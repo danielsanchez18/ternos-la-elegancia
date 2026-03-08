@@ -1,15 +1,32 @@
 @import "tailwindcss";
 
+/* Adds pointer cursor to buttons */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Defaults hover styles on all devices */
+@custom-variant hover (&:hover);
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
+} 
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  --color-primary: #1c398e;
+  --color-primary-hover: #193cb8;
+  
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-google-sans: var(--font-google-sans);
+  --font-oswald: var(--font-oswald);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +40,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  scroll-behavior: smooth;
+}
+
+.btn-primary {
+  @apply bg-primary hover:bg-primary-hover border border-primary hover:border-primary-hover focus:ring focus:ring-primary-hover text-white py-2 px-4 transition-colors duration-300;
+}
+
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
