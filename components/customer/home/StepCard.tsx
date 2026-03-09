@@ -22,19 +22,19 @@ export const StepCard = ({
         </p>
 
         <div className="space-y-2">
-          <h3 className="text-2xl uppercase font-oswald font-semibold">{title}</h3>
-          <p className="text-neutral-700">{description}</p>
+          <h3 className="text-2xl uppercase text-white font-oswald font-semibold">{title}</h3>
+          <p className="text-neutral-300">{description}</p>
         </div>
       </div>
 
-      <div className="absolute bg-black/10 size-full inset-0 ">
-        {/* <Image
+      <div className="absolute bg-black/10 size-full inset-0">
+        <Image
           src={image}
           alt={title}
-          width={120}
-          height={120}
-          className="object-cover"
-        /> */}
+          fill
+          className="object-cover w-full h-full"
+        />
+        <div className="size-full inset-0 absolute bg-black/70"></div>
       </div>
     </div>
   );

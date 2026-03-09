@@ -6,28 +6,28 @@ const steps = [
     title: "Consulta Personalizada",
     description:
       "Nos reunimos contigo para entender tu estilo, preferencias y necesidades.",
-    image: "/images/process/consulta.jpg",
+    image: "/images/step-consulta.avif",
   },
   {
     stepNumber: 2,
     title: "Toma de Medidas",
     description:
       "Mediciones precisas con técnicas profesionales para el ajuste perfecto.",
-    image: "/images/process/medidas.jpg",
+    image: "/images/step-medida.jpg",
   },
   {
     stepNumber: 3,
     title: "Confección Artesanal",
     description:
       "Nuestros maestros sastres crean tu traje con materiales de primera calidad.",
-    image: "/images/process/tela.jpg",
+    image: "/images/step-confeccion.png",
   },
   {
     stepNumber: 4,
     title: "Ajustes y Entrega",
     description:
       "Pruebas finales y ajustes para asegurar la perfección absoluta.",
-    image: "/images/process/entrega.jpg",
+    image: "/images/step-entrega.webp",
   },
 ];
 

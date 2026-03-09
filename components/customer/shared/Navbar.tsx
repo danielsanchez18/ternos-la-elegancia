@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import Logo from "@/assets/logos/logo.svg";
 
 export const Navbar = () => {
   return (
@@ -8,9 +10,10 @@ export const Navbar = () => {
       <div className="w-full flex items-center py-2">
         
         {/* TODO: Cambiar Logo */}
-        <a href="/" className="flex items-center gap-x-2">
-          <div className="size-10 bg-black/50 rounded-full"></div>
-          {/* <h1 className="text-xl font-oswald uppercase font-medium">Ternos La Elegancia</h1> */}
+        <a href="/" className="flex items-center gap-x-2" aria-label="Logo de la empresa" title="Ir a la página de inicio">
+          <div className="size-10 bg-black/50 rounded-full">
+            <Image src={Logo} alt="Logo" width={40} height={40} className="rounded-full" />
+          </div>
         </a>
 
         <div className="w-px h-5 mx-4 rotate-20 bg-black"></div>

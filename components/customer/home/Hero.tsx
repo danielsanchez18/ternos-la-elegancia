@@ -1,10 +1,24 @@
+import Image from "next/image";
+import Image1 from "@/assets/images/ternos-hero.jpg";
+
 export const Hero = () => {
     return (
         <div id="hero" className="lg:px-4">
-            <div className="h-200 lg:rounded-t-3xl transition-all bg-black/80 w-full relative">
+            <div className="h-200 lg:rounded-t-3xl transition-all bg-black/80 overflow-hidden w-full relative">
+
+                {/* Image background */}
+                <div className="absolute inset-0 z-10">
+                    <Image
+                        src={Image1}
+                        alt="Fondo del hero"
+                        fill
+                        className="object-cover mask-b-from-50%"
+                    />
+                    <div className="size-full inset-0 z-20 absolute bg-linear-to-b from-black/60 to-black/50"></div>
+                </div>
 
                 {/* Contenido */}
-                <div className="max-w-350 mx-auto h-full flex flex-col justify-center max-xl:px-4 space-y-8">
+                <div className="max-w-350 mx-auto h-full flex flex-col justify-center max-xl:px-4 space-y-8 z-20 absolute inset-0">
                     
                     <div className="text-white max-w-3xl space-y-4">
                         <h1 className="uppercase text-2xl tracking-widest font-oswald">Ternos La Elegancia</h1>
@@ -17,6 +31,7 @@ export const Hero = () => {
                         <button className="bg-transparent border border-white text-lg text-white px-5 py-2.5 hover:bg-white/10">Agendar Cita</button>
                     </div>
                 </div>
+
             </div>
         </div>
     )

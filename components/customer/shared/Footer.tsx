@@ -1,18 +1,20 @@
+import Image from "next/image";
+import Logo from "@/assets/logos/logo.svg";
+
 export const Footer = () => {
   return (
-    <section className=" w-full p-4">
+    <section className=" w-full lg:p-4">
       <footer className="max-bg-blue-950 lg:rounded-2xl bg-blue-950 py-15 px-5 mx-auto">
         
         {/* Links y contacto */}
         <div className="grid sm:grid-cols-3 md:grid-cols-4 gap-y-10 max-w-350 mx-auto gap-x-5 md:gap-x-10">
           <article className="flex flex-col gap-y-3 sm:col-span-3 md:col-span-1 mx-auto md:mx-0">
             <div className="flex items-center gap-x-2">
-              <div className="size-14 rounded-full bg-white/10">
-                {/* <img
-                  src="logo.png"
-                  className=""
+              <div className="size-12 rounded-full bg-white/10">
+                <Image
+                  src={Logo}
                   alt="Ternos La Elegancia Logo"
-                /> */}
+                />
               </div>
               <h2 className="text-xl font-medium font-oswald uppercase text-white">
                 Ternos La Elegancia
@@ -95,7 +97,7 @@ export const Footer = () => {
               +51 951 963 622
             </a>
 
-            <div className="hover:text-white hover:underline flex items-center gap-x-1 w-fit">
+            <div className="flex items-center gap-x-1 w-fit">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -117,7 +119,7 @@ export const Footer = () => {
               <p>Lun - Sáb: 9:00 am - 8:00 pm</p>
             </div>
 
-            <div className="hover:text-white hover:underline flex items-center gap-x-1 w-fit">
+            <div className="flex items-center gap-x-1 w-fit">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

@@ -1,13 +1,16 @@
+import Image from "next/image";
+import ImageVisit from "@/public/images/visit-us.jpg";
+
 export const VisitUs = () => {
   return (
     <section className="grid grid-cols-2 gap-10 items-center max-w-300 mx-auto">
       {/* Imagen */}
       <div className="h-80 bg-black/10 overflow-hidden">
-        {/* <img
-          src="https://imgs.search.brave.com/vtc0mU4GKkbv1FIcRrktQJ8gfcZ9lwhRBBPBx9jZg3Q/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zLmFs/aWNkbi5jb20vQHNj/MDQva2YvSDY5ZWIx/MzFmMzliZjRjNTRi/ZGE1ZmU4NThlNzFj/NmYwTy5qcGdfMzAw/eDMwMC5qcGc"
+        <Image
+          src={ImageVisit}
           alt="Tienda de Trajes"
           className="w-full h-full object-cover"
-        /> */}
+        />
       </div>
 
       {/* Contenido */}
