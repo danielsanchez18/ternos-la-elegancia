@@ -5,6 +5,13 @@ export class PaymentCustomOrderNotFoundError extends Error {
   }
 }
 
+export class PaymentSaleOrderNotFoundError extends Error {
+  constructor() {
+    super("Sale order not found");
+    this.name = "PaymentSaleOrderNotFoundError";
+  }
+}
+
 export class PaymentOverchargeError extends Error {
   constructor() {
     super("Payment amount exceeds pending balance for the order");

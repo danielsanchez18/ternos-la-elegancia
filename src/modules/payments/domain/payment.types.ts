@@ -95,3 +95,53 @@ export type CustomOrderPaymentSummary = {
   minAdvanceRequired: Prisma.Decimal;
   hasRequiredAdvance: boolean;
 };
+
+export type ListSaleOrderPaymentsFilters = {
+  status?: PaymentStatus;
+  concept?: PaymentConcept;
+  method?: PaymentMethod;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateSaleOrderPaymentInput = {
+  amount: number;
+  method: PaymentMethod;
+  concept?: PaymentConcept;
+  status?: PaymentStatus;
+  provider?: VoucherProvider;
+  operationCode?: string;
+  approvalCode?: string;
+  voucherUrl?: string;
+  paidAt?: Date;
+  notes?: string;
+};
+
+export type ListSaleOrderComprobantesFilters = {
+  status?: ComprobanteStatus;
+  type?: ComprobanteType;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateSaleOrderComprobanteInput = {
+  type: ComprobanteType;
+  status?: ComprobanteStatus;
+  serie?: string;
+  numero?: string;
+  subtotal?: number;
+  impuesto?: number;
+  total: number;
+  issuedAt?: Date;
+  pdfUrl?: string;
+  xmlUrl?: string;
+  notes?: string;
+};
+
+export type SaleOrderPaymentSummary = {
+  saleOrderId: number;
+  orderTotal: Prisma.Decimal;
+  approvedPaymentsTotal: Prisma.Decimal;
+  pendingBalance: Prisma.Decimal;
+  isFullyPaid: boolean;
+};

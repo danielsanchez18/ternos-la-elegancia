@@ -926,6 +926,9 @@ Respuestas:
 | `GET /api/custom-orders` | `customerId`, `status`, `code`, `requiresMeasurement`, `firstPurchaseFlow`, `createdFrom`, `createdTo`, `promisedFrom`, `promisedTo`, `page`, `pageSize`, `orderBy`, `order` |
 | `GET /api/custom-orders/:id/payments` | `status`, `concept`, `method`, `from`, `to` |
 | `GET /api/custom-orders/:id/comprobantes` | `status`, `type`, `from`, `to` |
+| `GET /api/sale-orders` | `customerId`, `status`, `code`, `requestedFrom`, `requestedTo`, `page`, `pageSize`, `orderBy`, `order` |
+| `GET /api/sale-orders/:id/payments` | `status`, `concept`, `method`, `from`, `to` |
+| `GET /api/sale-orders/:id/comprobantes` | `status`, `type`, `from`, `to` |
 
 ## 12. Recomendaciones para consumo frontend
 
@@ -936,3 +939,234 @@ Respuestas:
 - Para listados grandes (`custom-orders`), usar estado de paginacion con `page`, `pageSize`, `total`, `pageCount`.
 - Para enums, centralizar constantes UI para evitar strings hardcodeados.
 - Para flujos de confeccion, consumir `GET /api/custom-orders/:id/payments` y habilitar `START_CONFECTION` solo cuando `summary.hasRequiredAdvance === true`.
+- Para venta directa, consumir `GET /api/sale-orders/:id/payments` y habilitar `MARK_PAID` solo cuando `summary.isFullyPaid === true`.
+
+## 13. Sale Orders
+
+## 13.1 GET /api/sale-orders
+Lista ordenes de venta con filtros avanzados, orden y paginacion.
+
+Query params opcionales:
+- `customerId`: entero positivo
+- `status`: `SaleOrderStatus`
+- `code`: texto, busqueda parcial case-insensitive
+- `requestedFrom`: fecha
+- `requestedTo`: fecha
+- `page`: entero positivo, default `1`
+- `pageSize`: entero 1..100, default `20`
+- `orderBy`: `createdAt` | `requestedAt` | `total`, default `createdAt`
+- `order`: `asc` | `desc`, default `desc`
+
+Ejemplos:
+- `/api/sale-orders?page=1&pageSize=20`
+- `/api/sale-orders?status=PENDIENTE_PAGO`
+- `/api/sale-orders?customerId=1&status=PAGADO`
+- `/api/sale-orders?code=SAL-20260309`
+- `/api/sale-orders?requestedFrom=2026-03-01T00:00:00.000Z&requestedTo=2026-03-31T23:59:59.000Z`
+- `/api/sale-orders?orderBy=total&order=asc&page=2&pageSize=10`
+
+Respuesta `200`:
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1
+}
+```
+
+Errores:
+- `400`: query invalida
+
+## 13.2 POST /api/sale-orders
+Crea orden de venta.
+
+Body completo:
+```json
+{
+  "customerId": 1,
+  "notes": "Venta mostrador",
+  "requestedAt": "2026-03-10T14:00:00.000Z",
+  "items": [
+    {
+      "productId": 10,
+      "itemNameSnapshot": "Camisa Blanca Slim",
+      "quantity": 2,
+      "unitPrice": 120,
+      "discountAmount": 10,
+      "notes": "Empaque regalo",
+      "components": [
+        {
+          "variantId": 33,
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "bundleId": 3,
+      "quantity": 1,
+      "unitPrice": 450,
+      "discountAmount": 0
+    }
+  ]
+}
+```
+
+Reglas de validacion:
+- cada item debe tener exactamente uno: `productId` o `bundleId`
+- `quantity` default `1`
+- `unitPrice >= 0`
+- `discountAmount >= 0`
+- subtotal de item no puede quedar negativo
+- en `components`, cada componente requiere `productId` o `variantId`
+
+Respuestas:
+- `201`: orden creada
+- `400`: body invalido
+- `404`: cliente no encontrado
+- `409`: referencias invalidas (producto/bundle) o regla de item
+
+## 13.3 GET /api/sale-orders/:id
+Obtiene orden de venta por id.
+
+Respuestas:
+- `200`: orden completa con items y components
+- `400`: param invalido
+- `404`: orden no encontrada
+
+## 13.4 PATCH /api/sale-orders/:id
+Acciones de cambio de estado de venta.
+
+Body:
+```json
+{
+  "action": "MARK_PAID",
+  "note": "Pago confirmado en caja"
+}
+```
+
+Acciones validas:
+- `MARK_PAID` -> `PAGADO`
+- `START_PREPARATION` -> `EN_PREPARACION`
+- `MARK_READY_FOR_PICKUP` -> `LISTO_PARA_RECOJO`
+- `MARK_DELIVERED` -> `ENTREGADO`
+- `CANCEL` -> `CANCELADO`
+
+Regla critica de negocio:
+- Para `MARK_PAID`, pagos aprobados acumulados deben cubrir 100% del total de la orden.
+- Si no se cumple:
+
+```json
+{
+  "error": "Approved payments must cover total before marking order as paid"
+}
+```
+
+Respuestas:
+- `200`: orden actualizada
+- `400`: param/body invalido
+- `404`: orden no encontrada
+- `409`: transicion no permitida o pagos aprobados insuficientes
+
+## 14. Payments y Comprobantes (Sale Orders)
+
+## 14.1 GET /api/sale-orders/:id/payments
+Lista pagos de la orden y devuelve resumen financiero.
+
+Query params opcionales:
+- `status`: `PaymentStatus`
+- `concept`: `PaymentConcept`
+- `method`: `PaymentMethod`
+- `from`: fecha
+- `to`: fecha
+
+Respuesta `200`:
+```json
+{
+  "payments": [],
+  "summary": {
+    "saleOrderId": 20,
+    "orderTotal": "690.00",
+    "approvedPaymentsTotal": "300.00",
+    "pendingBalance": "390.00",
+    "isFullyPaid": false
+  }
+}
+```
+
+Errores:
+- `400`: params/query invalidos
+- `404`: sale order no encontrada
+
+## 14.2 POST /api/sale-orders/:id/payments
+Registra pago de orden de venta.
+
+Body:
+```json
+{
+  "amount": 390,
+  "method": "EFECTIVO",
+  "concept": "SALDO",
+  "status": "APROBADO",
+  "provider": "OTRO",
+  "operationCode": "CAJA-902",
+  "approvalCode": "OK-902",
+  "voucherUrl": "https://example.com/voucher.png",
+  "paidAt": "2026-03-10T16:00:00.000Z",
+  "notes": "Pago final"
+}
+```
+
+Validaciones y reglas:
+- `amount > 0`
+- no permite sobrepago aprobado (acumulado aprobado > total de orden)
+
+Respuestas:
+- `201`: `{ payment, summary }`
+- `400`: params/body invalidos
+- `404`: sale order no encontrada
+- `409`: sobrepago
+
+## 14.3 GET /api/sale-orders/:id/comprobantes
+Lista comprobantes de orden de venta.
+
+Query params opcionales:
+- `status`: `ComprobanteStatus`
+- `type`: `ComprobanteType`
+- `from`: fecha
+- `to`: fecha
+
+Respuestas:
+- `200`: array de comprobantes
+- `400`: params/query invalidos
+- `404`: sale order no encontrada
+
+## 14.4 POST /api/sale-orders/:id/comprobantes
+Crea comprobante para orden de venta.
+
+Body:
+```json
+{
+  "type": "BOLETA",
+  "status": "BORRADOR",
+  "serie": "B001",
+  "numero": "000789",
+  "subtotal": 584.75,
+  "impuesto": 105.25,
+  "total": 690,
+  "issuedAt": "2026-03-10T16:30:00.000Z",
+  "pdfUrl": "https://example.com/sale-comprobante.pdf",
+  "xmlUrl": "https://example.com/sale-comprobante.xml",
+  "notes": "Comprobante venta directa"
+}
+```
+
+Regla de negocio:
+- `total` del comprobante no puede exceder total de la orden.
+
+Respuestas:
+- `201`: comprobante creado
+- `400`: params/body invalidos
+- `404`: sale order no encontrada
+- `409`: total comprobante excede total de orden
