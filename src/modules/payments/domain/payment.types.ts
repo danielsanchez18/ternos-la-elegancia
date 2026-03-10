@@ -1,0 +1,97 @@
+import {
+  ComprobanteStatus,
+  ComprobanteType,
+  PaymentConcept,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+  VoucherProvider,
+} from "@prisma/client";
+
+export type ListCustomOrderPaymentsFilters = {
+  status?: PaymentStatus;
+  concept?: PaymentConcept;
+  method?: PaymentMethod;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateCustomOrderPaymentInput = {
+  amount: number;
+  method: PaymentMethod;
+  concept?: PaymentConcept;
+  status?: PaymentStatus;
+  provider?: VoucherProvider;
+  operationCode?: string;
+  approvalCode?: string;
+  voucherUrl?: string;
+  paidAt?: Date;
+  notes?: string;
+};
+
+export type ListCustomOrderComprobantesFilters = {
+  status?: ComprobanteStatus;
+  type?: ComprobanteType;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateCustomOrderComprobanteInput = {
+  type: ComprobanteType;
+  status?: ComprobanteStatus;
+  serie?: string;
+  numero?: string;
+  subtotal?: number;
+  impuesto?: number;
+  total: number;
+  issuedAt?: Date;
+  pdfUrl?: string;
+  xmlUrl?: string;
+  notes?: string;
+};
+
+export type PublicPayment = {
+  id: number;
+  customerId: number;
+  customOrderId: number | null;
+  amount: Prisma.Decimal;
+  method: PaymentMethod;
+  concept: PaymentConcept;
+  status: PaymentStatus;
+  provider: VoucherProvider | null;
+  operationCode: string | null;
+  approvalCode: string | null;
+  voucherUrl: string | null;
+  paidAt: Date;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PublicComprobante = {
+  id: number;
+  customerId: number;
+  customOrderId: number | null;
+  type: ComprobanteType;
+  status: ComprobanteStatus;
+  serie: string | null;
+  numero: string | null;
+  subtotal: Prisma.Decimal;
+  impuesto: Prisma.Decimal;
+  total: Prisma.Decimal;
+  issuedAt: Date | null;
+  pdfUrl: string | null;
+  xmlUrl: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CustomOrderPaymentSummary = {
+  customOrderId: number;
+  orderTotal: Prisma.Decimal;
+  approvedPaymentsTotal: Prisma.Decimal;
+  pendingBalance: Prisma.Decimal;
+  minAdvanceRequired: Prisma.Decimal;
+  hasRequiredAdvance: boolean;
+};
