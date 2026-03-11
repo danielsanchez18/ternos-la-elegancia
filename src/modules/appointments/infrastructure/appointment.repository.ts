@@ -2,8 +2,14 @@ import { AppointmentStatus, AppointmentType, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import {
+  CreateSpecialScheduleInput,
+  ListSpecialSchedulesFilters,
   ListAppointmentsFilters,
+  PublicBusinessHour,
   PublicAppointment,
+  PublicSpecialSchedule,
+  UpdateSpecialScheduleInput,
+  UpsertBusinessHourInput,
 } from "@/src/modules/appointments/domain/appointment.types";
 
 const publicAppointmentSelect = {
@@ -85,10 +91,18 @@ export class AppointmentRepository {
     });
   }
 
-  async countOccupiedSlots(scheduledAt: Date): Promise<number> {
+  async countOverlappingAppointments(input: {
+    startsAt: Date;
+    endsAt: Date;
+    excludeAppointmentId?: number;
+  }): Promise<number> {
     return prisma.appointment.count({
       where: {
-        scheduledAt,
+        id: input.excludeAppointmentId
+          ? {
+              not: input.excludeAppointmentId,
+            }
+          : undefined,
         status: {
           in: [
             AppointmentStatus.PENDIENTE,
@@ -96,6 +110,28 @@ export class AppointmentRepository {
             AppointmentStatus.REPROGRAMADA,
           ],
         },
+        AND: [
+          {
+            scheduledAt: {
+              lt: input.endsAt,
+            },
+          },
+          {
+            OR: [
+              {
+                estimatedEndAt: {
+                  gt: input.startsAt,
+                },
+              },
+              {
+                estimatedEndAt: null,
+                scheduledAt: {
+                  gte: input.startsAt,
+                },
+              },
+            ],
+          },
+        ],
       },
     });
   }
@@ -174,6 +210,107 @@ export class AppointmentRepository {
         status: input.status,
         note: input.note,
       },
+    });
+  }
+
+  async listBusinessHours() {
+    return prisma.businessHour.findMany({
+      orderBy: { dayOfWeek: "asc" },
+    });
+  }
+
+  async upsertBusinessHour(input: UpsertBusinessHourInput): Promise<PublicBusinessHour> {
+    const row = await prisma.businessHour.upsert({
+      where: {
+        dayOfWeek: input.dayOfWeek,
+      },
+      create: {
+        dayOfWeek: input.dayOfWeek,
+        openTime: input.openTime,
+        closeTime: input.closeTime,
+        isClosed: input.isClosed,
+        note: input.note,
+      },
+      update: {
+        openTime: input.openTime,
+        closeTime: input.closeTime,
+        isClosed: input.isClosed,
+        note: input.note,
+      },
+    });
+
+    return {
+      id: row.id,
+      dayOfWeek: row.dayOfWeek,
+      openTime: row.openTime,
+      closeTime: row.closeTime,
+      isClosed: row.isClosed,
+      note: row.note,
+    };
+  }
+
+  async listSpecialSchedules(
+    filters: ListSpecialSchedulesFilters
+  ): Promise<PublicSpecialSchedule[]> {
+    return prisma.specialSchedule.findMany({
+      where: {
+        date:
+          filters.from || filters.to
+            ? {
+                gte: filters.from,
+                lte: filters.to,
+              }
+            : undefined,
+      },
+      orderBy: { date: "asc" },
+    });
+  }
+
+  async findSpecialScheduleById(id: number): Promise<PublicSpecialSchedule | null> {
+    return prisma.specialSchedule.findUnique({
+      where: { id },
+    });
+  }
+
+  async upsertSpecialScheduleByDate(
+    input: CreateSpecialScheduleInput
+  ): Promise<PublicSpecialSchedule> {
+    return prisma.specialSchedule.upsert({
+      where: { date: input.date },
+      create: {
+        date: input.date,
+        openTime: input.openTime,
+        closeTime: input.closeTime,
+        isClosed: input.isClosed,
+        note: input.note,
+      },
+      update: {
+        openTime: input.openTime,
+        closeTime: input.closeTime,
+        isClosed: input.isClosed,
+        note: input.note,
+      },
+    });
+  }
+
+  async updateSpecialScheduleById(
+    id: number,
+    input: UpdateSpecialScheduleInput
+  ): Promise<PublicSpecialSchedule> {
+    return prisma.specialSchedule.update({
+      where: { id },
+      data: {
+        openTime: input.openTime,
+        closeTime: input.closeTime,
+        isClosed: input.isClosed,
+        note: input.note,
+      },
+    });
+  }
+
+  async deleteSpecialScheduleById(id: number): Promise<void> {
+    await prisma.specialSchedule.delete({
+      where: { id },
     });
   }
 }

@@ -1,19 +1,31 @@
 import { Prisma } from "@prisma/client";
 
 import {
+  PaymentAlterationOrderNotFoundError,
   ComprobanteOverchargeError,
   PaymentCustomOrderNotFoundError,
+  PaymentRentalOrderNotFoundError,
   PaymentSaleOrderNotFoundError,
   PaymentOverchargeError,
 } from "@/src/modules/payments/domain/payment.errors";
 import {
+  AlterationOrderPaymentSummary,
+  CreateAlterationOrderComprobanteInput,
+  CreateAlterationOrderPaymentInput,
+  CreateRentalOrderComprobanteInput,
+  CreateRentalOrderPaymentInput,
   CreateSaleOrderComprobanteInput,
   CreateSaleOrderPaymentInput,
   CreateCustomOrderComprobanteInput,
   CreateCustomOrderPaymentInput,
+  ListAlterationOrderComprobantesFilters,
+  ListAlterationOrderPaymentsFilters,
+  ListRentalOrderComprobantesFilters,
+  ListRentalOrderPaymentsFilters,
   ListSaleOrderComprobantesFilters,
   ListSaleOrderPaymentsFilters,
   CustomOrderPaymentSummary,
+  RentalOrderPaymentSummary,
   SaleOrderPaymentSummary,
   ListCustomOrderComprobantesFilters,
   ListCustomOrderPaymentsFilters,
@@ -227,6 +239,230 @@ export class PaymentService {
 
     return this.paymentRepository.createSaleOrderComprobante({
       saleOrderId,
+      customerId: order.customerId,
+      payload,
+    });
+  }
+
+  async listRentalOrderPayments(
+    rentalOrderId: number,
+    filters: ListRentalOrderPaymentsFilters
+  ): Promise<PublicPayment[]> {
+    const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
+    if (!order) {
+      throw new PaymentRentalOrderNotFoundError();
+    }
+
+    return this.paymentRepository.listRentalOrderPayments(rentalOrderId, filters);
+  }
+
+  async createRentalOrderPayment(
+    rentalOrderId: number,
+    payload: CreateRentalOrderPaymentInput
+  ): Promise<{ payment: PublicPayment; summary: RentalOrderPaymentSummary }> {
+    const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
+    if (!order) {
+      throw new PaymentRentalOrderNotFoundError();
+    }
+
+    const approvedPaid =
+      await this.paymentRepository.sumRentalOrderApprovedPayments(rentalOrderId);
+    const nextApprovedPaid =
+      payload.status === undefined || payload.status === "APROBADO"
+        ? approvedPaid.add(new Prisma.Decimal(payload.amount))
+        : approvedPaid;
+
+    if (nextApprovedPaid.gt(order.total)) {
+      throw new PaymentOverchargeError();
+    }
+
+    const payment = await this.paymentRepository.createRentalOrderPayment({
+      rentalOrderId,
+      customerId: order.customerId,
+      payload,
+    });
+
+    return {
+      payment,
+      summary: {
+        rentalOrderId: order.id,
+        orderTotal: order.total,
+        approvedPaymentsTotal: nextApprovedPaid,
+        pendingBalance: order.total.sub(nextApprovedPaid),
+        isFullyPaid: !nextApprovedPaid.lt(order.total),
+      },
+    };
+  }
+
+  async getRentalOrderPaymentSummary(
+    rentalOrderId: number
+  ): Promise<RentalOrderPaymentSummary> {
+    const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
+    if (!order) {
+      throw new PaymentRentalOrderNotFoundError();
+    }
+
+    const approvedPaid =
+      await this.paymentRepository.sumRentalOrderApprovedPayments(rentalOrderId);
+
+    return {
+      rentalOrderId: order.id,
+      orderTotal: order.total,
+      approvedPaymentsTotal: approvedPaid,
+      pendingBalance: order.total.sub(approvedPaid),
+      isFullyPaid: !approvedPaid.lt(order.total),
+    };
+  }
+
+  async listRentalOrderComprobantes(
+    rentalOrderId: number,
+    filters: ListRentalOrderComprobantesFilters
+  ): Promise<PublicComprobante[]> {
+    const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
+    if (!order) {
+      throw new PaymentRentalOrderNotFoundError();
+    }
+
+    return this.paymentRepository.listRentalOrderComprobantes(rentalOrderId, filters);
+  }
+
+  async createRentalOrderComprobante(
+    rentalOrderId: number,
+    payload: CreateRentalOrderComprobanteInput
+  ): Promise<PublicComprobante> {
+    const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
+    if (!order) {
+      throw new PaymentRentalOrderNotFoundError();
+    }
+
+    if (new Prisma.Decimal(payload.total).gt(order.total)) {
+      throw new ComprobanteOverchargeError();
+    }
+
+    return this.paymentRepository.createRentalOrderComprobante({
+      rentalOrderId,
+      customerId: order.customerId,
+      payload,
+    });
+  }
+
+  async listAlterationOrderPayments(
+    alterationOrderId: number,
+    filters: ListAlterationOrderPaymentsFilters
+  ): Promise<PublicPayment[]> {
+    const order = await this.paymentRepository.findAlterationOrderById(
+      alterationOrderId
+    );
+    if (!order) {
+      throw new PaymentAlterationOrderNotFoundError();
+    }
+
+    return this.paymentRepository.listAlterationOrderPayments(
+      alterationOrderId,
+      filters
+    );
+  }
+
+  async createAlterationOrderPayment(
+    alterationOrderId: number,
+    payload: CreateAlterationOrderPaymentInput
+  ): Promise<{ payment: PublicPayment; summary: AlterationOrderPaymentSummary }> {
+    const order = await this.paymentRepository.findAlterationOrderById(
+      alterationOrderId
+    );
+    if (!order) {
+      throw new PaymentAlterationOrderNotFoundError();
+    }
+
+    const approvedPaid =
+      await this.paymentRepository.sumAlterationOrderApprovedPayments(
+        alterationOrderId
+      );
+    const nextApprovedPaid =
+      payload.status === undefined || payload.status === "APROBADO"
+        ? approvedPaid.add(new Prisma.Decimal(payload.amount))
+        : approvedPaid;
+
+    if (nextApprovedPaid.gt(order.total)) {
+      throw new PaymentOverchargeError();
+    }
+
+    const payment = await this.paymentRepository.createAlterationOrderPayment({
+      alterationOrderId,
+      customerId: order.customerId,
+      payload,
+    });
+
+    return {
+      payment,
+      summary: {
+        alterationOrderId: order.id,
+        orderTotal: order.total,
+        approvedPaymentsTotal: nextApprovedPaid,
+        pendingBalance: order.total.sub(nextApprovedPaid),
+        isFullyPaid: !nextApprovedPaid.lt(order.total),
+      },
+    };
+  }
+
+  async getAlterationOrderPaymentSummary(
+    alterationOrderId: number
+  ): Promise<AlterationOrderPaymentSummary> {
+    const order = await this.paymentRepository.findAlterationOrderById(
+      alterationOrderId
+    );
+    if (!order) {
+      throw new PaymentAlterationOrderNotFoundError();
+    }
+
+    const approvedPaid =
+      await this.paymentRepository.sumAlterationOrderApprovedPayments(
+        alterationOrderId
+      );
+
+    return {
+      alterationOrderId: order.id,
+      orderTotal: order.total,
+      approvedPaymentsTotal: approvedPaid,
+      pendingBalance: order.total.sub(approvedPaid),
+      isFullyPaid: !approvedPaid.lt(order.total),
+    };
+  }
+
+  async listAlterationOrderComprobantes(
+    alterationOrderId: number,
+    filters: ListAlterationOrderComprobantesFilters
+  ): Promise<PublicComprobante[]> {
+    const order = await this.paymentRepository.findAlterationOrderById(
+      alterationOrderId
+    );
+    if (!order) {
+      throw new PaymentAlterationOrderNotFoundError();
+    }
+
+    return this.paymentRepository.listAlterationOrderComprobantes(
+      alterationOrderId,
+      filters
+    );
+  }
+
+  async createAlterationOrderComprobante(
+    alterationOrderId: number,
+    payload: CreateAlterationOrderComprobanteInput
+  ): Promise<PublicComprobante> {
+    const order = await this.paymentRepository.findAlterationOrderById(
+      alterationOrderId
+    );
+    if (!order) {
+      throw new PaymentAlterationOrderNotFoundError();
+    }
+
+    if (new Prisma.Decimal(payload.total).gt(order.total)) {
+      throw new ComprobanteOverchargeError();
+    }
+
+    return this.paymentRepository.createAlterationOrderComprobante({
+      alterationOrderId,
       customerId: order.customerId,
       payload,
     });

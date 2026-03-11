@@ -39,3 +39,17 @@ export class AppointmentTransitionNotAllowedError extends Error {
     this.name = "AppointmentTransitionNotAllowedError";
   }
 }
+
+export class AppointmentScheduleValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AppointmentScheduleValidationError";
+  }
+}
+
+export class AppointmentSpecialScheduleNotFoundError extends Error {
+  constructor() {
+    super("Special schedule not found");
+    this.name = "AppointmentSpecialScheduleNotFoundError";
+  }
+}

@@ -42,3 +42,49 @@ export type ListAppointmentsFilters = {
   from?: Date;
   to?: Date;
 };
+
+export type PublicBusinessHour = {
+  id: number | null;
+  dayOfWeek: number;
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean;
+  note: string | null;
+};
+
+export type UpsertBusinessHourInput = {
+  dayOfWeek: number;
+  openTime?: string | null;
+  closeTime?: string | null;
+  isClosed?: boolean;
+  note?: string;
+};
+
+export type PublicSpecialSchedule = {
+  id: number;
+  date: Date;
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean;
+  note: string | null;
+};
+
+export type ListSpecialSchedulesFilters = {
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateSpecialScheduleInput = {
+  date: Date;
+  openTime?: string | null;
+  closeTime?: string | null;
+  isClosed?: boolean;
+  note?: string;
+};
+
+export type UpdateSpecialScheduleInput = {
+  openTime?: string | null;
+  closeTime?: string | null;
+  isClosed?: boolean;
+  note?: string;
+};

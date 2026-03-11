@@ -116,6 +116,26 @@ Nota:
 - `EMITIDO`
 - `ANULADO`
 
+### 2.13 RentalOrderStatus
+- `RESERVADO`
+- `ENTREGADO`
+- `DEVUELTO`
+- `ATRASADO`
+- `CERRADO`
+- `CANCELADO`
+
+### 2.14 RentalPriceTier
+- `ESTRENO`
+- `NORMAL`
+
+### 2.15 AlterationOrderStatus
+- `RECIBIDO`
+- `EN_EVALUACION`
+- `EN_PROCESO`
+- `LISTO`
+- `ENTREGADO`
+- `CANCELADO`
+
 ## 3. Auth
 
 ### 3.1 BetterAuth handler
@@ -445,6 +465,11 @@ Respuestas:
 - `404`: cliente no encontrado
 - `409`: fuera de horario o sin cupo
 
+Reglas de negocio:
+- Solo bloques de `:00` y `:30`.
+- Debe caer dentro de horario de atencion (primero `SpecialSchedule`, luego `BusinessHour`, y finalmente horario fallback).
+- No se permiten traslapes con citas activas (`PENDIENTE`, `CONFIRMADA`, `REPROGRAMADA`) en la ventana de 30 minutos.
+
 ## 7.3 GET /api/appointments/:id
 Obtiene cita por id.
 
@@ -477,6 +502,91 @@ Respuestas:
 - `400`: param/body invalido
 - `404`: cita no encontrada
 - `409`: transicion no permitida, deadline excedido, fuera de horario, o slot ocupado
+
+## 7.5 GET /api/appointments/business-hours
+Lista horario semanal operativo (0=domingo ... 6=sabado).
+
+Respuestas:
+- `200`: array de 7 filas con `dayOfWeek`, `openTime`, `closeTime`, `isClosed`, `note`
+
+## 7.6 PUT /api/appointments/business-hours
+Actualiza o crea configuracion de un dia de la semana.
+
+Body:
+```json
+{
+  "dayOfWeek": 1,
+  "openTime": "09:00",
+  "closeTime": "19:30",
+  "isClosed": false,
+  "note": "Horario regular"
+}
+```
+
+Reglas:
+- Si `isClosed=false`, `openTime` y `closeTime` son requeridos.
+- `openTime` debe ser menor que `closeTime`.
+- Si `isClosed=true`, `openTime/closeTime` se guardan en `null`.
+
+Respuestas:
+- `200`: horario actualizado
+- `400`: body invalido
+- `409`: reglas de horario invalidas
+
+## 7.7 GET /api/appointments/special-schedules
+Lista excepciones de calendario por fecha.
+
+Query params opcionales:
+- `from`: fecha
+- `to`: fecha
+
+Respuestas:
+- `200`: array de excepciones
+- `400`: query invalida
+
+## 7.8 POST /api/appointments/special-schedules
+Crea (o reemplaza por fecha) una excepcion de calendario.
+
+Body:
+```json
+{
+  "date": "2026-03-29",
+  "openTime": "10:00",
+  "closeTime": "14:00",
+  "isClosed": false,
+  "note": "Horario por feriado"
+}
+```
+
+Respuestas:
+- `201`: excepcion creada/actualizada
+- `400`: body invalido
+- `409`: reglas de horario invalidas
+
+## 7.9 PATCH /api/appointments/special-schedules/:id
+Actualiza una excepcion por id.
+
+Body parcial (al menos un campo):
+```json
+{
+  "isClosed": true,
+  "note": "Dia no laborable"
+}
+```
+
+Respuestas:
+- `200`: excepcion actualizada
+- `400`: param/body invalido
+- `404`: excepcion no encontrada
+- `409`: reglas de horario invalidas
+
+## 7.10 DELETE /api/appointments/special-schedules/:id
+Elimina excepcion de calendario.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: param invalido
+- `404`: excepcion no encontrada
 
 ## 8. Fabrics
 
@@ -921,7 +1031,11 @@ Respuestas:
 | `GET /api/customers/:id/measurement-profiles` | Sin filtros |
 | `GET /api/measurement-profiles/:id/values` | `garmentType` |
 | `GET /api/appointments` | `customerId`, `status`, `from`, `to` |
+| `GET /api/appointments/business-hours` | Sin filtros |
+| `GET /api/appointments/special-schedules` | `from`, `to` |
+| `GET /api/notifications` | `customerId`, `channel`, `status`, `from`, `to` |
 | `GET /api/fabrics` | Sin filtros |
+| `GET /api/alteration-services` | `active` |
 | `GET /api/fabrics/:id/movements` | Sin filtros |
 | `GET /api/custom-orders` | `customerId`, `status`, `code`, `requiresMeasurement`, `firstPurchaseFlow`, `createdFrom`, `createdTo`, `promisedFrom`, `promisedTo`, `page`, `pageSize`, `orderBy`, `order` |
 | `GET /api/custom-orders/:id/payments` | `status`, `concept`, `method`, `from`, `to` |
@@ -929,6 +1043,12 @@ Respuestas:
 | `GET /api/sale-orders` | `customerId`, `status`, `code`, `requestedFrom`, `requestedTo`, `page`, `pageSize`, `orderBy`, `order` |
 | `GET /api/sale-orders/:id/payments` | `status`, `concept`, `method`, `from`, `to` |
 | `GET /api/sale-orders/:id/comprobantes` | `status`, `type`, `from`, `to` |
+| `GET /api/rental-orders` | `customerId`, `status`, `code`, `hasDelay`, `hasDamage`, `pickupFrom`, `pickupTo`, `dueFrom`, `dueTo`, `page`, `pageSize`, `orderBy`, `order` |
+| `GET /api/rental-orders/:id/payments` | `status`, `concept`, `method`, `from`, `to` |
+| `GET /api/rental-orders/:id/comprobantes` | `status`, `type`, `from`, `to` |
+| `GET /api/alteration-orders` | `customerId`, `serviceId`, `status`, `code`, `receivedFrom`, `receivedTo`, `promisedFrom`, `promisedTo`, `page`, `pageSize`, `orderBy`, `order` |
+| `GET /api/alteration-orders/:id/payments` | `status`, `concept`, `method`, `from`, `to` |
+| `GET /api/alteration-orders/:id/comprobantes` | `status`, `type`, `from`, `to` |
 
 ## 12. Recomendaciones para consumo frontend
 
@@ -938,8 +1058,13 @@ Respuestas:
 - Manejar `409` con mensajes de negocio (estado no permitido, codigo duplicado, etc.).
 - Para listados grandes (`custom-orders`), usar estado de paginacion con `page`, `pageSize`, `total`, `pageCount`.
 - Para enums, centralizar constantes UI para evitar strings hardcodeados.
+- Para agenda, consumir `GET /api/appointments/business-hours` y `GET /api/appointments/special-schedules` para construir calendario operativo real.
+- Para notificaciones de citas, ejecutar `POST /api/notifications/appointments/reminder-24h` (idealmente por cron/job) y monitorear resultados por `GET /api/notifications`.
+- Para ejecucion automatica segura, usar endpoint interno `POST /api/internal/cron/appointments/reminder-24h` con `Authorization: Bearer <CRON_SECRET>`.
 - Para flujos de confeccion, consumir `GET /api/custom-orders/:id/payments` y habilitar `START_CONFECTION` solo cuando `summary.hasRequiredAdvance === true`.
 - Para venta directa, consumir `GET /api/sale-orders/:id/payments` y habilitar `MARK_PAID` solo cuando `summary.isFullyPaid === true`.
+- Para alquiler, consumir `GET /api/rental-orders/:id/payments` y usar `summary.pendingBalance` para mostrar saldo pendiente en devolucion/cierre.
+- Para arreglos, consumir `GET /api/alteration-orders/:id/payments` y mostrar `summary.pendingBalance` antes de `MARK_DELIVERED`.
 
 ## 13. Sale Orders
 
@@ -1170,3 +1295,777 @@ Respuestas:
 - `400`: params/body invalidos
 - `404`: sale order no encontrada
 - `409`: total comprobante excede total de orden
+
+## 15. Rental Orders
+
+## 15.1 GET /api/rental-orders
+Lista ordenes de alquiler con filtros avanzados, orden y paginacion.
+
+Query params opcionales:
+- `customerId`: entero positivo
+- `status`: `RentalOrderStatus`
+- `code`: texto, busqueda parcial case-insensitive
+- `hasDelay`: `true` | `false`
+- `hasDamage`: `true` | `false`
+- `pickupFrom`: fecha
+- `pickupTo`: fecha
+- `dueFrom`: fecha
+- `dueTo`: fecha
+- `page`: entero positivo, default `1`
+- `pageSize`: entero 1..100, default `20`
+- `orderBy`: `createdAt` | `pickupAt` | `dueBackAt` | `total`, default `createdAt`
+- `order`: `asc` | `desc`, default `desc`
+
+Ejemplos:
+- `/api/rental-orders?page=1&pageSize=20`
+- `/api/rental-orders?status=ENTREGADO`
+- `/api/rental-orders?customerId=1&hasDelay=true`
+- `/api/rental-orders?code=REN-20260311`
+- `/api/rental-orders?pickupFrom=2026-03-01T00:00:00.000Z&pickupTo=2026-03-31T23:59:59.000Z`
+- `/api/rental-orders?dueFrom=2026-03-10T00:00:00.000Z&dueTo=2026-03-20T23:59:59.000Z&orderBy=dueBackAt&order=asc`
+
+Respuesta `200`:
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1
+}
+```
+
+Errores:
+- `400`: query invalida
+
+## 15.2 POST /api/rental-orders
+Crea orden de alquiler (flujo inmediato, no reserva futura web).
+
+Body:
+```json
+{
+  "customerId": 1,
+  "pickupAt": "2026-03-11T10:00:00.000Z",
+  "dueBackAt": "2026-03-13T18:00:00.000Z",
+  "notes": "Cliente recoge en tienda",
+  "items": [
+    {
+      "rentalUnitId": 5,
+      "productId": 10,
+      "itemNameSnapshot": "Terno Azul Marino",
+      "tierAtRental": "ESTRENO",
+      "unitPrice": 250,
+      "notes": "Incluye funda"
+    }
+  ]
+}
+```
+
+Reglas de validacion y negocio:
+- `items` requiere al menos 1 elemento
+- `dueBackAt` debe ser mayor a `pickupAt`
+- alquiler web es inmediato: no permite `pickupAt` futuro fuera de una tolerancia corta
+- cada `rentalUnitId` debe existir y estar `DISPONIBLE`
+- el backend registra salida inicial y bloquea unidad en estado `ALQUILADO`
+
+Respuestas:
+- `201`: orden creada
+- `400`: body invalido
+- `404`: cliente o unidad no encontrada
+- `409`: unidad no disponible o regla de negocio violada
+
+## 15.3 GET /api/rental-orders/:id
+Obtiene orden de alquiler por id.
+
+Respuestas:
+- `200`: orden completa con items
+- `400`: param invalido
+- `404`: orden no encontrada
+
+## 15.4 PATCH /api/rental-orders/:id
+Acciones de cambio de estado del alquiler.
+
+Body:
+```json
+{
+  "action": "MARK_RETURNED",
+  "note": "Retorno en buen estado",
+  "hasDamage": false,
+  "returnNotes": "Sin observaciones"
+}
+```
+
+Acciones validas:
+- `MARK_RETURNED` -> `DEVUELTO`
+- `MARK_LATE` -> `ATRASADO`
+- `CLOSE` -> `CERRADO`
+- `CANCEL` -> `CANCELADO`
+
+Reglas de transicion:
+- `MARK_RETURNED` permitido desde `ENTREGADO` o `ATRASADO`
+- `MARK_LATE` permitido desde `ENTREGADO`
+- `CLOSE` permitido desde `DEVUELTO`
+- `CANCEL` permitido desde `RESERVADO`
+
+Regla adicional al devolver:
+- El backend libera unidades (`DISPONIBLE`), registra movimiento de devolucion y baja tier `ESTRENO` a `NORMAL` cuando corresponde.
+
+Respuestas:
+- `200`: orden actualizada
+- `400`: param/body invalido
+- `404`: orden no encontrada
+- `409`: transicion no permitida
+
+## 16. Payments y Comprobantes (Rental Orders)
+
+## 16.1 GET /api/rental-orders/:id/payments
+Lista pagos de la orden de alquiler y devuelve resumen financiero.
+
+Query params opcionales:
+- `status`: `PaymentStatus`
+- `concept`: `PaymentConcept`
+- `method`: `PaymentMethod`
+- `from`: fecha
+- `to`: fecha
+
+Respuesta `200`:
+```json
+{
+  "payments": [],
+  "summary": {
+    "rentalOrderId": 30,
+    "orderTotal": "250.00",
+    "approvedPaymentsTotal": "100.00",
+    "pendingBalance": "150.00",
+    "isFullyPaid": false
+  }
+}
+```
+
+Errores:
+- `400`: params/query invalidos
+- `404`: rental order no encontrada
+
+## 16.2 POST /api/rental-orders/:id/payments
+Registra pago de orden de alquiler.
+
+Body:
+```json
+{
+  "amount": 150,
+  "method": "YAPE",
+  "concept": "SALDO",
+  "status": "APROBADO",
+  "provider": "YAPE",
+  "operationCode": "YAPE-00901",
+  "approvalCode": "OK-REN-901",
+  "voucherUrl": "https://example.com/rental-voucher.png",
+  "paidAt": "2026-03-12T17:30:00.000Z",
+  "notes": "Saldo al devolver"
+}
+```
+
+Reglas:
+- `amount > 0`
+- no permite sobrepago aprobado (acumulado aprobado > total de orden)
+
+Respuestas:
+- `201`: `{ payment, summary }`
+- `400`: params/body invalidos
+- `404`: rental order no encontrada
+- `409`: sobrepago
+
+## 16.3 GET /api/rental-orders/:id/comprobantes
+Lista comprobantes de orden de alquiler.
+
+Query params opcionales:
+- `status`: `ComprobanteStatus`
+- `type`: `ComprobanteType`
+- `from`: fecha
+- `to`: fecha
+
+Respuestas:
+- `200`: array de comprobantes
+- `400`: params/query invalidos
+- `404`: rental order no encontrada
+
+## 16.4 POST /api/rental-orders/:id/comprobantes
+Crea comprobante para orden de alquiler.
+
+Body:
+```json
+{
+  "type": "BOLETA",
+  "status": "BORRADOR",
+  "serie": "B010",
+  "numero": "000901",
+  "subtotal": 211.86,
+  "impuesto": 38.14,
+  "total": 250,
+  "issuedAt": "2026-03-12T18:00:00.000Z",
+  "pdfUrl": "https://example.com/rental-comprobante.pdf",
+  "xmlUrl": "https://example.com/rental-comprobante.xml",
+  "notes": "Comprobante alquiler"
+}
+```
+
+Regla de negocio:
+- `total` del comprobante no puede exceder total de la orden.
+
+Respuestas:
+- `201`: comprobante creado
+- `400`: params/body invalidos
+- `404`: rental order no encontrada
+- `409`: total comprobante excede total de orden
+
+## 17. Alteration Orders
+
+## 17.1 GET /api/alteration-orders
+Lista ordenes de arreglo con filtros avanzados, orden y paginacion.
+
+Query params opcionales:
+- `customerId`: entero positivo
+- `serviceId`: entero positivo
+- `status`: `AlterationOrderStatus`
+- `code`: texto, busqueda parcial case-insensitive
+- `receivedFrom`: fecha
+- `receivedTo`: fecha
+- `promisedFrom`: fecha
+- `promisedTo`: fecha
+- `page`: entero positivo, default `1`
+- `pageSize`: entero 1..100, default `20`
+- `orderBy`: `createdAt` | `receivedAt` | `promisedAt` | `total`, default `createdAt`
+- `order`: `asc` | `desc`, default `desc`
+
+Ejemplos:
+- `/api/alteration-orders?page=1&pageSize=20`
+- `/api/alteration-orders?status=EN_PROCESO`
+- `/api/alteration-orders?customerId=1&serviceId=3`
+- `/api/alteration-orders?code=ALT-20260311`
+- `/api/alteration-orders?receivedFrom=2026-03-01T00:00:00.000Z&receivedTo=2026-03-31T23:59:59.000Z`
+
+Respuesta `200`:
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "pageSize": 20,
+  "pageCount": 1
+}
+```
+
+Errores:
+- `400`: query invalida
+
+## 17.2 POST /api/alteration-orders
+Crea orden de arreglo.
+
+Body:
+```json
+{
+  "customerId": 1,
+  "serviceId": 2,
+  "garmentDescription": "Pantalon de vestir azul",
+  "workDescription": "Basta y ajuste de cintura",
+  "initialCondition": "Buen estado",
+  "receivedAt": "2026-03-11T10:00:00.000Z",
+  "promisedAt": "2026-03-14T18:00:00.000Z",
+  "subtotal": 70,
+  "discountTotal": 10,
+  "notes": "Cliente pide prueba rapida"
+}
+```
+
+Reglas de validacion y negocio:
+- `garmentDescription` y `workDescription` son requeridos
+- si `serviceId` existe, debe apuntar a un servicio de arreglo valido
+- si `promisedAt` existe, debe ser mayor o igual a `receivedAt`
+- `total = subtotal - discountTotal` y no puede ser negativo
+
+Respuestas:
+- `201`: orden creada
+- `400`: body invalido
+- `404`: cliente o servicio no encontrado
+- `409`: regla de negocio violada
+
+## 17.3 GET /api/alteration-orders/:id
+Obtiene orden de arreglo por id.
+
+Respuestas:
+- `200`: orden completa
+- `400`: param invalido
+- `404`: orden no encontrada
+
+## 17.4 PATCH /api/alteration-orders/:id
+Acciones de cambio de estado de arreglo.
+
+Body:
+```json
+{
+  "action": "MARK_READY",
+  "note": "Ajuste terminado"
+}
+```
+
+Acciones validas:
+- `START_EVALUATION` -> `EN_EVALUACION`
+- `START_WORK` -> `EN_PROCESO`
+- `MARK_READY` -> `LISTO`
+- `MARK_DELIVERED` -> `ENTREGADO`
+- `CANCEL` -> `CANCELADO`
+
+Reglas de transicion:
+- `START_EVALUATION` solo desde `RECIBIDO`
+- `START_WORK` solo desde `EN_EVALUACION`
+- `MARK_READY` solo desde `EN_PROCESO`
+- `MARK_DELIVERED` solo desde `LISTO`
+- `CANCEL` desde `RECIBIDO`, `EN_EVALUACION`, `EN_PROCESO` o `LISTO`
+
+Respuestas:
+- `200`: orden actualizada
+- `400`: param/body invalido
+- `404`: orden no encontrada
+- `409`: transicion no permitida
+
+## 18. Payments y Comprobantes (Alteration Orders)
+
+## 18.1 GET /api/alteration-orders/:id/payments
+Lista pagos de la orden de arreglo y devuelve resumen financiero.
+
+Query params opcionales:
+- `status`: `PaymentStatus`
+- `concept`: `PaymentConcept`
+- `method`: `PaymentMethod`
+- `from`: fecha
+- `to`: fecha
+
+Respuesta `200`:
+```json
+{
+  "payments": [],
+  "summary": {
+    "alterationOrderId": 18,
+    "orderTotal": "60.00",
+    "approvedPaymentsTotal": "30.00",
+    "pendingBalance": "30.00",
+    "isFullyPaid": false
+  }
+}
+```
+
+Errores:
+- `400`: params/query invalidos
+- `404`: alteration order no encontrada
+
+## 18.2 POST /api/alteration-orders/:id/payments
+Registra pago de orden de arreglo.
+
+Body:
+```json
+{
+  "amount": 30,
+  "method": "EFECTIVO",
+  "concept": "SALDO",
+  "status": "APROBADO",
+  "provider": "OTRO",
+  "operationCode": "CAJA-ALT-01",
+  "approvalCode": "OK-ALT-01",
+  "voucherUrl": "https://example.com/alt-voucher.png",
+  "paidAt": "2026-03-11T15:30:00.000Z",
+  "notes": "Pago contra entrega"
+}
+```
+
+Reglas:
+- `amount > 0`
+- no permite sobrepago aprobado (acumulado aprobado > total de orden)
+
+Respuestas:
+- `201`: `{ payment, summary }`
+- `400`: params/body invalidos
+- `404`: alteration order no encontrada
+- `409`: sobrepago
+
+## 18.3 GET /api/alteration-orders/:id/comprobantes
+Lista comprobantes de orden de arreglo.
+
+Query params opcionales:
+- `status`: `ComprobanteStatus`
+- `type`: `ComprobanteType`
+- `from`: fecha
+- `to`: fecha
+
+Respuestas:
+- `200`: array de comprobantes
+- `400`: params/query invalidos
+- `404`: alteration order no encontrada
+
+## 18.4 POST /api/alteration-orders/:id/comprobantes
+Crea comprobante para orden de arreglo.
+
+Body:
+```json
+{
+  "type": "BOLETA",
+  "status": "BORRADOR",
+  "serie": "B015",
+  "numero": "001230",
+  "subtotal": 50.85,
+  "impuesto": 9.15,
+  "total": 60,
+  "issuedAt": "2026-03-11T16:00:00.000Z",
+  "pdfUrl": "https://example.com/alt-comprobante.pdf",
+  "xmlUrl": "https://example.com/alt-comprobante.xml",
+  "notes": "Comprobante servicio de arreglo"
+}
+```
+
+Regla de negocio:
+- `total` del comprobante no puede exceder total de la orden.
+
+Respuestas:
+- `201`: comprobante creado
+- `400`: params/body invalidos
+- `404`: alteration order no encontrada
+- `409`: total comprobante excede total de orden
+
+## 19. Alteration Services
+
+## 19.1 GET /api/alteration-services
+Lista servicios de arreglo configurables por admin.
+
+Query params opcionales:
+- `active`: `true` | `false`
+
+Ejemplos:
+- `/api/alteration-services`
+- `/api/alteration-services?active=true`
+
+Respuestas:
+- `200`: array de servicios
+- `400`: query invalida
+
+## 19.2 POST /api/alteration-services
+Crea servicio de arreglo.
+
+Body:
+```json
+{
+  "nombre": "Basta de pantalon",
+  "precioBase": 35,
+  "activo": true
+}
+```
+
+Reglas:
+- `nombre` requerido
+- `precioBase` opcional, si existe debe ser >= 0
+
+Respuestas:
+- `201`: servicio creado
+- `400`: body invalido
+- `409`: regla de negocio violada
+
+## 19.3 GET /api/alteration-services/:id
+Obtiene servicio de arreglo por id.
+
+Respuestas:
+- `200`: servicio
+- `400`: param invalido
+- `404`: servicio no encontrado
+
+## 19.4 PATCH /api/alteration-services/:id
+Actualiza servicio de arreglo.
+
+Body parcial (al menos un campo):
+```json
+{
+  "nombre": "Basta y pinza",
+  "precioBase": 45,
+  "activo": true
+}
+```
+
+Reglas:
+- al menos un campo debe venir en body
+- `precioBase` puede enviarse `null` para limpiar precio base
+
+Respuestas:
+- `200`: servicio actualizado
+- `400`: param/body invalido
+- `404`: servicio no encontrado
+- `409`: regla de negocio violada
+
+## 19.5 DELETE /api/alteration-services/:id
+Desactiva servicio (soft delete: `activo=false`).
+
+Respuestas:
+- `200`: servicio desactivado
+- `400`: param invalido
+- `404`: servicio no encontrado
+
+## 20. Notifications
+
+## 20.1 GET /api/notifications
+Lista notificaciones registradas.
+
+Query params opcionales:
+- `customerId`: entero positivo
+- `channel`: `NotificationChannel`
+- `status`: `NotificationStatus`
+- `from`: fecha
+- `to`: fecha
+
+Ejemplos:
+- `/api/notifications`
+- `/api/notifications?channel=WHATSAPP&status=ENVIADA`
+- `/api/notifications?customerId=1&from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
+
+Respuestas:
+- `200`: array de notificaciones
+- `400`: query invalida
+
+## 20.2 POST /api/notifications/appointments/reminder-24h
+Dispara recordatorios de citas dentro de ventana 24h y marca `reminder24hSentAt`.
+
+Body:
+```json
+{
+  "channel": "WHATSAPP",
+  "dryRun": false
+}
+```
+
+Reglas:
+- `channel` para este flujo: `EMAIL` o `WHATSAPP`.
+- Ventana evaluada: citas entre +23h y +24h desde "ahora".
+- Solo estados activos de cita: `PENDIENTE`, `CONFIRMADA`, `REPROGRAMADA`.
+- Idempotente por cita: si ya se marco `reminder24hSentAt`, no vuelve a enviar.
+- Si `dryRun=true`, no escribe notificaciones ni marca recordatorios.
+
+Respuesta `200`:
+```json
+{
+  "checked": 3,
+  "eligible": 3,
+  "sent": 3,
+  "skippedAlreadySent": 0,
+  "dryRun": false
+}
+```
+
+Errores:
+- `400`: body invalido
+- `409`: canal no permitido para este flujo
+
+## 21. Product Images y Variants
+
+## 21.1 GET /api/products/:id/images
+Lista imagenes del producto.
+
+Respuestas:
+- `200`: array de imagenes
+- `400`: param invalido
+- `404`: producto no encontrado
+
+## 21.2 POST /api/products/:id/images
+Crea imagen para producto.
+
+Body:
+```json
+{
+  "url": "https://example.com/product-main.jpg",
+  "altText": "Terno azul frontal",
+  "sortOrder": 0
+}
+```
+
+Respuestas:
+- `201`: imagen creada
+- `400`: param/body invalido
+- `404`: producto no encontrado
+
+## 21.3 PATCH /api/products/images/:imageId
+Actualiza imagen por id.
+
+Body parcial:
+```json
+{
+  "altText": "Vista frontal actualizada",
+  "sortOrder": 1
+}
+```
+
+Respuestas:
+- `200`: imagen actualizada
+- `400`: param/body invalido
+- `404`: imagen no encontrada
+
+## 21.4 DELETE /api/products/images/:imageId
+Elimina imagen de producto.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: param invalido
+- `404`: imagen no encontrada
+
+## 21.5 GET /api/products/:id/variants
+Lista variantes del producto.
+
+Respuestas:
+- `200`: array de variantes
+- `400`: param invalido
+- `404`: producto no encontrado
+
+## 21.6 POST /api/products/:id/variants
+Crea variante de producto.
+
+Body:
+```json
+{
+  "sku": "TERNO-AZUL-48",
+  "talla": "48",
+  "color": "Azul marino",
+  "stock": 3,
+  "minStock": 1,
+  "salePrice": 690,
+  "compareAtPrice": 740,
+  "active": true
+}
+```
+
+Respuestas:
+- `201`: variante creada
+- `400`: param/body invalido
+- `404`: producto no encontrado
+- `409`: conflicto unico (ej. `sku`)
+
+## 21.7 PATCH /api/products/variants/:variantId
+Actualiza variante por id.
+
+Body parcial:
+```json
+{
+  "stock": 5,
+  "salePrice": 650,
+  "active": true
+}
+```
+
+Respuestas:
+- `200`: variante actualizada
+- `400`: param/body invalido
+- `404`: variante no encontrada
+- `409`: conflicto unico
+
+## 21.8 DELETE /api/products/variants/:variantId
+Desactiva variante (`active=false`).
+
+Respuestas:
+- `200`: variante desactivada
+- `400`: param invalido
+- `404`: variante no encontrada
+
+## 22. Rental Units
+
+## 22.1 GET /api/rental-units
+Lista unidades fisicas de alquiler.
+
+Query params opcionales:
+- `productId`
+- `variantId`
+- `status` (`DISPONIBLE`, `ALQUILADO`, `EN_MANTENIMIENTO`, `DANADO`, `RETIRADO`)
+- `currentTier` (`ESTRENO`, `NORMAL`)
+- `search` (busca en `internalCode`, `sizeLabel`, `color`)
+
+Respuestas:
+- `200`: array de unidades
+- `400`: query invalida
+
+## 22.2 POST /api/rental-units
+Crea unidad fisica de alquiler.
+
+Body:
+```json
+{
+  "productId": 10,
+  "variantId": 25,
+  "internalCode": "RU-TERNO-001",
+  "sizeLabel": "48",
+  "color": "Azul",
+  "currentTier": "ESTRENO",
+  "normalPrice": 220,
+  "premierePrice": 320,
+  "status": "DISPONIBLE"
+}
+```
+
+Reglas:
+- `premierePrice >= normalPrice`
+- si `variantId` se envia, debe pertenecer al `productId`
+
+Respuestas:
+- `201`: unidad creada
+- `400`: body invalido
+- `404`: producto o variante no encontrados
+- `409`: conflicto de codigo interno o regla de negocio
+
+## 22.3 GET /api/rental-units/:id
+Obtiene unidad por id.
+
+Respuestas:
+- `200`: unidad
+- `400`: param invalido
+- `404`: unidad no encontrada
+
+## 22.4 PATCH /api/rental-units/:id
+Actualiza datos de unidad (precios, color, estado, notas, variante, etc.).
+
+Body parcial:
+```json
+{
+  "normalPrice": 200,
+  "premierePrice": 280,
+  "notes": "Revisada en taller"
+}
+```
+
+Respuestas:
+- `200`: unidad actualizada
+- `400`: param/body invalido
+- `404`: unidad o variante no encontrada
+- `409`: regla de negocio invalida
+
+## 22.5 DELETE /api/rental-units/:id
+Retira unidad (`status=RETIRADO`).
+
+Respuestas:
+- `200`: unidad retirada
+- `400`: param invalido
+- `404`: unidad no encontrada
+- `409`: no se puede retirar si esta alquilada
+
+## 22.6 PATCH /api/rental-units/:id/actions
+Ejecuta acciones de operacion sobre la unidad.
+
+Body:
+```json
+{
+  "action": "MARK_NORMAL_TIER",
+  "note": "Ya paso su primer alquiler"
+}
+```
+
+Acciones validas:
+- `MARK_AVAILABLE`
+- `MARK_MAINTENANCE`
+- `MARK_DAMAGED`
+- `MARK_RETIRED`
+- `MARK_NORMAL_TIER`
+
+Respuestas:
+- `200`: unidad actualizada
+- `400`: param/body invalido
+- `404`: unidad no encontrada
+- `409`: accion no permitida por estado

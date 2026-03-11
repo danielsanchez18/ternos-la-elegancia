@@ -20,6 +20,46 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Scheduler (Recordatorio 24h de Citas)
+
+Se agrego un endpoint interno para ejecucion por scheduler externo (cron):
+
+- `POST /api/internal/cron/appointments/reminder-24h`
+
+Autorizacion requerida:
+
+- Header `Authorization: Bearer <CRON_SECRET>`
+- Alternativa: header `x-cron-secret: <CRON_SECRET>`
+
+Variables de entorno:
+
+- `CRON_SECRET`: secreto compartido para proteger endpoints internos de cron.
+
+Payload opcional:
+
+```json
+{
+	"channel": "WHATSAPP",
+	"dryRun": false
+}
+```
+
+Si no se envia body, usa defaults del schema (`WHATSAPP`, `dryRun=false`).
+
+Ejemplo con curl:
+
+```bash
+curl -X POST "http://localhost:3000/api/internal/cron/appointments/reminder-24h" \
+	-H "Authorization: Bearer $CRON_SECRET" \
+	-H "Content-Type: application/json" \
+	-d '{"channel":"WHATSAPP","dryRun":false}'
+```
+
+Recomendacion operativa:
+
+- Ejecutar cada hora.
+- Monitorear resultados y volumen via `GET /api/notifications`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

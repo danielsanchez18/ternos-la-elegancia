@@ -54,6 +54,7 @@ export type PublicPayment = {
   id: number;
   customerId: number;
   customOrderId: number | null;
+  alterationOrderId: number | null;
   amount: Prisma.Decimal;
   method: PaymentMethod;
   concept: PaymentConcept;
@@ -72,6 +73,7 @@ export type PublicComprobante = {
   id: number;
   customerId: number;
   customOrderId: number | null;
+  alterationOrderId: number | null;
   type: ComprobanteType;
   status: ComprobanteStatus;
   serie: string | null;
@@ -140,6 +142,106 @@ export type CreateSaleOrderComprobanteInput = {
 
 export type SaleOrderPaymentSummary = {
   saleOrderId: number;
+  orderTotal: Prisma.Decimal;
+  approvedPaymentsTotal: Prisma.Decimal;
+  pendingBalance: Prisma.Decimal;
+  isFullyPaid: boolean;
+};
+
+export type ListRentalOrderPaymentsFilters = {
+  status?: PaymentStatus;
+  concept?: PaymentConcept;
+  method?: PaymentMethod;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateRentalOrderPaymentInput = {
+  amount: number;
+  method: PaymentMethod;
+  concept?: PaymentConcept;
+  status?: PaymentStatus;
+  provider?: VoucherProvider;
+  operationCode?: string;
+  approvalCode?: string;
+  voucherUrl?: string;
+  paidAt?: Date;
+  notes?: string;
+};
+
+export type ListRentalOrderComprobantesFilters = {
+  status?: ComprobanteStatus;
+  type?: ComprobanteType;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateRentalOrderComprobanteInput = {
+  type: ComprobanteType;
+  status?: ComprobanteStatus;
+  serie?: string;
+  numero?: string;
+  subtotal?: number;
+  impuesto?: number;
+  total: number;
+  issuedAt?: Date;
+  pdfUrl?: string;
+  xmlUrl?: string;
+  notes?: string;
+};
+
+export type RentalOrderPaymentSummary = {
+  rentalOrderId: number;
+  orderTotal: Prisma.Decimal;
+  approvedPaymentsTotal: Prisma.Decimal;
+  pendingBalance: Prisma.Decimal;
+  isFullyPaid: boolean;
+};
+
+export type ListAlterationOrderPaymentsFilters = {
+  status?: PaymentStatus;
+  concept?: PaymentConcept;
+  method?: PaymentMethod;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateAlterationOrderPaymentInput = {
+  amount: number;
+  method: PaymentMethod;
+  concept?: PaymentConcept;
+  status?: PaymentStatus;
+  provider?: VoucherProvider;
+  operationCode?: string;
+  approvalCode?: string;
+  voucherUrl?: string;
+  paidAt?: Date;
+  notes?: string;
+};
+
+export type ListAlterationOrderComprobantesFilters = {
+  status?: ComprobanteStatus;
+  type?: ComprobanteType;
+  from?: Date;
+  to?: Date;
+};
+
+export type CreateAlterationOrderComprobanteInput = {
+  type: ComprobanteType;
+  status?: ComprobanteStatus;
+  serie?: string;
+  numero?: string;
+  subtotal?: number;
+  impuesto?: number;
+  total: number;
+  issuedAt?: Date;
+  pdfUrl?: string;
+  xmlUrl?: string;
+  notes?: string;
+};
+
+export type AlterationOrderPaymentSummary = {
+  alterationOrderId: number;
   orderTotal: Prisma.Decimal;
   approvedPaymentsTotal: Prisma.Decimal;
   pendingBalance: Prisma.Decimal;

@@ -2,10 +2,18 @@ import { Prisma, PaymentStatus, PaymentConcept, ComprobanteStatus } from "@prism
 
 import { prisma } from "@/lib/prisma";
 import {
+  CreateAlterationOrderComprobanteInput,
+  CreateAlterationOrderPaymentInput,
+  CreateRentalOrderComprobanteInput,
+  CreateRentalOrderPaymentInput,
   CreateSaleOrderComprobanteInput,
   CreateSaleOrderPaymentInput,
   CreateCustomOrderComprobanteInput,
   CreateCustomOrderPaymentInput,
+  ListAlterationOrderComprobantesFilters,
+  ListAlterationOrderPaymentsFilters,
+  ListRentalOrderComprobantesFilters,
+  ListRentalOrderPaymentsFilters,
   ListSaleOrderComprobantesFilters,
   ListSaleOrderPaymentsFilters,
   ListCustomOrderComprobantesFilters,
@@ -18,6 +26,7 @@ const publicPaymentSelect = {
   id: true,
   customerId: true,
   customOrderId: true,
+  alterationOrderId: true,
   amount: true,
   method: true,
   concept: true,
@@ -36,6 +45,7 @@ const publicComprobanteSelect = {
   id: true,
   customerId: true,
   customOrderId: true,
+  alterationOrderId: true,
   type: true,
   status: true,
   serie: true,
@@ -280,6 +290,258 @@ export class PaymentRepository {
       data: {
         customerId: input.customerId,
         saleOrderId: input.saleOrderId,
+        type: input.payload.type,
+        status: input.payload.status ?? ComprobanteStatus.BORRADOR,
+        serie: input.payload.serie,
+        numero: input.payload.numero,
+        subtotal:
+          input.payload.subtotal !== undefined
+            ? new Prisma.Decimal(input.payload.subtotal)
+            : new Prisma.Decimal(0),
+        impuesto:
+          input.payload.impuesto !== undefined
+            ? new Prisma.Decimal(input.payload.impuesto)
+            : new Prisma.Decimal(0),
+        total: new Prisma.Decimal(input.payload.total),
+        issuedAt: input.payload.issuedAt,
+        pdfUrl: input.payload.pdfUrl,
+        xmlUrl: input.payload.xmlUrl,
+        notes: input.payload.notes,
+      },
+      select: publicComprobanteSelect,
+    });
+  }
+
+  async findRentalOrderById(rentalOrderId: number) {
+    return prisma.rentalOrder.findUnique({
+      where: { id: rentalOrderId },
+      select: {
+        id: true,
+        customerId: true,
+        total: true,
+      },
+    });
+  }
+
+  async listRentalOrderPayments(
+    rentalOrderId: number,
+    filters: ListRentalOrderPaymentsFilters
+  ): Promise<PublicPayment[]> {
+    return prisma.payment.findMany({
+      where: {
+        rentalOrderId,
+        status: filters.status,
+        concept: filters.concept,
+        method: filters.method,
+        paidAt:
+          filters.from || filters.to
+            ? {
+                gte: filters.from,
+                lte: filters.to,
+              }
+            : undefined,
+      },
+      orderBy: { paidAt: "desc" },
+      select: publicPaymentSelect,
+    });
+  }
+
+  async listRentalOrderComprobantes(
+    rentalOrderId: number,
+    filters: ListRentalOrderComprobantesFilters
+  ): Promise<PublicComprobante[]> {
+    return prisma.comprobante.findMany({
+      where: {
+        rentalOrderId,
+        status: filters.status,
+        type: filters.type,
+        issuedAt:
+          filters.from || filters.to
+            ? {
+                gte: filters.from,
+                lte: filters.to,
+              }
+            : undefined,
+      },
+      orderBy: { createdAt: "desc" },
+      select: publicComprobanteSelect,
+    });
+  }
+
+  async sumRentalOrderApprovedPayments(rentalOrderId: number): Promise<Prisma.Decimal> {
+    const aggregate = await prisma.payment.aggregate({
+      where: {
+        rentalOrderId,
+        status: PaymentStatus.APROBADO,
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return aggregate._sum.amount ?? new Prisma.Decimal(0);
+  }
+
+  async createRentalOrderPayment(input: {
+    rentalOrderId: number;
+    customerId: number;
+    payload: CreateRentalOrderPaymentInput;
+  }): Promise<PublicPayment> {
+    return prisma.payment.create({
+      data: {
+        customerId: input.customerId,
+        rentalOrderId: input.rentalOrderId,
+        amount: new Prisma.Decimal(input.payload.amount),
+        method: input.payload.method,
+        concept: input.payload.concept ?? PaymentConcept.PAGO_TOTAL,
+        status: input.payload.status ?? PaymentStatus.APROBADO,
+        provider: input.payload.provider,
+        operationCode: input.payload.operationCode,
+        approvalCode: input.payload.approvalCode,
+        voucherUrl: input.payload.voucherUrl,
+        paidAt: input.payload.paidAt,
+        notes: input.payload.notes,
+      },
+      select: publicPaymentSelect,
+    });
+  }
+
+  async createRentalOrderComprobante(input: {
+    rentalOrderId: number;
+    customerId: number;
+    payload: CreateRentalOrderComprobanteInput;
+  }): Promise<PublicComprobante> {
+    return prisma.comprobante.create({
+      data: {
+        customerId: input.customerId,
+        rentalOrderId: input.rentalOrderId,
+        type: input.payload.type,
+        status: input.payload.status ?? ComprobanteStatus.BORRADOR,
+        serie: input.payload.serie,
+        numero: input.payload.numero,
+        subtotal:
+          input.payload.subtotal !== undefined
+            ? new Prisma.Decimal(input.payload.subtotal)
+            : new Prisma.Decimal(0),
+        impuesto:
+          input.payload.impuesto !== undefined
+            ? new Prisma.Decimal(input.payload.impuesto)
+            : new Prisma.Decimal(0),
+        total: new Prisma.Decimal(input.payload.total),
+        issuedAt: input.payload.issuedAt,
+        pdfUrl: input.payload.pdfUrl,
+        xmlUrl: input.payload.xmlUrl,
+        notes: input.payload.notes,
+      },
+      select: publicComprobanteSelect,
+    });
+  }
+
+  async findAlterationOrderById(alterationOrderId: number) {
+    return prisma.alterationOrder.findUnique({
+      where: { id: alterationOrderId },
+      select: {
+        id: true,
+        customerId: true,
+        total: true,
+      },
+    });
+  }
+
+  async listAlterationOrderPayments(
+    alterationOrderId: number,
+    filters: ListAlterationOrderPaymentsFilters
+  ): Promise<PublicPayment[]> {
+    return prisma.payment.findMany({
+      where: {
+        alterationOrderId,
+        status: filters.status,
+        concept: filters.concept,
+        method: filters.method,
+        paidAt:
+          filters.from || filters.to
+            ? {
+                gte: filters.from,
+                lte: filters.to,
+              }
+            : undefined,
+      },
+      orderBy: { paidAt: "desc" },
+      select: publicPaymentSelect,
+    });
+  }
+
+  async listAlterationOrderComprobantes(
+    alterationOrderId: number,
+    filters: ListAlterationOrderComprobantesFilters
+  ): Promise<PublicComprobante[]> {
+    return prisma.comprobante.findMany({
+      where: {
+        alterationOrderId,
+        status: filters.status,
+        type: filters.type,
+        issuedAt:
+          filters.from || filters.to
+            ? {
+                gte: filters.from,
+                lte: filters.to,
+              }
+            : undefined,
+      },
+      orderBy: { createdAt: "desc" },
+      select: publicComprobanteSelect,
+    });
+  }
+
+  async sumAlterationOrderApprovedPayments(
+    alterationOrderId: number
+  ): Promise<Prisma.Decimal> {
+    const aggregate = await prisma.payment.aggregate({
+      where: {
+        alterationOrderId,
+        status: PaymentStatus.APROBADO,
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return aggregate._sum.amount ?? new Prisma.Decimal(0);
+  }
+
+  async createAlterationOrderPayment(input: {
+    alterationOrderId: number;
+    customerId: number;
+    payload: CreateAlterationOrderPaymentInput;
+  }): Promise<PublicPayment> {
+    return prisma.payment.create({
+      data: {
+        customerId: input.customerId,
+        alterationOrderId: input.alterationOrderId,
+        amount: new Prisma.Decimal(input.payload.amount),
+        method: input.payload.method,
+        concept: input.payload.concept ?? PaymentConcept.PAGO_TOTAL,
+        status: input.payload.status ?? PaymentStatus.APROBADO,
+        provider: input.payload.provider,
+        operationCode: input.payload.operationCode,
+        approvalCode: input.payload.approvalCode,
+        voucherUrl: input.payload.voucherUrl,
+        paidAt: input.payload.paidAt,
+        notes: input.payload.notes,
+      },
+      select: publicPaymentSelect,
+    });
+  }
+
+  async createAlterationOrderComprobante(input: {
+    alterationOrderId: number;
+    customerId: number;
+    payload: CreateAlterationOrderComprobanteInput;
+  }): Promise<PublicComprobante> {
+    return prisma.comprobante.create({
+      data: {
+        customerId: input.customerId,
+        alterationOrderId: input.alterationOrderId,
         type: input.payload.type,
         status: input.payload.status ?? ComprobanteStatus.BORRADOR,
         serie: input.payload.serie,

@@ -5,14 +5,22 @@ import {
   AppointmentDeadlineExceededError,
   AppointmentNotFoundError,
   AppointmentOutsideBusinessHoursError,
+  AppointmentScheduleValidationError,
+  AppointmentSpecialScheduleNotFoundError,
   AppointmentSlotUnavailableError,
   AppointmentTransitionNotAllowedError,
 } from "@/src/modules/appointments/domain/appointment.errors";
 import {
   AppointmentActionInput,
+  CreateSpecialScheduleInput,
   CreateAppointmentInput,
+  ListSpecialSchedulesFilters,
   ListAppointmentsFilters,
+  PublicBusinessHour,
   PublicAppointment,
+  PublicSpecialSchedule,
+  UpdateSpecialScheduleInput,
+  UpsertBusinessHourInput,
 } from "@/src/modules/appointments/domain/appointment.types";
 import { AppointmentRepository } from "@/src/modules/appointments/infrastructure/appointment.repository";
 
@@ -43,6 +51,12 @@ function datePlusHours(date: Date, hours: number): Date {
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
+}
+
+function normalizedDayDate(input: Date): Date {
+  const date = new Date(input);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
 function appointmentStatusAllowsTransition(
@@ -253,7 +267,7 @@ export class AppointmentService {
       );
     }
 
-    await this.assertSlotIsAvailable(input.scheduledAt);
+    await this.assertSlotIsAvailable(input.scheduledAt, id);
 
     const updated = await this.appointmentRepository.updateById(id, {
       status: AppointmentStatus.REPROGRAMADA,
@@ -272,12 +286,139 @@ export class AppointmentService {
     return updated;
   }
 
-  private async assertSlotIsAvailable(scheduledAt: Date): Promise<void> {
+  async listBusinessHours(): Promise<PublicBusinessHour[]> {
+    const configured = await this.appointmentRepository.listBusinessHours();
+
+    return Array.from({ length: 7 }, (_, dayOfWeek) => {
+      const row = configured.find((item) => item.dayOfWeek === dayOfWeek);
+      const fallback = defaultBusinessHours[dayOfWeek];
+
+      return {
+        id: row?.id ?? null,
+        dayOfWeek,
+        openTime: row?.openTime ?? fallback?.open ?? null,
+        closeTime: row?.closeTime ?? fallback?.close ?? null,
+        isClosed: row?.isClosed ?? fallback?.isClosed ?? true,
+        note: row?.note ?? null,
+      };
+    });
+  }
+
+  async upsertBusinessHour(input: UpsertBusinessHourInput): Promise<PublicBusinessHour> {
+    const isClosed = input.isClosed ?? false;
+
+    if (!isClosed) {
+      if (!input.openTime || !input.closeTime) {
+        throw new AppointmentScheduleValidationError(
+          "openTime and closeTime are required when day is open"
+        );
+      }
+
+      if (timeToMinutes(input.openTime) >= timeToMinutes(input.closeTime)) {
+        throw new AppointmentScheduleValidationError(
+          "openTime must be before closeTime"
+        );
+      }
+    }
+
+    return this.appointmentRepository.upsertBusinessHour({
+      ...input,
+      isClosed,
+      openTime: isClosed ? null : input.openTime ?? null,
+      closeTime: isClosed ? null : input.closeTime ?? null,
+    });
+  }
+
+  async listSpecialSchedules(
+    filters: ListSpecialSchedulesFilters
+  ): Promise<PublicSpecialSchedule[]> {
+    return this.appointmentRepository.listSpecialSchedules(filters);
+  }
+
+  async createSpecialSchedule(
+    input: CreateSpecialScheduleInput
+  ): Promise<PublicSpecialSchedule> {
+    const normalizedDate = normalizedDayDate(input.date);
+    const isClosed = input.isClosed ?? false;
+
+    if (!isClosed) {
+      if (!input.openTime || !input.closeTime) {
+        throw new AppointmentScheduleValidationError(
+          "openTime and closeTime are required when day is open"
+        );
+      }
+
+      if (timeToMinutes(input.openTime) >= timeToMinutes(input.closeTime)) {
+        throw new AppointmentScheduleValidationError(
+          "openTime must be before closeTime"
+        );
+      }
+    }
+
+    return this.appointmentRepository.upsertSpecialScheduleByDate({
+      ...input,
+      date: normalizedDate,
+      isClosed,
+      openTime: isClosed ? null : input.openTime ?? null,
+      closeTime: isClosed ? null : input.closeTime ?? null,
+    });
+  }
+
+  async updateSpecialSchedule(
+    id: number,
+    input: UpdateSpecialScheduleInput
+  ): Promise<PublicSpecialSchedule> {
+    const existing = await this.appointmentRepository.findSpecialScheduleById(id);
+    if (!existing) {
+      throw new AppointmentSpecialScheduleNotFoundError();
+    }
+
+    const isClosed = input.isClosed ?? existing.isClosed;
+    const openTime = input.openTime !== undefined ? input.openTime : existing.openTime;
+    const closeTime = input.closeTime !== undefined ? input.closeTime : existing.closeTime;
+
+    if (!isClosed) {
+      if (!openTime || !closeTime) {
+        throw new AppointmentScheduleValidationError(
+          "openTime and closeTime are required when day is open"
+        );
+      }
+
+      if (timeToMinutes(openTime) >= timeToMinutes(closeTime)) {
+        throw new AppointmentScheduleValidationError(
+          "openTime must be before closeTime"
+        );
+      }
+    }
+
+    return this.appointmentRepository.updateSpecialScheduleById(id, {
+      ...input,
+      isClosed,
+      openTime: isClosed ? null : openTime,
+      closeTime: isClosed ? null : closeTime,
+    });
+  }
+
+  async deleteSpecialSchedule(id: number): Promise<void> {
+    const existing = await this.appointmentRepository.findSpecialScheduleById(id);
+    if (!existing) {
+      throw new AppointmentSpecialScheduleNotFoundError();
+    }
+
+    await this.appointmentRepository.deleteSpecialScheduleById(id);
+  }
+
+  private async assertSlotIsAvailable(
+    scheduledAt: Date,
+    excludeAppointmentId?: number
+  ): Promise<void> {
     await this.assertInsideBusinessHours(scheduledAt);
 
-    const occupiedSlots = await this.appointmentRepository.countOccupiedSlots(
-      scheduledAt
-    );
+    const occupiedSlots = await this.appointmentRepository.countOverlappingAppointments({
+      startsAt: scheduledAt,
+      endsAt: datePlusMinutes(scheduledAt, 30),
+      excludeAppointmentId,
+    });
 
     if (occupiedSlots >= DEFAULT_SLOT_CAPACITY) {
       throw new AppointmentSlotUnavailableError();
