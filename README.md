@@ -20,6 +20,31 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Prisma 7 Setup
+
+Este proyecto usa Prisma 7 con configuracion en `prisma.config.ts`.
+
+Cambios importantes en Prisma 7:
+- `schema.prisma` ya no define `url` en `datasource`.
+- La conexion se define en `prisma.config.ts` (`datasource.url`).
+- Para PostgreSQL, `PrismaClient` se inicializa con `@prisma/adapter-pg`.
+
+Comandos utiles:
+
+```bash
+npx prisma validate
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma db seed
+```
+
+Dependencias de Prisma 7 usadas en este proyecto:
+- `prisma`
+- `@prisma/client`
+- `@prisma/adapter-pg`
+- `pg`
+- `dotenv`
+
 ## Scheduler (Recordatorio 24h de Citas)
 
 Se agrego un endpoint interno para ejecucion por scheduler externo (cron):

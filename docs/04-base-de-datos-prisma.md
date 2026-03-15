@@ -65,6 +65,51 @@ En órdenes guardar snapshot de:
 - Si se modifica Prisma, revisar también seeds y formularios.
 - Si cambia un enum crítico, revisar filtros y UI.
 
+## Prisma 7 (configuración obligatoria)
+
+Desde Prisma 7 la URL de conexión ya no se define en `schema.prisma`.
+
+### 1. Config central en `prisma.config.ts`
+- Definir `schema`, `migrations` y `datasource.url` en `prisma.config.ts`.
+- Cargar variables de entorno con `import "dotenv/config"`.
+
+Ejemplo base:
+```ts
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
+
+export default defineConfig({
+	schema: "prisma/schema.prisma",
+	migrations: {
+		path: "prisma/migrations",
+		seed: "tsx prisma/seed.ts",
+	},
+	datasource: {
+		url: env("DATABASE_URL"),
+	},
+});
+```
+
+### 2. `schema.prisma` sin `url`
+- Mantener solo `provider` en `datasource db`.
+
+### 3. Cliente Prisma con adapter de PostgreSQL
+- Usar `@prisma/adapter-pg` y `pg`.
+- Inicializar `PrismaClient` con `adapter` en runtime (app y seed).
+
+### 4. Dependencias mínimas para PostgreSQL en Prisma 7
+- `prisma`
+- `@prisma/client`
+- `@prisma/adapter-pg`
+- `pg`
+- `dotenv`
+
+### 5. Comandos recomendados
+- `npx prisma validate`
+- `npx prisma generate`
+- `npx prisma migrate dev --name <nombre>`
+- `npx prisma db seed`
+
 ## Seeds mínimos esperados
 - horarios base
 - estados iniciales derivados del dominio
