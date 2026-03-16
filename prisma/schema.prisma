@@ -333,6 +333,7 @@ model Product {
   customizationDefinitions CustomizationDefinition[]
   parentComponents         ProductComponent[]         @relation("ProductComponentParent")
   childComponents          ProductComponent[]         @relation("ProductComponentChild")
+  promotionTargets         PromotionProductTarget[]
 }
 
 model ProductImage {
@@ -1027,6 +1028,20 @@ model Promotion {
   updatedAt     DateTime        @updatedAt
 
   coupons       Coupon[]
+  productTargets PromotionProductTarget[]
+}
+
+model PromotionProductTarget {
+  id          Int        @id @default(autoincrement())
+  promotionId Int
+  productId   Int
+  createdAt   DateTime   @default(now())
+
+  promotion   Promotion  @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([promotionId, productId])
+  @@index([productId])
 }
 
 model Coupon {

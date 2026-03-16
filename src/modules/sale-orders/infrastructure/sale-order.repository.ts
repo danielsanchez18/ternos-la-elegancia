@@ -116,6 +116,7 @@ export class SaleOrderRepository {
       select: {
         id: true,
         nombre: true,
+        kind: true,
       },
     });
   }
@@ -126,8 +127,79 @@ export class SaleOrderRepository {
       select: {
         id: true,
         nombre: true,
+        items: {
+          select: {
+            product: {
+              select: {
+                kind: true,
+              },
+            },
+          },
+        },
       },
     });
+  }
+
+  async customerHasPriorSuitOrJacketPurchase(customerId: number): Promise<boolean> {
+    const row = await prisma.saleOrderItem.findFirst({
+      where: {
+        saleOrder: {
+          customerId,
+          status: { not: "CANCELADO" },
+        },
+        OR: [
+          {
+            product: {
+              kind: { in: ["TERNO", "SACO"] },
+            },
+          },
+          {
+            bundle: {
+              items: {
+                some: {
+                  product: {
+                    kind: { in: ["TERNO", "SACO"] },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    return Boolean(row);
+  }
+
+  async customerHasValidMeasurementProfile(customerId: number, now: Date): Promise<boolean> {
+    const row = await prisma.measurementProfile.findFirst({
+      where: {
+        customerId,
+        isActive: true,
+        validUntil: { gte: now },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(row);
+  }
+
+  async customerHasReservedMeasurementAppointment(
+    customerId: number,
+    now: Date
+  ): Promise<boolean> {
+    const row = await prisma.appointment.findFirst({
+      where: {
+        customerId,
+        type: "TOMA_MEDIDAS",
+        status: { in: ["PENDIENTE", "CONFIRMADA", "REPROGRAMADA"] },
+        scheduledAt: { gte: now },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(row);
   }
 
   async getSaleOrderApprovedPaymentsTotal(saleOrderId: number): Promise<Prisma.Decimal> {

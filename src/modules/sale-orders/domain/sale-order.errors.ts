@@ -32,3 +32,12 @@ export class SaleOrderPaymentRequiredError extends Error {
     this.name = "SaleOrderPaymentRequiredError";
   }
 }
+
+export class SaleOrderMeasurementReservationRequiredError extends Error {
+  constructor() {
+    super(
+      "First suit/jacket purchase without valid measurements requires an active measurement appointment"
+    );
+    this.name = "SaleOrderMeasurementReservationRequiredError";
+  }
+}

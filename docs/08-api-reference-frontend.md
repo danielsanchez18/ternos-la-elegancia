@@ -1967,9 +1967,227 @@ Respuestas:
 - `400`: param invalido
 - `404`: variante no encontrada
 
-## 22. Rental Units
+## 22. Catalogo Flexible (Atributos y Componentes)
 
-## 22.1 GET /api/rental-units
+### 22.1 GET /api/catalog/attribute-definitions
+Lista definiciones de atributos configurables del catalogo.
+
+Query params opcionales:
+- `scope`: `PRODUCT` | `VARIANT`
+- `appliesToKind`: `ProductKind`
+- `active`: `true` | `false`
+
+Respuestas:
+- `200`: array de definiciones con `options`
+- `400`: query invalida
+
+### 22.2 POST /api/catalog/attribute-definitions
+Crea definicion de atributo.
+
+Body:
+```json
+{
+  "code": "fit_type",
+  "label": "Tipo de fit",
+  "scope": "PRODUCT",
+  "inputType": "SELECT",
+  "appliesToKind": "TERNO",
+  "active": true,
+  "sortOrder": 10
+}
+```
+
+Respuestas:
+- `201`: definicion creada
+- `400`: body invalido
+- `409`: definicion duplicada (`fields`)
+
+### 22.3 GET /api/catalog/attribute-definitions/:definitionId
+Obtiene una definicion por id.
+
+Respuestas:
+- `200`: definicion
+- `400`: param invalido
+- `404`: definicion no encontrada
+
+### 22.4 PATCH /api/catalog/attribute-definitions/:definitionId
+Actualiza una definicion (parcial, al menos 1 campo).
+
+Respuestas:
+- `200`: definicion actualizada
+- `400`: param/body invalido
+- `404`: definicion no encontrada
+- `409`: conflicto unico
+
+### 22.5 DELETE /api/catalog/attribute-definitions/:definitionId
+Desactiva definicion (`active=false`).
+
+Respuestas:
+- `200`: definicion desactivada
+- `400`: param invalido
+- `404`: definicion no encontrada
+
+### 22.6 GET /api/catalog/attribute-definitions/:definitionId/options
+Lista opciones de una definicion.
+
+Respuestas:
+- `200`: array de opciones
+- `400`: param invalido
+- `404`: definicion no encontrada
+
+### 22.7 POST /api/catalog/attribute-definitions/:definitionId/options
+Crea opcion para una definicion.
+
+Body:
+```json
+{
+  "code": "slim",
+  "label": "Slim",
+  "sortOrder": 1,
+  "active": true
+}
+```
+
+Respuestas:
+- `201`: opcion creada
+- `400`: param/body invalido
+- `404`: definicion no encontrada
+- `409`: opcion duplicada (`fields`)
+
+### 22.8 PATCH /api/catalog/attribute-options/:optionId
+Actualiza opcion (parcial, al menos 1 campo).
+
+Respuestas:
+- `200`: opcion actualizada
+- `400`: param/body invalido
+- `404`: opcion no encontrada
+- `409`: conflicto unico
+
+### 22.9 DELETE /api/catalog/attribute-options/:optionId
+Desactiva opcion (`active=false`).
+
+Respuestas:
+- `200`: opcion desactivada
+- `400`: param invalido
+- `404`: opcion no encontrada
+
+### 22.10 GET /api/products/:id/attributes
+Lista valores de atributos a nivel producto.
+
+Respuestas:
+- `200`: array de valores con detalle de definicion/opcion
+- `400`: param invalido
+- `404`: producto no encontrado
+
+### 22.11 PUT /api/products/:id/attributes
+Crea o actualiza (upsert) valor de atributo en producto.
+
+Body:
+```json
+{
+  "definitionId": 12,
+  "optionId": 55,
+  "valueText": null,
+  "valueNumber": null,
+  "valueBoolean": null
+}
+```
+
+Reglas:
+- Debe enviarse al menos un campo de valor: `optionId`, `valueText`, `valueNumber` o `valueBoolean`.
+- `definitionId` debe existir y tener `scope=PRODUCT`.
+- Si se envia `optionId`, debe pertenecer a la definicion.
+
+Respuestas:
+- `200`: valor upsertado
+- `400`: param/body invalido o regla de validacion
+- `404`: producto no encontrado
+
+### 22.12 DELETE /api/products/:id/attributes/:definitionId
+Elimina valor de atributo del producto.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: params invalidos
+- `404`: producto no encontrado o valor no existente
+
+### 22.13 GET /api/products/variants/:variantId/attributes
+Lista valores de atributos a nivel variante.
+
+Respuestas:
+- `200`: array de valores
+- `400`: param invalido
+- `404`: variante no encontrada
+
+### 22.14 PUT /api/products/variants/:variantId/attributes
+Crea o actualiza (upsert) valor de atributo en variante.
+
+Reglas:
+- Debe enviarse al menos un campo de valor.
+- `definitionId` debe existir y tener `scope=VARIANT`.
+- Si se envia `optionId`, debe pertenecer a la definicion.
+
+Respuestas:
+- `200`: valor upsertado
+- `400`: param/body invalido o regla de validacion
+- `404`: variante no encontrada
+
+### 22.15 DELETE /api/products/variants/:variantId/attributes/:definitionId
+Elimina valor de atributo de la variante.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: params invalidos
+- `404`: variante no encontrada o valor no existente
+
+### 22.16 GET /api/products/:id/components
+Lista componentes de producto (composicion parent -> child).
+
+Respuestas:
+- `200`: array de componentes
+- `400`: param invalido
+- `404`: producto no encontrado
+
+### 22.17 POST /api/products/:id/components
+Crea componente para producto padre.
+
+Body:
+```json
+{
+  "childProductId": 21,
+  "quantity": 1,
+  "sortOrder": 0
+}
+```
+
+Reglas:
+- `childProductId` debe existir.
+- No se permite auto-referencia (`parentProductId === childProductId`).
+
+Respuestas:
+- `201`: componente creado
+- `400`: param/body invalido o regla de validacion
+- `404`: producto no encontrado
+
+### 22.18 PATCH /api/products/components/:componentId
+Actualiza componente por id (parcial, al menos 1 campo).
+
+Respuestas:
+- `200`: componente actualizado
+- `400`: param/body invalido o regla de validacion
+- `404`: componente no encontrado
+
+### 22.19 DELETE /api/products/components/:componentId
+Elimina componente por id.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: param invalido
+- `404`: componente no encontrado
+
+## 23. Rental Units
+
+## 23.1 GET /api/rental-units
 Lista unidades fisicas de alquiler.
 
 Query params opcionales:
@@ -1983,7 +2201,7 @@ Respuestas:
 - `200`: array de unidades
 - `400`: query invalida
 
-## 22.2 POST /api/rental-units
+## 23.2 POST /api/rental-units
 Crea unidad fisica de alquiler.
 
 Body:
@@ -2011,7 +2229,7 @@ Respuestas:
 - `404`: producto o variante no encontrados
 - `409`: conflicto de codigo interno o regla de negocio
 
-## 22.3 GET /api/rental-units/:id
+## 23.3 GET /api/rental-units/:id
 Obtiene unidad por id.
 
 Respuestas:
@@ -2019,7 +2237,7 @@ Respuestas:
 - `400`: param invalido
 - `404`: unidad no encontrada
 
-## 22.4 PATCH /api/rental-units/:id
+## 23.4 PATCH /api/rental-units/:id
 Actualiza datos de unidad (precios, color, estado, notas, variante, etc.).
 
 Body parcial:
@@ -2037,7 +2255,7 @@ Respuestas:
 - `404`: unidad o variante no encontrada
 - `409`: regla de negocio invalida
 
-## 22.5 DELETE /api/rental-units/:id
+## 23.5 DELETE /api/rental-units/:id
 Retira unidad (`status=RETIRADO`).
 
 Respuestas:
@@ -2046,7 +2264,7 @@ Respuestas:
 - `404`: unidad no encontrada
 - `409`: no se puede retirar si esta alquilada
 
-## 22.6 PATCH /api/rental-units/:id/actions
+## 23.6 PATCH /api/rental-units/:id/actions
 Ejecuta acciones de operacion sobre la unidad.
 
 Body:
@@ -2069,3 +2287,532 @@ Respuestas:
 - `400`: param/body invalido
 - `404`: unidad no encontrada
 - `409`: accion no permitida por estado
+
+## 24. Bundles
+
+## 24.1 GET /api/bundles
+Lista bundles con filtros basicos.
+
+Query params opcionales:
+- `search`: texto sobre `nombre` o `slug`
+- `active`: `true` | `false`
+
+Respuestas:
+- `200`: array de bundles
+- `400`: query invalida
+
+## 24.2 POST /api/bundles
+Crea bundle.
+
+Body:
+```json
+{
+  "nombre": "Pack Oficina",
+  "slug": "pack-oficina",
+  "descripcion": "Saco + pantalon",
+  "price": 799,
+  "active": true
+}
+```
+
+Respuestas:
+- `201`: bundle creado
+- `400`: body invalido
+- `409`: conflicto unico (ej. slug)
+
+## 24.3 GET /api/bundles/:id
+Obtiene bundle por id.
+
+Respuestas:
+- `200`: bundle
+- `400`: param invalido
+- `404`: bundle no encontrado
+
+## 24.4 PATCH /api/bundles/:id
+Actualiza bundle (parcial, al menos un campo).
+
+Respuestas:
+- `200`: bundle actualizado
+- `400`: param/body invalido
+- `404`: bundle no encontrado
+- `409`: conflicto unico
+
+## 24.5 DELETE /api/bundles/:id
+Desactiva bundle (`active=false`).
+
+Respuestas:
+- `200`: bundle desactivado
+- `400`: param invalido
+- `404`: bundle no encontrado
+
+## 24.6 GET /api/bundles/:id/items
+Lista items de producto de un bundle.
+
+Respuestas:
+- `200`: array de items
+- `400`: param invalido
+- `404`: bundle no encontrado
+
+## 24.7 POST /api/bundles/:id/items
+Agrega item de producto al bundle.
+
+Body:
+```json
+{
+  "productId": 21,
+  "quantity": 1,
+  "sortOrder": 0
+}
+```
+
+Respuestas:
+- `201`: item creado
+- `400`: param/body invalido
+- `404`: bundle o producto no encontrado
+- `409`: item duplicado en el bundle
+
+## 24.8 PATCH /api/bundles/items/:itemId
+Actualiza item de producto del bundle.
+
+Respuestas:
+- `200`: item actualizado
+- `400`: param/body invalido
+- `404`: item o producto no encontrado
+- `409`: conflicto de unicidad
+
+## 24.9 DELETE /api/bundles/items/:itemId
+Elimina item de producto del bundle.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: param invalido
+- `404`: item no encontrado
+
+## 24.10 GET /api/bundles/:id/variant-items
+Lista items de variantes de un bundle.
+
+Respuestas:
+- `200`: array de variant items
+- `400`: param invalido
+- `404`: bundle no encontrado
+
+## 24.11 POST /api/bundles/:id/variant-items
+Agrega item de variante al bundle.
+
+Body:
+```json
+{
+  "variantId": 44,
+  "quantity": 1,
+  "sortOrder": 0
+}
+```
+
+Respuestas:
+- `201`: variant item creado
+- `400`: param/body invalido
+- `404`: bundle o variante no encontrados
+- `409`: variant item duplicado en el bundle
+
+## 24.12 PATCH /api/bundles/variant-items/:itemId
+Actualiza item de variante del bundle.
+
+Respuestas:
+- `200`: variant item actualizado
+- `400`: param/body invalido
+- `404`: item o variante no encontrados
+- `409`: conflicto de unicidad
+
+## 24.13 DELETE /api/bundles/variant-items/:itemId
+Elimina item de variante del bundle.
+
+Respuestas:
+- `200`: `{ "ok": true }`
+- `400`: param invalido
+- `404`: item no encontrado
+
+## 25. Promotions y Coupons
+
+## 25.1 GET /api/promotions
+Lista promociones.
+
+Query params opcionales:
+- `search`: texto en nombre
+- `scope`: `ORDEN` | `PRODUCTO` | `BUNDLE`
+- `active`: `true` | `false`
+
+Respuestas:
+- `200`: array de promociones
+- `400`: query invalida
+
+## 25.2 POST /api/promotions
+Crea promocion.
+
+Body:
+```json
+{
+  "nombre": "Promo temporada",
+  "scope": "ORDEN",
+  "discountType": "PORCENTAJE",
+  "value": 10,
+  "startsAt": "2026-03-15T00:00:00.000Z",
+  "endsAt": "2026-03-31T23:59:59.000Z",
+  "active": true,
+  "productIds": [21, 35]
+}
+```
+
+Regla:
+- `endsAt` debe ser mayor o igual que `startsAt`.
+- `scope=PRODUCTO` requiere `productIds` con al menos un producto.
+- para `scope=ORDEN` o `scope=BUNDLE`, `productIds` no debe enviarse.
+
+Respuestas:
+- `201`: promocion creada
+- `400`: body invalido o regla de negocio
+- `409`: conflicto unico
+
+## 25.3 GET /api/promotions/:id
+Obtiene promocion por id.
+
+Respuestas:
+- `200`: promocion
+- `400`: param invalido
+- `404`: promocion no encontrada
+
+## 25.4 PATCH /api/promotions/:id
+Actualiza promocion.
+
+Body parcial (campos opcionales):
+- `nombre`, `scope`, `discountType`, `value`, `startsAt`, `endsAt`, `active`, `productIds`
+
+Reglas:
+- si `scope` final es `PRODUCTO`, la promocion debe quedar con `productIds` no vacio.
+- si `scope` final no es `PRODUCTO`, los targets de producto se limpian.
+
+Respuestas:
+- `200`: promocion actualizada
+- `400`: param/body invalido o regla de negocio
+- `404`: promocion no encontrada
+- `409`: conflicto unico
+
+## 25.5 DELETE /api/promotions/:id
+Desactiva promocion (`active=false`).
+
+Respuestas:
+- `200`: promocion desactivada
+- `400`: param invalido
+- `404`: promocion no encontrada
+
+## 25.6 GET /api/coupons
+Lista cupones.
+
+Query params opcionales:
+- `search`: texto en code
+- `active`: `true` | `false`
+- `promotionId`: entero positivo
+- `bundleId`: entero positivo
+
+Respuestas:
+- `200`: array de cupones
+- `400`: query invalida
+
+## 25.7 POST /api/coupons
+Crea cupon.
+
+Body:
+```json
+{
+  "code": "TENOFF",
+  "promotionId": 2,
+  "discountType": "PORCENTAJE",
+  "value": 10,
+  "maxUses": 100,
+  "startsAt": "2026-03-15T00:00:00.000Z",
+  "endsAt": "2026-03-31T23:59:59.000Z",
+  "active": true
+}
+```
+
+Reglas:
+- no puede tener `promotionId` y `bundleId` al mismo tiempo.
+- valida existencia de `promotionId` o `bundleId` cuando se envien.
+
+Respuestas:
+- `201`: cupon creado
+- `400`: body invalido o regla de negocio
+- `409`: conflicto unico (code)
+
+## 25.8 GET /api/coupons/:id
+Obtiene cupon por id.
+
+Respuestas:
+- `200`: cupon
+- `400`: param invalido
+- `404`: cupon no encontrado
+
+## 25.9 PATCH /api/coupons/:id
+Actualiza cupon.
+
+Respuestas:
+- `200`: cupon actualizado
+- `400`: param/body invalido o regla de negocio
+- `404`: cupon no encontrado
+- `409`: conflicto unico
+
+## 25.10 DELETE /api/coupons/:id
+Desactiva cupon (`active=false`).
+
+Respuestas:
+- `200`: cupon desactivado
+- `400`: param invalido
+- `404`: cupon no encontrado
+
+## 25.11 GET /api/coupons/:id/uses
+Lista usos del cupon.
+
+Respuestas:
+- `200`: array de usos
+- `400`: param invalido
+- `404`: cupon no encontrado
+
+## 25.12 POST /api/coupons/:id/preview
+Previsualiza aplicacion de cupon sobre una orden (sin persistir).
+
+Body:
+```json
+{
+  "orderType": "sale",
+  "orderId": 10
+}
+```
+
+Respuestas:
+- `200`: preview con `appliedAmount`, `resultingDiscountTotal`, `resultingTotal`
+- `400`: param/body invalido o regla de negocio
+- `404`: cupon u orden no encontrados
+
+## 25.13 POST /api/coupons/:id/apply
+Aplica cupon a una orden y registra `OrderCouponUse`.
+
+Body:
+```json
+{
+  "orderType": "sale",
+  "orderId": 10
+}
+```
+
+Reglas:
+- valida vigencia, activo, maxUses y compatibilidad de scope.
+- evita aplicar dos veces el mismo cupon a la misma orden.
+- `scope=PRODUCTO`: aplica descuento sobre la suma de items con `productId` (solo `sale` y `custom`).
+- `scope=BUNDLE`: solo aplica a `sale` y requiere que la orden contenga el `bundle` objetivo.
+
+Respuestas:
+- `201`: resultado de aplicacion con orden actualizada
+- `400`: regla de negocio no cumplida
+- `404`: cupon u orden no encontrados
+
+## 25.14 DELETE /api/coupons/uses/:useId
+Revierte uso de cupon: elimina uso, recalcula totales y decrementa `usedCount`.
+
+Regla:
+- no permite revertir si la orden ya esta en estado final.
+
+Respuestas:
+- `200`: resultado de reversa con orden recalculada
+- `400`: param invalido o regla de negocio
+- `404`: uso de cupon no encontrado
+
+## 26. Coupons Disponibles por Orden
+
+## 26.1 GET /api/orders/:orderType/:orderId/available-coupons
+Lista cupones aplicables para una orden especifica, con monto proyectado.
+
+Route params:
+- `orderType`: `sale` | `custom` | `rental` | `alteration`
+- `orderId`: entero positivo
+
+Reglas de filtrado:
+- solo cupones activos y vigentes
+- excluye cupones ya usados en esa orden
+- aplica restricciones por scope y bundle
+- `scope=PRODUCTO`: solo se lista para `sale/custom` y calcula sobre subtotal elegible de items con `productId`
+
+Respuestas:
+- `200`: array de cupones disponibles con `appliedAmount`, `resultingDiscountTotal`, `resultingTotal`
+- `400`: params invalidos
+- `404`: orden no encontrada
+
+## 27. Reportes
+
+## 27.1 GET /api/reports/minimum
+Devuelve el paquete de reportes minimos del negocio.
+
+Query params opcionales:
+- `from`: fecha/hora ISO de inicio de ventana
+- `to`: fecha/hora ISO de fin de ventana
+- `topRentedLimit`: limite para top de prendas mas alquiladas (1-50, default 10)
+- `recurrentMinOrders`: minimo de ordenes para cliente recurrente (2-20, default 2)
+- `stockLimit`: limite de variantes para reporte de stock bajo (1-200, default 50)
+
+Si no se envia rango, usa ultimos 30 dias.
+
+Incluye:
+- ventas por periodo (sale/custom/rental/alteration)
+- alquileres activos
+- prendas mas alquiladas
+- clientes recurrentes
+- reservas de medidas
+- stock bajo
+- clientes nuevos sin ficha o con ficha vencida
+
+Respuestas:
+- `200`: objeto consolidado de reportes
+- `400`: query invalida o rango inconsistente (`from > to`)
+
+## 28. Notas y Archivos de Cliente
+
+## 28.1 GET /api/customers/:id/notes
+Lista notas de un cliente (ordenadas por `createdAt` desc).
+
+Route params:
+- `id`: entero positivo
+
+Respuestas:
+- `200`: `{ "data": PublicCustomerNote[] }`
+- `400`: param invalido
+- `404`: cliente no encontrado
+
+## 28.2 POST /api/customers/:id/notes
+Crea una nota para un cliente.
+
+Route params:
+- `id`: entero positivo
+
+Body:
+```json
+{
+  "note": "Cliente solicita entalle mas ajustado en cintura.",
+  "adminUserId": 1
+}
+```
+
+Validaciones:
+- `note`: requerido, trim, min 1, max 4000
+- `adminUserId`: opcional, entero positivo o `null`
+
+Respuestas:
+- `201`: `{ "data": PublicCustomerNote }`
+- `400`: body/param invalido
+- `404`: cliente o admin no encontrados
+
+## 28.3 PATCH /api/customers/notes/:noteId
+Actualiza una nota por id (parcial).
+
+Route params:
+- `noteId`: entero positivo
+
+Body (al menos 1 campo):
+```json
+{
+  "note": "Actualizar observacion del cliente",
+  "adminUserId": 1
+}
+```
+
+Route params:
+- `noteId`: entero positivo
+
+Reglas:
+- se requiere al menos uno de: `note`, `adminUserId`
+- `adminUserId` puede ser `null` para limpiar referencia
+
+Respuestas:
+- `200`: `{ "data": PublicCustomerNote }`
+- `400`: body/param invalido
+- `404`: nota o admin no encontrados
+
+## 28.4 DELETE /api/customers/notes/:noteId
+Elimina una nota por id.
+
+Route params:
+- `noteId`: entero positivo
+
+Respuestas:
+- `200`: `{ "data": { "deleted": true } }`
+- `400`: param invalido
+- `404`: nota no encontrada
+
+## 28.5 GET /api/customers/:id/files
+Lista archivos asociados a un cliente (ordenados por `createdAt` desc).
+
+Route params:
+- `id`: entero positivo
+
+Respuestas:
+- `200`: `{ "data": PublicCustomerFile[] }`
+- `400`: param invalido
+- `404`: cliente no encontrado
+
+## 28.6 POST /api/customers/:id/files
+Registra archivo de cliente (metadatos + URL).
+
+Route params:
+- `id`: entero positivo
+
+Body:
+```json
+{
+  "fileName": "orden-2026-015-medidas.pdf",
+  "fileUrl": "https://cdn.ejemplo.com/clientes/15/orden-2026-015-medidas.pdf",
+  "mimeType": "application/pdf",
+  "description": "Ficha de medidas inicial"
+}
+```
+
+Validaciones:
+- `fileName`: requerido, trim, min 1, max 255
+- `fileUrl`: requerido, URL valida, max 2048
+- `mimeType`: opcional, trim, min 1, max 255
+- `description`: opcional, trim, min 1, max 1000
+
+Respuestas:
+- `201`: `{ "data": PublicCustomerFile }`
+- `400`: body/param invalido
+- `404`: cliente no encontrado
+
+## 28.7 PATCH /api/customers/files/:fileId
+Actualiza metadatos de archivo de cliente (parcial).
+
+Route params:
+- `fileId`: entero positivo
+
+Body (al menos 1 campo):
+```json
+{
+  "description": "Ficha de medidas actualizada",
+  "mimeType": "application/pdf"
+}
+```
+
+Reglas:
+- se requiere al menos uno de: `fileName`, `fileUrl`, `mimeType`, `description`
+- `mimeType` y `description` aceptan `null` para limpiar el valor
+
+Respuestas:
+- `200`: `{ "data": PublicCustomerFile }`
+- `400`: body/param invalido
+- `404`: archivo no encontrado
+
+## 28.8 DELETE /api/customers/files/:fileId
+Elimina archivo de cliente por id.
+
+Route params:
+- `fileId`: entero positivo
+
+Respuestas:
+- `200`: `{ "data": { "deleted": true } }`
+- `400`: param invalido
+- `404`: archivo no encontrado

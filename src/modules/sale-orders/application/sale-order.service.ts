@@ -10,6 +10,7 @@ import {
 import {
   SaleOrderCustomerNotFoundError,
   SaleOrderItemReferenceError,
+  SaleOrderMeasurementReservationRequiredError,
   SaleOrderNotFoundError,
   SaleOrderPaymentRequiredError,
   SaleOrderStatusTransitionError,
@@ -96,6 +97,7 @@ export class SaleOrderService {
         quantity: number;
       }>;
     }>;
+    let includesSuitOrJacket = false;
 
     for (const item of input.items) {
       const quantity = item.quantity ?? 1;
@@ -118,6 +120,10 @@ export class SaleOrderService {
         }
 
         itemNameSnapshot = itemNameSnapshot ?? product.nombre;
+
+        if (product.kind === "TERNO" || product.kind === "SACO") {
+          includesSuitOrJacket = true;
+        }
       }
 
       if (item.bundleId !== undefined) {
@@ -129,6 +135,16 @@ export class SaleOrderService {
         }
 
         itemNameSnapshot = itemNameSnapshot ?? bundle.nombre;
+
+        if (
+          bundle.items.some(
+            (bundleItem) =>
+              bundleItem.product.kind === "TERNO" ||
+              bundleItem.product.kind === "SACO"
+          )
+        ) {
+          includesSuitOrJacket = true;
+        }
       }
 
       if (!itemNameSnapshot) {
@@ -150,6 +166,35 @@ export class SaleOrderService {
           quantity: component.quantity ?? 1,
         })),
       });
+    }
+
+    if (includesSuitOrJacket) {
+      const hasPriorSuitOrJacketPurchase =
+        await this.saleOrderRepository.customerHasPriorSuitOrJacketPurchase(
+          input.customerId
+        );
+
+      if (!hasPriorSuitOrJacketPurchase) {
+        const now = new Date();
+
+        const hasValidMeasurements =
+          await this.saleOrderRepository.customerHasValidMeasurementProfile(
+            input.customerId,
+            now
+          );
+
+        if (!hasValidMeasurements) {
+          const hasReservedMeasurementAppointment =
+            await this.saleOrderRepository.customerHasReservedMeasurementAppointment(
+              input.customerId,
+              now
+            );
+
+          if (!hasReservedMeasurementAppointment) {
+            throw new SaleOrderMeasurementReservationRequiredError();
+          }
+        }
+      }
     }
 
     const requestedAt = input.requestedAt ?? new Date();

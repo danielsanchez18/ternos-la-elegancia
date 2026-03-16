@@ -4,6 +4,7 @@ import { saleOrderService } from "@/src/modules/sale-orders/application/sale-ord
 import {
   SaleOrderCustomerNotFoundError,
   SaleOrderItemReferenceError,
+  SaleOrderMeasurementReservationRequiredError,
 } from "@/src/modules/sale-orders/domain/sale-order.errors";
 import {
   createSaleOrderSchema,
@@ -64,6 +65,16 @@ export async function POST(request: Request) {
 
     if (error instanceof SaleOrderItemReferenceError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof SaleOrderMeasurementReservationRequiredError) {
+      return NextResponse.json(
+        {
+          error:
+            "First suit/jacket purchase without valid measurements requires a reserved measurement appointment",
+        },
+        { status: 409 }
+      );
     }
 
     return NextResponse.json(
