@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { rentalOrderService } from "@/src/modules/rental-orders/application/rental-order.service";
 import {
   RentalOrderNotFoundError,
@@ -15,8 +16,13 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = rentalOrderIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -45,6 +51,11 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = rentalOrderIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

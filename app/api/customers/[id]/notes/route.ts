@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import {
   CustomerRecordRelatedEntityNotFoundError,
 } from "@/src/modules/customers/domain/customer-records.errors";
@@ -19,6 +20,11 @@ type RouteContext = {
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
+    const auth = await requireApiAuth(_request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const params = idParamSchema.parse(await context.params);
     const notes = await recordsService.listNotesByCustomerId(params.id);
 
@@ -48,6 +54,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const params = idParamSchema.parse(await context.params);
     const body = createCustomerNoteSchema.parse(await request.json());
 

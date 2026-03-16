@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { notificationService } from "@/src/modules/notifications/application/notification.service";
 import {
   formatZodIssues,
@@ -7,6 +8,11 @@ import {
 } from "@/src/modules/notifications/presentation/notification.schemas";
 
 export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
 
   const parsedQuery = listNotificationsQuerySchema.safeParse({

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { rentalUnitService } from "@/src/modules/rental-units/application/rental-unit.service";
 import {
   RentalUnitConflictError,
@@ -14,6 +15,11 @@ import {
 } from "@/src/modules/rental-units/presentation/rental-unit.schemas";
 
 export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
 
   const parsedQuery = listRentalUnitsQuerySchema.safeParse({
@@ -37,6 +43,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createRentalUnitSchema.safeParse(body);
 

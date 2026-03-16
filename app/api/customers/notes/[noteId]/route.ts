@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { CustomerRecordsService } from "@/src/modules/customers/application/customer-records.service";
 import {
   CustomerNoteNotFoundError,
@@ -20,6 +21,11 @@ type RouteContext = {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const params = noteIdParamSchema.parse(await context.params);
     const body = updateCustomerNoteSchema.parse(await request.json());
 
@@ -55,6 +61,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
+    const auth = await requireApiAuth(_request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const params = noteIdParamSchema.parse(await context.params);
 
     await recordsService.deleteNote(params.noteId);

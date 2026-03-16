@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { catalogService } from "@/src/modules/catalog/application/catalog.service";
 import {
   CatalogProductAttributeValueNotFoundError,
@@ -15,8 +16,13 @@ type RouteContext = {
   params: Promise<{ id: string; definitionId: string }>;
 };
 
-export async function DELETE(_: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const routeParams = await params;
 
     const parsedProductId = productIdParamSchema.safeParse({ id: routeParams.id });

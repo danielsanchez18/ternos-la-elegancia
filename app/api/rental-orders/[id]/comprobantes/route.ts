@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { paymentService } from "@/src/modules/payments/application/payment.service";
 import {
   ComprobanteOverchargeError,
@@ -18,6 +19,11 @@ type RouteContext = {
 
 export async function GET(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = rentalOrderIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -68,6 +74,11 @@ export async function GET(request: Request, { params }: RouteContext) {
 
 export async function POST(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = rentalOrderIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

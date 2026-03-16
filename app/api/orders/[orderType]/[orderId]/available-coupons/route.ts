@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/api-auth";
 import { promotionService } from "@/src/modules/promotions/application/promotion.service";
 import { PromotionRelatedEntityNotFoundError } from "@/src/modules/promotions/domain/promotion.errors";
 import {
@@ -11,8 +13,53 @@ type RouteContext = {
   params: Promise<{ orderType: string; orderId: string }>;
 };
 
-export async function GET(_: Request, { params }: RouteContext) {
+async function customerOwnsOrder(
+  customerId: number,
+  orderType: "sale" | "custom" | "rental" | "alteration",
+  orderId: number
+) {
+  if (orderType === "sale") {
+    const order = await prisma.saleOrder.findUnique({
+      where: { id: orderId },
+      select: { customerId: true },
+    });
+
+    return order?.customerId === customerId;
+  }
+
+  if (orderType === "custom") {
+    const order = await prisma.customOrder.findUnique({
+      where: { id: orderId },
+      select: { customerId: true },
+    });
+
+    return order?.customerId === customerId;
+  }
+
+  if (orderType === "rental") {
+    const order = await prisma.rentalOrder.findUnique({
+      where: { id: orderId },
+      select: { customerId: true },
+    });
+
+    return order?.customerId === customerId;
+  }
+
+  const order = await prisma.alterationOrder.findUnique({
+    where: { id: orderId },
+    select: { customerId: true },
+  });
+
+  return order?.customerId === customerId;
+}
+
+export async function GET(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "authenticated");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = availableCouponsOrderParamsSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -20,6 +67,22 @@ export async function GET(_: Request, { params }: RouteContext) {
         { error: "Invalid route params", issues: formatZodIssues(parsedParams.error) },
         { status: 400 }
       );
+    }
+
+    if (!auth.context.adminUserId) {
+      if (!auth.context.customerId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const hasAccess = await customerOwnsOrder(
+        auth.context.customerId,
+        parsedParams.data.orderType,
+        parsedParams.data.orderId
+      );
+
+      if (!hasAccess) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const coupons = await promotionService.listAvailableCouponsForOrder(parsedParams.data);

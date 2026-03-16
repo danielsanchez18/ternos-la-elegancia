@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { catalogService } from "@/src/modules/catalog/application/catalog.service";
 import {
   CatalogRelatedEntityNotFoundError,
@@ -39,6 +40,11 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function PUT(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = variantIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

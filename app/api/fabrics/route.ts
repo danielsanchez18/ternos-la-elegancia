@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { fabricService } from "@/src/modules/fabrics/application/fabric.service";
 import { FabricCodeConflictError } from "@/src/modules/fabrics/domain/fabric.errors";
 import {
@@ -7,13 +8,23 @@ import {
   formatZodIssues,
 } from "@/src/modules/fabrics/presentation/fabric.schemas";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const fabrics = await fabricService.listFabrics();
   return NextResponse.json(fabrics);
 }
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createFabricSchema.safeParse(body);
 

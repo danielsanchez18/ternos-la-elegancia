@@ -147,6 +147,138 @@ Observacion de integracion:
 - Las rutas concretas de sign-in/sign-up/session dependen de configuracion BetterAuth activa en `lib/auth.ts`.
 - Recomendado: consumir el cliente oficial BetterAuth en frontend para evitar acoplarse a paths internos.
 
+### 3.2 Matriz de acceso por endpoint
+
+Niveles de acceso implementados actualmente:
+- `public`: no requiere sesion.
+- `authenticated`: requiere sesion valida (cliente o admin).
+- `admin`: requiere sesion valida con perfil admin activo.
+
+#### Endpoints public
+- `GET|POST /api/auth/[...all]`
+- `POST /api/internal/cron/appointments/reminder-24h` (uso interno por token de cron)
+- `GET /api/products`
+- `GET /api/products/:id`
+- `GET /api/products/slug/:slug`
+- `GET /api/products/:id/attributes`
+- `GET /api/products/:id/components`
+- `GET /api/products/:id/images`
+- `GET /api/products/:id/variants`
+- `GET /api/products/variants/:variantId/attributes`
+- `GET /api/bundles`
+- `GET /api/bundles/:id`
+- `GET /api/bundles/:id/items`
+- `GET /api/bundles/:id/variant-items`
+
+#### Endpoints authenticated
+- `GET /api/orders/:orderType/:orderId/available-coupons`
+- `POST /api/payments/izipay/session-token`
+
+Regla adicional para `available-coupons`:
+- si la sesion es de cliente, solo puede consultar cupones de ordenes propias.
+- si la sesion es admin, puede consultar cualquier orden.
+
+Reglas adicionales para `izipay/session-token`:
+- si la sesion es de cliente, solo puede solicitar token para ordenes propias.
+- valida tope Yape Code: total de orden debe ser menor o igual a `S/ 2000`.
+- soporta modo simulacion con `IZIPAY_MOCK_MODE=true` (respuesta incluye `tokenSource: "mock"`).
+
+#### Endpoints admin
+- `GET|POST /api/users`
+- `GET|PATCH|DELETE /api/users/:id`
+
+- `GET|POST /api/brands`
+- `GET|PATCH|DELETE /api/brands/:id`
+
+- `GET|POST /api/customers`
+- `GET|PATCH|DELETE /api/customers/:id`
+- `GET|POST /api/customers/:id/measurement-profiles`
+- `GET|POST /api/customers/:id/notes`
+- `PATCH|DELETE /api/customers/notes/:noteId`
+- `GET|POST /api/customers/:id/files`
+- `PATCH|DELETE /api/customers/files/:fileId`
+
+- `GET|POST /api/fabrics`
+- `GET|PATCH|DELETE /api/fabrics/:id`
+- `GET|POST /api/fabrics/:id/movements`
+
+- `GET /api/measurement-fields`
+- `GET|PATCH /api/measurement-profiles/:id`
+- `GET|PUT /api/measurement-profiles/:id/values`
+
+- `GET|POST /api/appointments`
+- `GET|PATCH /api/appointments/:id`
+- `GET|PUT /api/appointments/business-hours`
+- `GET|POST /api/appointments/special-schedules`
+- `PATCH|DELETE /api/appointments/special-schedules/:id`
+
+- `GET|POST /api/alteration-services`
+- `GET|PATCH|DELETE /api/alteration-services/:id`
+
+- `GET|POST /api/alteration-orders`
+- `GET|PATCH /api/alteration-orders/:id`
+- `GET|POST /api/alteration-orders/:id/payments`
+- `GET|POST /api/alteration-orders/:id/comprobantes`
+
+- `GET|POST /api/sale-orders`
+- `GET|PATCH /api/sale-orders/:id`
+- `GET|POST /api/sale-orders/:id/payments`
+- `GET|POST /api/sale-orders/:id/comprobantes`
+
+- `GET|POST /api/custom-orders`
+- `GET|PATCH /api/custom-orders/:id`
+- `GET|POST /api/custom-orders/:id/payments`
+- `GET|POST /api/custom-orders/:id/comprobantes`
+
+- `GET|POST /api/rental-orders`
+- `GET|PATCH /api/rental-orders/:id`
+- `GET|POST /api/rental-orders/:id/payments`
+- `GET|POST /api/rental-orders/:id/comprobantes`
+
+- `GET|POST /api/rental-units`
+- `GET|PATCH|DELETE /api/rental-units/:id`
+- `PATCH /api/rental-units/:id/actions`
+
+- `GET|POST /api/promotions`
+- `GET|PATCH|DELETE /api/promotions/:id`
+
+- `GET|POST /api/coupons`
+- `GET|PATCH|DELETE /api/coupons/:id`
+- `POST /api/coupons/:id/apply`
+- `POST /api/coupons/:id/preview`
+- `GET /api/coupons/:id/uses`
+- `DELETE /api/coupons/uses/:useId`
+
+- `GET|POST /api/catalog/attribute-definitions`
+- `GET|PATCH|DELETE /api/catalog/attribute-definitions/:definitionId`
+- `GET|POST /api/catalog/attribute-definitions/:definitionId/options`
+- `PATCH|DELETE /api/catalog/attribute-options/:optionId`
+
+- `POST /api/products`
+- `PATCH|DELETE /api/products/:id`
+- `PUT /api/products/:id/attributes`
+- `DELETE /api/products/:id/attributes/:definitionId`
+- `POST /api/products/:id/components`
+- `PATCH|DELETE /api/products/components/:componentId`
+- `POST /api/products/:id/images`
+- `PATCH|DELETE /api/products/images/:imageId`
+- `POST /api/products/:id/variants`
+- `PATCH|DELETE /api/products/variants/:variantId`
+- `PUT /api/products/variants/:variantId/attributes`
+- `DELETE /api/products/variants/:variantId/attributes/:definitionId`
+
+- `POST /api/bundles`
+- `PATCH|DELETE /api/bundles/:id`
+- `POST /api/bundles/:id/items`
+- `PATCH|DELETE /api/bundles/items/:itemId`
+- `POST /api/bundles/:id/variant-items`
+- `PATCH|DELETE /api/bundles/variant-items/:itemId`
+
+- `GET /api/notifications`
+- `POST /api/notifications/appointments/reminder-24h`
+
+- `GET /api/reports/minimum`
+
 ## 4. Users
 
 ## 4.1 GET /api/users
@@ -1146,11 +1278,24 @@ Reglas de validacion:
 - subtotal de item no puede quedar negativo
 - en `components`, cada componente requiere `productId` o `variantId`
 
+Regla de negocio (medidas en primera compra de terno/saco):
+- si la orden incluye un producto `TERNO` o `SACO` (o un bundle que los contenga),
+- y el cliente no tiene compras previas no canceladas de `TERNO/SACO`,
+- y no tiene ficha de medidas vigente,
+- entonces debe existir una cita `TOMA_MEDIDAS` reservada (`PENDIENTE`, `CONFIRMADA` o `REPROGRAMADA`) en fecha futura.
+
+Si no se cumple, responde:
+```json
+{
+  "error": "First suit/jacket purchase without valid measurements requires a reserved measurement appointment"
+}
+```
+
 Respuestas:
 - `201`: orden creada
 - `400`: body invalido
 - `404`: cliente no encontrado
-- `409`: referencias invalidas (producto/bundle) o regla de item
+- `409`: referencias invalidas (producto/bundle), regla de item o regla de medidas/cita
 
 ## 13.3 GET /api/sale-orders/:id
 Obtiene orden de venta por id.

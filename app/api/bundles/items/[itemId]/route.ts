@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { bundleService } from "@/src/modules/bundles/application/bundle.service";
 import {
   BundleConflictError,
@@ -19,6 +20,11 @@ type RouteContext = {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = bundleItemIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -67,8 +73,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(_: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = bundleItemIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

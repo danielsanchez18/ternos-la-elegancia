@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { notificationService } from "@/src/modules/notifications/application/notification.service";
 import { NotificationValidationError } from "@/src/modules/notifications/domain/notification.errors";
 import {
@@ -9,6 +10,11 @@ import {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = dispatchAppointmentReminder24hSchema.safeParse(body);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { productService } from "@/src/modules/products/application/product.service";
 import { BrandConflictError } from "@/src/modules/products/domain/product.errors";
 import {
@@ -7,13 +8,23 @@ import {
   formatZodIssues,
 } from "@/src/modules/products/presentation/product.schemas";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const brands = await productService.listBrands();
   return NextResponse.json(brands);
 }
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createBrandSchema.safeParse(body);
 

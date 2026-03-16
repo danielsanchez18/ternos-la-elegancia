@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { catalogService } from "@/src/modules/catalog/application/catalog.service";
 import {
   CatalogProductComponentNotFoundError,
@@ -17,6 +18,11 @@ type RouteContext = {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = componentIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -55,8 +61,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(_: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = componentIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

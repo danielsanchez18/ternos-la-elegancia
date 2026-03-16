@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { measurementService } from "@/src/modules/measurements/application/measurement.service";
 import {
   MeasurementFieldNotFoundForGarmentError,
@@ -19,6 +20,11 @@ type RouteContext = {
 
 export async function GET(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = measurementProfileIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -76,6 +82,11 @@ export async function GET(request: Request, { params }: RouteContext) {
 
 export async function PUT(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = measurementProfileIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

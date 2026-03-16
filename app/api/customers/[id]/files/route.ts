@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { CustomerRecordsService } from "@/src/modules/customers/application/customer-records.service";
 import { CustomerRecordRelatedEntityNotFoundError } from "@/src/modules/customers/domain/customer-records.errors";
 import {
@@ -17,6 +18,11 @@ type RouteContext = {
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
+    const auth = await requireApiAuth(_request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const params = idParamSchema.parse(await context.params);
     const files = await recordsService.listFilesByCustomerId(params.id);
 
@@ -46,6 +52,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const params = idParamSchema.parse(await context.params);
     const body = createCustomerFileSchema.parse(await request.json());
 

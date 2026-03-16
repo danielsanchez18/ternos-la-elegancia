@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import {
   formatZodErrors,
@@ -13,6 +14,11 @@ type RouteParams = {
 };
 
 export async function GET(_: Request, { params }: RouteParams) {
+  const auth = await requireApiAuth(_, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const parsedParams = userIdParamSchema.safeParse(await params);
 
   if (!parsedParams.success) {
@@ -40,6 +46,11 @@ export async function GET(_: Request, { params }: RouteParams) {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = userIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -102,6 +113,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
 export async function DELETE(_: Request, { params }: RouteParams) {
   try {
+    const auth = await requireApiAuth(_, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = userIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

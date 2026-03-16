@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { appointmentService } from "@/src/modules/appointments/application/appointment.service";
 import { AppointmentScheduleValidationError } from "@/src/modules/appointments/domain/appointment.errors";
 import {
@@ -7,13 +8,23 @@ import {
   upsertBusinessHourSchema,
 } from "@/src/modules/appointments/presentation/appointment.schemas";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const businessHours = await appointmentService.listBusinessHours();
   return NextResponse.json(businessHours);
 }
 
 export async function PUT(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = upsertBusinessHourSchema.safeParse(body);
 

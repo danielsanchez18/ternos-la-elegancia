@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { promotionService } from "@/src/modules/promotions/application/promotion.service";
 import {
   CouponNotFoundError,
@@ -18,6 +19,11 @@ type RouteContext = {
 
 export async function POST(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = couponIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

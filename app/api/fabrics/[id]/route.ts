@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { fabricService } from "@/src/modules/fabrics/application/fabric.service";
 import {
   FabricCodeConflictError,
@@ -17,6 +18,11 @@ type RouteContext = {
 
 export async function GET(_: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(_, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = fabricIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -39,6 +45,11 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = fabricIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -81,6 +92,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
 export async function DELETE(_: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(_, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = fabricIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

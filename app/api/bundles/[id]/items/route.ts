@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { bundleService } from "@/src/modules/bundles/application/bundle.service";
 import {
   BundleConflictError,
@@ -41,6 +42,11 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function POST(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = bundleIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

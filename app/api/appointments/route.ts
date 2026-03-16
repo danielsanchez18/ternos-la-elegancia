@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { appointmentService } from "@/src/modules/appointments/application/appointment.service";
 import {
   AppointmentCustomerNotFoundError,
@@ -13,6 +14,11 @@ import {
 } from "@/src/modules/appointments/presentation/appointment.schemas";
 
 export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
 
   const parsedQuery = listAppointmentsQuerySchema.safeParse({
@@ -38,6 +44,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createAppointmentSchema.safeParse(body);
 

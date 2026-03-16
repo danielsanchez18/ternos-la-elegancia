@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { createUserSchema, formatZodErrors } from "@/lib/validators/user";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
   });
@@ -14,6 +20,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createUserSchema.safeParse(body);
 

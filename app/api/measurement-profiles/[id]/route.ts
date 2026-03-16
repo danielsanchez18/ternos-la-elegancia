@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { measurementService } from "@/src/modules/measurements/application/measurement.service";
 import { MeasurementProfileNotFoundError } from "@/src/modules/measurements/domain/measurement.errors";
 import {
@@ -12,8 +13,13 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = measurementProfileIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {
@@ -45,6 +51,11 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const parsedParams = measurementProfileIdParamSchema.safeParse(await params);
 
     if (!parsedParams.success) {

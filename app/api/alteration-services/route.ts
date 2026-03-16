@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { alterationServiceService } from "@/src/modules/alteration-services/application/alteration-service.service";
 import { AlterationServiceValidationError } from "@/src/modules/alteration-services/domain/alteration-service.errors";
 import {
@@ -9,6 +10,11 @@ import {
 } from "@/src/modules/alteration-services/presentation/alteration-service.schemas";
 
 export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
 
   const parsedQuery = listAlterationServicesQuerySchema.safeParse({
@@ -31,6 +37,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createAlterationServiceSchema.safeParse(body);
 

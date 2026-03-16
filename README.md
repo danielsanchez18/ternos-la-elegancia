@@ -85,6 +85,50 @@ Recomendacion operativa:
 - Ejecutar cada hora.
 - Monitorear resultados y volumen via `GET /api/notifications`.
 
+## Izipay Yape Code (Session Token Backend)
+
+Se agrego endpoint backend para obtener token de sesion de Izipay para checkout SDK:
+
+- `POST /api/payments/izipay/session-token`
+
+Body:
+
+```json
+{
+	"orderType": "sale",
+	"orderId": 123
+}
+```
+
+Acceso:
+
+- Requiere sesion (`authenticated`).
+- Cliente solo puede solicitar token para ordenes propias.
+- Admin puede solicitar token para cualquier orden.
+
+Regla Yape Code:
+
+- Monto maximo permitido por backend: `S/ 2000`.
+
+Variables de entorno requeridas para integracion:
+
+- `IZIPAY_SESSION_TOKEN_URL`: URL completa del endpoint de token de sesion.
+
+Variables opcionales:
+
+- `IZIPAY_SESSION_TOKEN_AUTHORIZATION`: valor completo del header Authorization (`Basic ...` o `Bearer ...`).
+- `IZIPAY_SESSION_TOKEN_EXTRA_HEADERS`: JSON string con headers extra.
+- `IZIPAY_SESSION_TOKEN_BODY`: JSON string con body para el request de token.
+- `IZIPAY_RSA_PUBLIC_KEY`: llave publica RSA para `checkout.LoadForm`.
+- `IZIPAY_MERCHANT_CODE`: merchant code para config de checkout.
+- `IZIPAY_MOCK_MODE`: `true` para modo simulacion sin afiliacion.
+
+Modo simulacion (`IZIPAY_MOCK_MODE=true`):
+
+- No llama a Izipay.
+- Genera `authorization` mock y devuelve `tokenSource: "mock"`.
+- Permite avanzar desarrollo frontend/backend sin credenciales reales.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

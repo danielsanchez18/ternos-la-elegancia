@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { customOrderService } from "@/src/modules/custom-orders/application/custom-order.service";
 import {
   CustomOrderCustomerNotFoundError,
@@ -14,6 +15,11 @@ import {
 } from "@/src/modules/custom-orders/presentation/custom-order.schemas";
 
 export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, "admin");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
 
   const parsedQuery = listCustomOrdersQuerySchema.safeParse({
@@ -48,6 +54,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const body = await request.json();
     const parsedBody = createCustomOrderSchema.safeParse(body);
 
