@@ -10,7 +10,7 @@ export default function CustomerLayout({
   return (
     <>
       <main className="h-dvh overflow-y-auto w-full bg-white text-black font-google-sans scrollbar-hide relative">
-        <div id="navbar">
+        <div id="navbar" className="mb-20">
           <Navbar />
         </div>
         {children}

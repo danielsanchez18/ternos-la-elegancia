@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export type Product = {
-  id: string;
+  id: string | number;
+  slug?: string;
   name: string;
   category: string;
   description: string;
@@ -14,8 +14,8 @@ export type Product = {
 
 type ProductCardProps = {
   product: Product;
-  onToggleCart: (id: string) => void;
-  onToggleLike: (id: string) => void;
+  onToggleCart: (id: string | number) => void;
+  onToggleLike: (id: string | number) => void;
 };
 
 export const ProductCard = ({
@@ -23,15 +23,16 @@ export const ProductCard = ({
   onToggleCart,
   onToggleLike,
 }: ProductCardProps) => {
+  const productHref = product.slug ? `/productos/${product.slug}` : `/productos/${product.id}`;
+
   return (
     <article className="overflow-hidden group flex flex-col">
-      <Link href={`/productos/${product.id}`} className="flex flex-col">
+      <Link href={productHref} className="flex flex-col">
         <div className="h-72 bg-black/10 overflow-hidden relative">
-          <Image
+          <img
             src={product.image}
             alt={product.name}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
           />
         </div>
 

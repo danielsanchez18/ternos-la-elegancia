@@ -1,6 +1,10 @@
-import { CategoryCard, type Category } from "@/components/shared/CategoryCard";
+"use client";
 
-const collections: Category[] = [
+import { useEffect, useState } from "react";
+import { CategoryCard, type Category } from "@/components/shared/CategoryCard";
+import { getStorefrontBundles } from "@/lib/storefront-api";
+
+const fallbackCollections: Category[] = [
   {
     id: "col-001",
     name: "Ternos Clásicos",
@@ -39,6 +43,45 @@ const collections: Category[] = [
 ];
 
 export const Collections = () => {
+  const [collections, setCollections] = useState<Category[]>(fallbackCollections);
+  const [loadMessage, setLoadMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCollections() {
+      try {
+        const response = await getStorefrontBundles();
+
+        if (!isMounted || response.length === 0) {
+          return;
+        }
+
+        setCollections(
+          response.map((bundle, index) => ({
+            id: bundle.id,
+            name: bundle.nombre,
+            description: bundle.descripcion ?? "Conjunto recomendado para ocasiones especiales.",
+            image: fallbackCollections[index % fallbackCollections.length].image,
+            slug: bundle.slug,
+          }))
+        );
+      } catch {
+        if (isMounted) {
+          setLoadMessage(
+            "Mostrando colecciones referenciales mientras se habilitan datos reales."
+          );
+        }
+      }
+    }
+
+    void loadCollections();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="bg-white space-y-15">
       {/* Título y Descripción */}
@@ -49,6 +92,7 @@ export const Collections = () => {
         <p className="text-neutral-700 text-balance text-lg">
           Excelencia en cada detalle para el caballero moderno.
         </p>
+        {loadMessage ? <p className="text-sm text-amber-700">{loadMessage}</p> : null}
       </div>
 
       {/* Galería de Colecciones */}

@@ -29,7 +29,7 @@ export const Testimonials = () => {
         {/* Testimonio 1 */}
         <div className="bg-black/10 w-full h-full row-span-2 flex flex-col justify-end p-8 relative">
           <p className="text-white z-20">
-            "Excelente servicio, puntualidad y atención al cliente. Recomiendo esta empresa a todos mis amigos y familiares."
+            &quot;Excelente servicio, puntualidad y atención al cliente. Recomiendo esta empresa a todos mis amigos y familiares.&quot;
           </p>
           <div className="flex items-center mt-6 space-x-4 z-20">
             <div className="rounded-full overflow-hidden bg-black/10 size-14">
@@ -72,7 +72,7 @@ export const Testimonials = () => {
             </div>
           </div>
           <p className="text-white mt-6 z-20">
-            "Servicio de calidad y profesionalismo. Muy satisfecho con el trato recibido. Definitivamente volveré a contratar sus servicios en el futuro."
+            &quot;Servicio de calidad y profesionalismo. Muy satisfecho con el trato recibido. Definitivamente volveré a contratar sus servicios en el futuro.&quot;
           </p>
           <div className="absolute inset-0 size-full ">
             <Image
@@ -88,7 +88,7 @@ export const Testimonials = () => {
         {/* Testimonio 3 */}
         <div className="bg-black/10 w-full h-full row-span-2 flex flex-col justify-end p-8 relative">
           <p className="text-white z-20">
-            "Excelente servicio, puntualidad y atención al cliente. Recomiendo esta empresa a todos mis amigos y familiares."
+            &quot;Excelente servicio, puntualidad y atención al cliente. Recomiendo esta empresa a todos mis amigos y familiares.&quot;
           </p>
           <div className="flex items-center mt-6 space-x-4 z-20">
             <div className="rounded-full overflow-hidden bg-black/10 size-14">
@@ -131,7 +131,7 @@ export const Testimonials = () => {
             </div>
           </div>
           <p className="text-white mt-6 z-20">
-            "Servicio de calidad y profesionalismo. Muy satisfecho con el trato recibido. Definitivamente volveré a contratar sus servicios en el futuro."
+            &quot;Servicio de calidad y profesionalismo. Muy satisfecho con el trato recibido. Definitivamente volveré a contratar sus servicios en el futuro.&quot;
           </p>
           <div className="absolute inset-0 size-full ">
             <Image

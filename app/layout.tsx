@@ -1,26 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Google_Sans, Oswald } from "next/font/google";
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const googleSans = Google_Sans({
-  variable: "--font-google-sans",
-  subsets: ["latin"],
-});
-
-const oswald = Oswald({
-  variable: "--font-oswald",
-  subsets: ["latin"],
-})
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Ternos La Elegancia",
@@ -33,12 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${googleSans.variable} ${oswald.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <html lang="es" className={cn("font-sans", geist.variable)}>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

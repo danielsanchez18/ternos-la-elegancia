@@ -20,6 +20,115 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Prisma 7 Setup
+
+Este proyecto usa Prisma 7 con configuracion en `prisma.config.ts`.
+
+Cambios importantes en Prisma 7:
+- `schema.prisma` ya no define `url` en `datasource`.
+- La conexion se define en `prisma.config.ts` (`datasource.url`).
+- Para PostgreSQL, `PrismaClient` se inicializa con `@prisma/adapter-pg`.
+
+Comandos utiles:
+
+```bash
+npx prisma validate
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma db seed
+```
+
+Dependencias de Prisma 7 usadas en este proyecto:
+- `prisma`
+- `@prisma/client`
+- `@prisma/adapter-pg`
+- `pg`
+- `dotenv`
+
+## Scheduler (Recordatorio 24h de Citas)
+
+Se agrego un endpoint interno para ejecucion por scheduler externo (cron):
+
+- `POST /api/internal/cron/appointments/reminder-24h`
+
+Autorizacion requerida:
+
+- Header `Authorization: Bearer <CRON_SECRET>`
+- Alternativa: header `x-cron-secret: <CRON_SECRET>`
+
+Variables de entorno:
+
+- `CRON_SECRET`: secreto compartido para proteger endpoints internos de cron.
+
+Payload opcional:
+
+```json
+{
+	"channel": "WHATSAPP",
+	"dryRun": false
+}
+```
+
+Si no se envia body, usa defaults del schema (`WHATSAPP`, `dryRun=false`).
+
+Ejemplo con curl:
+
+```bash
+curl -X POST "http://localhost:3000/api/internal/cron/appointments/reminder-24h" \
+	-H "Authorization: Bearer $CRON_SECRET" \
+	-H "Content-Type: application/json" \
+	-d '{"channel":"WHATSAPP","dryRun":false}'
+```
+
+Recomendacion operativa:
+
+- Ejecutar cada hora.
+- Monitorear resultados y volumen via `GET /api/notifications`.
+
+## Izipay Yape Code (Session Token Backend)
+
+Se agrego endpoint backend para obtener token de sesion de Izipay para checkout SDK:
+
+- `POST /api/payments/izipay/session-token`
+
+Body:
+
+```json
+{
+	"orderType": "sale",
+	"orderId": 123
+}
+```
+
+Acceso:
+
+- Requiere sesion (`authenticated`).
+- Cliente solo puede solicitar token para ordenes propias.
+- Admin puede solicitar token para cualquier orden.
+
+Regla Yape Code:
+
+- Monto maximo permitido por backend: `S/ 2000`.
+
+Variables de entorno requeridas para integracion:
+
+- `IZIPAY_SESSION_TOKEN_URL`: URL completa del endpoint de token de sesion.
+
+Variables opcionales:
+
+- `IZIPAY_SESSION_TOKEN_AUTHORIZATION`: valor completo del header Authorization (`Basic ...` o `Bearer ...`).
+- `IZIPAY_SESSION_TOKEN_EXTRA_HEADERS`: JSON string con headers extra.
+- `IZIPAY_SESSION_TOKEN_BODY`: JSON string con body para el request de token.
+- `IZIPAY_RSA_PUBLIC_KEY`: llave publica RSA para `checkout.LoadForm`.
+- `IZIPAY_MERCHANT_CODE`: merchant code para config de checkout.
+- `IZIPAY_MOCK_MODE`: `true` para modo simulacion sin afiliacion.
+
+Modo simulacion (`IZIPAY_MOCK_MODE=true`):
+
+- No llama a Izipay.
+- Genera `authorization` mock y devuelve `tokenSource: "mock"`.
+- Permite avanzar desarrollo frontend/backend sin credenciales reales.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

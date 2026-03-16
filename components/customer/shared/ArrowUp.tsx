@@ -8,24 +8,17 @@ export const ArrowUp = () => {
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.getElementById("navbar");
-      console.log("Navbar:", navbar);
-      console.log("ScrollY:", window.scrollY);
-      
+
       if (navbar) {
         const navbarHeight = navbar.offsetHeight;
-        console.log("NavbarHeight:", navbarHeight);
-        console.log("Should be visible:", window.scrollY > navbarHeight);
         setIsVisible(window.scrollY > navbarHeight);
-      } else {
-        console.log("Navbar elemento NO encontrado");
       }
     };
 
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  console.log("isVisible state:", isVisible);
 
   return isVisible && (
     <a href="#navbar" 

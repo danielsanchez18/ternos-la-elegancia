@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Logo from "@/assets/logos/logo.svg";
 
 export const Footer = () => {
@@ -29,33 +30,33 @@ export const Footer = () => {
 
           <article className="text-sm flex flex-col max-sm:items-center uppercase w-fit mx-auto text-white/80 gap-y-3">
             <h3 className="uppercase mb-3 text-lg font-oswald">explorar</h3>
-            <a href="/" className="hover:text-white hover:underline w-fit">
+            <Link href="/" className="hover:text-white hover:underline w-fit">
               Inicio
-            </a>
-            <a
+            </Link>
+            <Link
               href="/productos"
               className="hover:text-white hover:underline w-fit"
             >
               Productos
-            </a>
-            <a
+            </Link>
+            <Link
               href="/proceso"
               className="hover:text-white hover:underline w-fit"
             >
               proceso
-            </a>
-            <a
+            </Link>
+            <Link
               href="/nosotros"
               className="hover:text-white hover:underline w-fit"
             >
               Nosotros
-            </a>
-            <a
+            </Link>
+            <Link
               href="/contacto"
               className="hover:text-white hover:underline w-fit"
             >
               contacto
-            </a>
+            </Link>
           </article>
 
           <article className="text-sm flex flex-col text-white/80 max-sm:items-center w-fit mx-auto gap-y-3">
