@@ -3,10 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import Logo from "@/assets/logos/logo.svg";
-
-export const Navbar = () => {
+export const Navbar = ({ children }: { children?: React.ReactNode }) => {
   return (
-    <div className="w-full bg-white fixed top-0 left-0 right-0 z-50">
+    <div className="w-full bg-white fixed top-0 left-0 right-0 z-9999">
       <nav className="max-w-350 mx-auto max-xl:px-4">
         <div className="w-full flex items-center py-2">
           {/* TODO: Cambiar Logo */}
@@ -107,20 +106,7 @@ export const Navbar = () => {
             </button>
 
             {/* Usuario */}
-            <button className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                className="size-6"
-              >
-                <g fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="12" cy="6" r="4" />
-                  <path d="M20 17.5c0 2.485 0 4.5-8 4.5s-8-2.015-8-4.5S7.582 13 12 13s8 2.015 8 4.5Z" />
-                </g>
-              </svg>
-            </button>
+            {children}
           </div>
         </div>
       </nav>

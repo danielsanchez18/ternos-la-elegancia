@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/customer/shared/Navbar";
 import { Footer } from "@/components/customer/shared/Footer";
+import ProfileButton from "@/components/shared/ProfileButton";
 import { ArrowUp } from "@/components/customer/shared/ArrowUp";
 
 export default function CustomerLayout({
@@ -10,8 +11,8 @@ export default function CustomerLayout({
   return (
     <>
       <main className="h-dvh overflow-y-auto w-full bg-white text-black font-google-sans scrollbar-hide relative">
-        <div id="navbar" className="mb-20">
-          <Navbar />
+        <div id="navbar" className="mb-18">
+          <Navbar><ProfileButton /></Navbar>
         </div>
         {children}
         <Footer />

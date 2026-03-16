@@ -1,15 +1,9 @@
 import { Prisma } from "@prisma/client";
-import { randomBytes, scryptSync } from "node:crypto";
 
+import { hashDomainPassword } from "@/lib/password-hash";
 import { CustomerConflictError, CustomerNotFoundError } from "@/src/modules/customers/domain/customer.errors";
 import { CreateCustomerInput, PublicCustomer, UpdateCustomerInput } from "@/src/modules/customers/domain/customer.types";
 import { CustomerRepository } from "@/src/modules/customers/infrastructure/customer.repository";
-
-function hashPassword(plainTextPassword: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(plainTextPassword, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
-}
 
 export class CustomerService {
   constructor(private readonly customerRepository: CustomerRepository) {}
@@ -22,7 +16,7 @@ export class CustomerService {
         email: input.email,
         celular: input.celular,
         dni: input.dni,
-        passwordHash: hashPassword(input.password),
+        passwordHash: hashDomainPassword(input.password),
       });
     } catch (error: unknown) {
       this.handlePersistenceError(error);
@@ -46,7 +40,9 @@ export class CustomerService {
     try {
       return await this.customerRepository.updateById(id, {
         ...input,
-        passwordHash: input.password ? hashPassword(input.password) : undefined,
+        passwordHash: input.password
+          ? hashDomainPassword(input.password)
+          : undefined,
       });
     } catch (error: unknown) {
       this.handlePersistenceError(error);

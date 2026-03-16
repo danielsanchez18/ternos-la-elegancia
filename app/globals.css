@@ -25,6 +25,7 @@
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
   --font-geist-sans: "Avenir Next", "Segoe UI", sans-serif;
   --font-geist-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
   --font-google-sans: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
