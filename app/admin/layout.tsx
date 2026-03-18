@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import AdminShell from "@/components/admin/AdminShell";
 import { getSessionAccess } from "@/lib/session-access";
 
 export default async function AdminLayout({
@@ -18,5 +19,5 @@ export default async function AdminLayout({
     redirect("/profile");
   }
 
-  return children;
+  return <AdminShell>{children}</AdminShell>;
 }
