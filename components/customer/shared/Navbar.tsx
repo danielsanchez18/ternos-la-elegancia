@@ -45,7 +45,7 @@ export const Navbar = () => {
             Nosotros
           </Link>
           <Link
-            href="/contact"
+            href="/contacto"
             className="px-4 py-4 text-neutral-900 hover:text-neutral-600 hover:bg-neutral-100"
           >
             Contacto
