@@ -1,9 +1,9 @@
 import { Hero } from "@/components/customer/about/Hero";
 import { Mission } from '@/components/customer/about/Mission';
 import { Features } from "@/components/customer/about/Features";
-import { VisitUs } from "@/components/customer/about/VisitUs";
 import { Testimonials } from "@/components/customer/home/Testimonials";
 import { Team } from '@/components/customer/about/Team';
+import { VisitUs } from "@/components/customer/home/VisitUs";
 
 export default function CustomerAbout() {
   return (
@@ -15,8 +15,8 @@ export default function CustomerAbout() {
           <Features />
         </div>
         <Team />
-        <VisitUs />
         <Testimonials />
+        <VisitUs />
       </div>
     </div>
   );

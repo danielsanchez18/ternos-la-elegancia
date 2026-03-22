@@ -51,7 +51,7 @@ export const Testimonials = () => {
               fill
               className="w-full h-full object-cover absolute inset-0"
             />
-            <div className="size-full inset-0 absolute bg-linear-to-tr from-black to-black/50"></div>
+            <div className="size-full inset-0 absolute bg-linear-to-tr from-black/80 to-black/50"></div>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export const Testimonials = () => {
               fill
               className="w-full h-full object-cover absolute inset-0"
             />
-            <div className="size-full inset-0 absolute bg-linear-to-tl from-black to-black/50"></div>
+            <div className="size-full inset-0 absolute bg-linear-to-tl from-black/80 to-black/50"></div>
           </div>
         </div>
         
@@ -110,7 +110,7 @@ export const Testimonials = () => {
               fill
               className="w-full h-full object-cover absolute inset-0"
             />
-            <div className="size-full inset-0 absolute bg-linear-to-tr from-black to-black/50"></div>
+            <div className="size-full inset-0 absolute bg-linear-to-tr from-black/80 to-black/50"></div>
           </div>
         </div>
         
@@ -140,7 +140,7 @@ export const Testimonials = () => {
               fill
               className="w-full h-full object-cover absolute inset-0"
             />
-            <div className="size-full inset-0 absolute bg-linear-to-tr from-black to-black/50"></div>
+            <div className="size-full inset-0 absolute bg-linear-to-tr from-black/80 to-black/50"></div>
           </div>
         </div>
 

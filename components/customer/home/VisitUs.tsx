@@ -53,8 +53,8 @@ export const VisitUs = () => {
               <g
                 fill="none"
                 stroke="currentColor"
-                strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeLinecap="round"
                 strokeWidth="1.5"
               >
                 <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0" />
@@ -82,7 +82,7 @@ export const VisitUs = () => {
         </div>
 
         {/* Boton de llamada a la acción */}
-        <button className="btn-primary">Ver Ubicación</button>
+        <button className="btn-primary">Ver Mapa</button>
       </div>
     </section>
   );
