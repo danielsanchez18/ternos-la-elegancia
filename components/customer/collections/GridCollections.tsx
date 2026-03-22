@@ -40,21 +40,21 @@ const collections: Category[] = [
     id: "col-006",
     name: "Accesorios",
     description: "Complementos para un look completo y sofisticado.",
-    image: "/images/cat-accesorios.jpg",
+    image: "/images/cat-ternos.webp",
     slug: "accesorios",
   },
   {
     id: "col-007",
     name: "Ternos de Verano",
     description: "Frescos y ligeros para los días más cálidos.",
-    image: "/images/cat-verano.jpg",
+    image: "/images/cat-casual.webp",
     slug: "ternos-de-verano",
   },
   {
     id: "col-008",
     name: "Ternos de Invierno",
     description: "Calidez y estilo para la temporada fría.",
-    image: "/images/cat-invierno.jpg",
+    image: "/images/cat-novios.jpg",
     slug: "ternos-de-invierno",
   }
 ];

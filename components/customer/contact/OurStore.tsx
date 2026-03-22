@@ -1,3 +1,5 @@
+import Image from "next/image"
+
 export const OurStore = () => {
     return (
         <div className="flex flex-col gap-y-10">
@@ -8,9 +10,30 @@ export const OurStore = () => {
             </div>
             
             <div className="grid grid-cols-3 gap-x-5">
-                <div className="h-60 bg-black/10"></div>
-                <div className="h-60 bg-black/10"></div>
-                <div className="h-60 bg-black/10"></div>
+                <div className="relative h-60 bg-black/10 group cursor-pointer overflow-hidden">
+                    <Image 
+                        src="/images/our-store-1.jpg"
+                        alt="Nuestra Tienda"
+                        fill
+                        className="object-cover h-full w-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="relative h-60 bg-black/10 group cursor-pointer overflow-hidden">
+                    <Image 
+                        src="/images/our-store-2.jpg"
+                        alt="Nuestra Tienda"
+                        fill
+                        className="object-cover h-full w-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="relative h-60 bg-black/10 group cursor-pointer overflow-hidden">
+                    <Image 
+                        src="/images/our-store-3.jpg"
+                        alt="Nuestra Tienda"
+                        fill
+                        className="object-cover h-full w-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
             </div>
 
         </div>

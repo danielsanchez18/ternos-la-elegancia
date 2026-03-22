@@ -55,7 +55,9 @@ export const Navbar = () => {
         {/* Botones (Carrito, Buscar, Usuario) */}
         <div className="flex items-center ml-auto">
           {/* Buscar */}
-          <button className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">
+          <a
+            href="/buscar"  
+            className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -71,7 +73,7 @@ export const Navbar = () => {
               <path d="m21 21-4.34-4.34" />
               <circle cx="11" cy="11" r="8" />
             </svg>
-          </button>
+          </a>
 
           {/* Carrito */}
           <button className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">
