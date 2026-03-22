@@ -17,7 +17,7 @@ export const CategoryCard = ({ category }: CategoryCardProps) => {
   return (
     <Link href={`/colecciones/${category.slug}`} className="overflow-hidden group hover:bg-gray-100">
       {/* Foto */}
-      <div className="h-72 bg-black/10 overflow-hidden relative">
+      <div className="min-h-96 max-h-96 bg-black/10 overflow-hidden relative">
         <Image
           src={category.image}
           alt={category.name}

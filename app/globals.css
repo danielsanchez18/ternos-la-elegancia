@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/forms";
 
 /* Adds pointer cursor to buttons */
 @layer base {
@@ -13,7 +14,6 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
 } 
 
 @theme inline {

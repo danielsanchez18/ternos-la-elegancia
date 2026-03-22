@@ -3,8 +3,8 @@ import Logo from "@/assets/logos/logo.svg";
 
 export const Footer = () => {
   return (
-    <section className=" w-full lg:p-4">
-      <footer className="max-bg-blue-950 lg:rounded-2xl bg-blue-950 py-15 px-5 mx-auto">
+    <section className="w-full">
+      <footer className="max-bg-blue-950 bg-blue-950 py-15 px-5 mx-auto">
         
         {/* Links y contacto */}
         <div className="grid sm:grid-cols-3 md:grid-cols-4 gap-y-10 max-w-350 mx-auto gap-x-5 md:gap-x-10">

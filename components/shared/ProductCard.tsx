@@ -26,7 +26,7 @@ export const ProductCard = ({
   return (
     <article className="overflow-hidden group flex flex-col">
       <Link href={`/productos/${product.id}`} className="flex flex-col">
-        <div className="h-72 bg-black/10 overflow-hidden relative">
+        <div className="min-h-96 max-h-96 bg-black/10 overflow-hidden relative">
           <Image
             src={product.image}
             alt={product.name}

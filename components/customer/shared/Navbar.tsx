@@ -27,10 +27,10 @@ export const Navbar = () => {
             Inicio
           </Link>
           <Link
-            href="/productos"
+            href="/colecciones"
             className="px-4 py-4 text-neutral-900 hover:text-neutral-600 hover:bg-neutral-100"
           >
-            Productos
+            Colecciones
           </Link>
           <Link
             href="/proceso"
