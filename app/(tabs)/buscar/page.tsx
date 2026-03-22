@@ -1,6 +1,8 @@
 
-export const CustomerSearch = () => {
+export default function CustomerSearch () {
   return (
-    <div>page</div>
+    <div>
+
+    </div>
   )
 }
