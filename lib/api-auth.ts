@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
 
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export type ApiAuthLevel = "authenticated" | "admin" | "customer";
@@ -27,50 +27,37 @@ export async function requireApiAuth(
   request: Request,
   level: ApiAuthLevel = "authenticated"
 ): Promise<ApiAuthResult> {
-  const token = getSessionCookie(request.headers);
+  const session = await auth.api.getSession({ headers: request.headers });
 
-  if (!token) {
+  if (!session) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
   }
 
-  const session = await prisma.session.findUnique({
-    where: { token },
+  const memberships = await prisma.user.findUnique({
+    where: { id: session.user.id },
     select: {
-      userId: true,
-      expiresAt: true,
-      user: {
+      adminProfile: {
         select: {
-          adminProfile: {
-            select: {
-              id: true,
-              isActive: true,
-            },
-          },
-          customer: {
-            select: {
-              id: true,
-              isActive: true,
-            },
-          },
+          id: true,
+          isActive: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          isActive: true,
         },
       },
     },
   });
 
-  if (!session || session.expiresAt <= new Date()) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
   const context: ApiAuthContext = {
-    userId: session.userId,
-    adminUserId: session.user.adminProfile?.id ?? null,
-    customerId: session.user.customer?.id ?? null,
+    userId: session.user.id,
+    adminUserId: memberships?.adminProfile?.id ?? null,
+    customerId: memberships?.customer?.id ?? null,
   };
 
   if (level === "authenticated") {
@@ -78,7 +65,7 @@ export async function requireApiAuth(
   }
 
   if (level === "admin") {
-    if (!session.user.adminProfile || !session.user.adminProfile.isActive) {
+    if (!memberships?.adminProfile || !memberships.adminProfile.isActive) {
       return {
         ok: false,
         response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
@@ -88,7 +75,7 @@ export async function requireApiAuth(
     return { ok: true, context };
   }
 
-  if (!session.user.customer || !session.user.customer.isActive) {
+  if (!memberships?.customer || !memberships.customer.isActive) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),

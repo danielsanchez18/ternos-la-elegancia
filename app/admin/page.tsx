@@ -9,7 +9,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { getAdminDashboardMetrics } from "@/lib/admin-dashboard-metrics";
+import { getAdminDashboardMetricsFromApi } from "@/lib/admin-api";
 
 const currencyFormatter = new Intl.NumberFormat("es-PE", {
   style: "currency",
@@ -27,7 +27,7 @@ function statusLabel(status: string) {
 }
 
 export default async function AdminPage() {
-  const metrics = await getAdminDashboardMetrics();
+  const metrics = await getAdminDashboardMetricsFromApi();
 
   const heroCards = [
     {
@@ -283,7 +283,7 @@ export default async function AdminPage() {
                       </p>
                     </div>
                     <div className="text-sm text-stone-300">
-                      {dateFormatter.format(appointment.scheduledAt)}
+                      {dateFormatter.format(new Date(appointment.scheduledAt))}
                     </div>
                   </div>
                   <div className="mt-3 inline-flex rounded-full border border-white/8 px-3 py-1 text-xs uppercase tracking-[0.18em] text-stone-400">
@@ -364,7 +364,7 @@ export default async function AdminPage() {
                         {payment.customerName}
                       </p>
                       <p className="mt-1 text-sm text-stone-400">
-                        {payment.method.toLowerCase()} · {dateFormatter.format(payment.paidAt)}
+                        {payment.method.toLowerCase()} · {dateFormatter.format(new Date(payment.paidAt))}
                       </p>
                     </div>
                     <div className="text-right">

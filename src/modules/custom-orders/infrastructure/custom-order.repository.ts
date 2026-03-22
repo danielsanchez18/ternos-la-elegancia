@@ -407,6 +407,127 @@ export class CustomOrderRepository {
     });
   }
 
+  async update(input: {
+    id: number;
+    notes?: string | null;
+    internalNotes?: string | null;
+    requestedDeliveryAt?: Date | null;
+    promisedDeliveryAt?: Date | null;
+    subtotal: Prisma.Decimal;
+    discountTotal: Prisma.Decimal;
+    total: Prisma.Decimal;
+    preparedItems: Array<{
+      productId?: number;
+      itemNameSnapshot: string;
+      quantity: number;
+      unitPrice: Prisma.Decimal;
+      discountAmount: Prisma.Decimal;
+      subtotal: Prisma.Decimal;
+      notes?: string;
+      parts: Array<{
+        productId?: number;
+        garmentType: MeasurementGarmentType;
+        label: string;
+        workMode: FabricPriceMode;
+        measurementProfileId?: number;
+        measurementProfileGarmentId?: number;
+        fabricId?: number;
+        fabricNameSnapshot?: string;
+        fabricCodeSnapshot?: string;
+        fabricColorSnapshot?: string;
+        unitPrice?: Prisma.Decimal;
+        notes?: string;
+        selections: Array<{
+          definitionId: number;
+          optionId?: number;
+          definitionCodeSnapshot: string;
+          definitionLabelSnapshot: string;
+          inputTypeSnapshot: InputFieldType;
+          optionCodeSnapshot?: string;
+          optionLabelSnapshot?: string;
+          extraPriceSnapshot?: Prisma.Decimal;
+          valueText?: string;
+          valueNumber?: Prisma.Decimal;
+          valueBoolean?: boolean;
+        }>;
+      }>;
+    }>;
+  }): Promise<PublicCustomOrder> {
+    return prisma.$transaction(async (tx) => {
+      // 1. Clear existing items
+      await tx.customOrderItem.deleteMany({
+        where: { customOrderId: input.id },
+      });
+
+      // 2. Update order and create new items
+      const updatedOrder = await tx.customOrder.update({
+        where: { id: input.id },
+        data: {
+          notes: input.notes,
+          internalNotes: input.internalNotes,
+          requestedDeliveryAt: input.requestedDeliveryAt,
+          promisedDeliveryAt: input.promisedDeliveryAt,
+          subtotal: input.subtotal,
+          discountTotal: input.discountTotal,
+          total: input.total,
+          items: {
+            create: input.preparedItems.map((item) => ({
+              productId: item.productId,
+              itemNameSnapshot: item.itemNameSnapshot,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discountAmount: item.discountAmount,
+              subtotal: item.subtotal,
+              notes: item.notes,
+              parts: {
+                create: item.parts.map((part) => ({
+                  productId: part.productId,
+                  garmentType: part.garmentType,
+                  label: part.label,
+                  workMode: part.workMode,
+                  measurementProfileId: part.measurementProfileId,
+                  measurementProfileGarmentId: part.measurementProfileGarmentId,
+                  fabricId: part.fabricId,
+                  fabricNameSnapshot: part.fabricNameSnapshot,
+                  fabricCodeSnapshot: part.fabricCodeSnapshot,
+                  fabricColorSnapshot: part.fabricColorSnapshot,
+                  unitPrice: part.unitPrice,
+                  notes: part.notes,
+                  selections: {
+                    create: part.selections.map((selection) => ({
+                      definitionId: selection.definitionId,
+                      optionId: selection.optionId,
+                      definitionCodeSnapshot: selection.definitionCodeSnapshot,
+                      definitionLabelSnapshot: selection.definitionLabelSnapshot,
+                      inputTypeSnapshot: selection.inputTypeSnapshot,
+                      optionCodeSnapshot: selection.optionCodeSnapshot,
+                      optionLabelSnapshot: selection.optionLabelSnapshot,
+                      extraPriceSnapshot: selection.extraPriceSnapshot,
+                      valueText: selection.valueText,
+                      valueNumber: selection.valueNumber,
+                      valueBoolean: selection.valueBoolean,
+                    })),
+                  },
+                })),
+              },
+            })),
+          },
+        },
+        select: publicCustomOrderSelect,
+      });
+
+      await tx.customOrderStatusHistory.create({
+        data: {
+          customOrderId: input.id,
+          status: updatedOrder.status,
+          note: "Orden de confeccion actualizada",
+        },
+      });
+
+      return updatedOrder;
+    });
+  }
+
   async updateStatus(input: {
     id: number;
     status: CustomOrderStatus;
@@ -449,5 +570,29 @@ export class CustomOrderRepository {
     });
 
     return aggregated._sum.amount ?? new Prisma.Decimal(0);
+  }
+
+  async linkMeasurementToPart(input: {
+    orderId: number;
+    partId: number;
+    profileId: number;
+    profileGarmentId: number;
+  }): Promise<PublicCustomOrder> {
+    await prisma.customOrderItemPart.update({
+      where: {
+        id: input.partId,
+        customOrderItem: {
+          customOrderId: input.orderId,
+        },
+      },
+      data: {
+        measurementProfileId: input.profileId,
+        measurementProfileGarmentId: input.profileGarmentId,
+      },
+    });
+
+    const updated = await this.findById(input.orderId);
+    if (!updated) throw new Error("Order not found after update");
+    return updated;
   }
 }

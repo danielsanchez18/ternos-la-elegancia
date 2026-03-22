@@ -13,7 +13,8 @@ export type CustomOrderAction =
   | "START_FITTING"
   | "MARK_READY"
   | "MARK_DELIVERED"
-  | "CANCEL";
+  | "CANCEL"
+  | "LINK_MEASUREMENT";
 
 export type ListCustomOrdersFilters = {
   customerId?: number;
@@ -83,6 +84,15 @@ export type CreateCustomOrderInput = {
 export type CustomOrderActionInput = {
   action: CustomOrderAction;
   note?: string;
+  partId?: number;
+  profileId?: number;
+  profileGarmentId?: number;
+};
+
+export type UpdateCustomOrderInput = Partial<Omit<CreateCustomOrderInput, "customerId">> & {
+  // We can add specific update logic for items if we want partial updates,
+  // but for now let's assume we can update the main fields.
+  // Full item replacement is usually easier for custom orders.
 };
 
 export type PublicCustomOrder = {

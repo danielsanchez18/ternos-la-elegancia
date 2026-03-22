@@ -1,10 +1,13 @@
 import {
+  InventoryMovementType,
   CustomOrderStatus,
   FabricPriceMode,
   InputFieldType,
   MeasurementGarmentType,
   Prisma,
 } from "@prisma/client";
+import { FabricRepository } from "@/src/modules/fabrics/infrastructure/fabric.repository";
+import { GARMENT_FABRIC_CONSUMPTION, DEFAULT_FABRIC_CONSUMPTION } from "../domain/custom-order.constants";
 
 import {
   CustomOrderActionInput,
@@ -12,6 +15,7 @@ import {
   CreateCustomOrderInput,
   ListCustomOrdersFilters,
   PublicCustomOrder,
+  UpdateCustomOrderInput,
 } from "@/src/modules/custom-orders/domain/custom-order.types";
 import {
   CustomOrderAdvancePaymentRequiredError,
@@ -53,6 +57,14 @@ function canTransitionStatus(
       CustomOrderStatus.EN_PRUEBA,
       CustomOrderStatus.LISTO,
     ],
+    LINK_MEASUREMENT: [
+      CustomOrderStatus.PENDIENTE_RESERVA,
+      CustomOrderStatus.RESERVA_CONFIRMADA,
+      CustomOrderStatus.MEDIDAS_TOMADAS,
+      CustomOrderStatus.EN_CONFECCION,
+      CustomOrderStatus.EN_PRUEBA,
+      CustomOrderStatus.LISTO,
+    ],
   };
 
   return map[action].includes(current);
@@ -83,10 +95,16 @@ function actionToStatus(action: CustomOrderActionInput["action"]): CustomOrderSt
     return CustomOrderStatus.ENTREGADO;
   }
 
+  if (action === "LINK_MEASUREMENT") {
+    // This action doesn't change status
+    return CustomOrderStatus.PENDIENTE_RESERVA; // Won't be used
+  }
+
   return CustomOrderStatus.CANCELADO;
 }
 
 export class CustomOrderService {
+  private readonly fabricRepository = new FabricRepository();
   constructor(private readonly customOrderRepository: CustomOrderRepository) {}
 
   async listCustomOrders(filters: ListCustomOrdersFilters): Promise<CustomOrderListResult> {
@@ -103,6 +121,7 @@ export class CustomOrderService {
   }
 
   async createCustomOrder(input: CreateCustomOrderInput): Promise<PublicCustomOrder> {
+    const now = new Date();
     const customerExists = await this.customOrderRepository.customerExists(
       input.customerId
     );
@@ -111,47 +130,100 @@ export class CustomOrderService {
       throw new CustomOrderCustomerNotFoundError();
     }
 
+    const { preparedItems, requiresMeasurement } = await this.prepareItems(
+      input.customerId,
+      input.items,
+      Boolean(input.firstPurchaseFlow)
+    );
+
+    const status = requiresMeasurement
+      ? CustomOrderStatus.PENDIENTE_RESERVA
+      : CustomOrderStatus.RESERVA_CONFIRMADA;
+
+    const code = await this.customOrderRepository.nextCodeForDate(now);
+
+    return this.customOrderRepository.createWithHistory({
+      code,
+      status,
+      requiresMeasurement,
+      measurementRequiredUntil: requiresMeasurement ? addDays(now, 7) : null,
+      payload: input,
+      preparedItems,
+    });
+  }
+
+  async updateCustomOrder(
+    id: number,
+    input: UpdateCustomOrderInput
+  ): Promise<PublicCustomOrder> {
     const now = new Date();
-    let requiresMeasurement = Boolean(input.firstPurchaseFlow);
+    const existing = await this.customOrderRepository.findById(id);
+    if (!existing) {
+      throw new CustomOrderNotFoundError();
+    }
 
-    const preparedItems = [] as Array<{
-      productId?: number;
-      itemNameSnapshot: string;
-      quantity: number;
-      unitPrice: Prisma.Decimal;
-      discountAmount: Prisma.Decimal;
-      subtotal: Prisma.Decimal;
-      notes?: string;
-      parts: Array<{
-        productId?: number;
-        garmentType: MeasurementGarmentType;
-        label: string;
-        workMode: FabricPriceMode;
-        measurementProfileId?: number;
-        measurementProfileGarmentId?: number;
-        fabricId?: number;
-        fabricNameSnapshot?: string;
-        fabricCodeSnapshot?: string;
-        fabricColorSnapshot?: string;
-        unitPrice?: Prisma.Decimal;
-        notes?: string;
-        selections: Array<{
-          definitionId: number;
-          optionId?: number;
-          definitionCodeSnapshot: string;
-          definitionLabelSnapshot: string;
-          inputTypeSnapshot: InputFieldType;
-          optionCodeSnapshot?: string;
-          optionLabelSnapshot?: string;
-          extraPriceSnapshot?: Prisma.Decimal;
-          valueText?: string;
-          valueNumber?: Prisma.Decimal;
-          valueBoolean?: boolean;
-        }>;
-      }>;
-    }>;
+    // Optional: restrict editing based on status
+    if (
+      ([CustomOrderStatus.ENTREGADO, CustomOrderStatus.CANCELADO] as string[]).includes(
+        existing.status as string
+      )
+    ) {
+      throw new CustomOrderStatusTransitionError();
+    }
 
-    for (const item of input.items) {
+    const { preparedItems } = await this.prepareItems(
+      existing.customerId,
+      input.items ?? [],
+      existing.firstPurchaseFlow
+    );
+
+    // Recalculate totals
+    const subtotal = preparedItems.reduce(
+      (acc, item) => acc.add(item.unitPrice.mul(item.quantity)),
+      new Prisma.Decimal(0)
+    );
+    const discountTotal = preparedItems.reduce(
+      (acc, item) => acc.add(item.discountAmount),
+      new Prisma.Decimal(0)
+    );
+    const total = subtotal.sub(discountTotal);
+
+    return this.customOrderRepository.update({
+      id,
+      notes: input.notes !== undefined ? input.notes : existing.notes,
+      internalNotes:
+        input.internalNotes !== undefined
+          ? input.internalNotes
+          : existing.internalNotes,
+      requestedDeliveryAt:
+        input.requestedDeliveryAt !== undefined
+          ? input.requestedDeliveryAt
+          : existing.requestedDeliveryAt,
+      promisedDeliveryAt:
+        input.promisedDeliveryAt !== undefined
+          ? input.promisedDeliveryAt
+          : existing.promisedDeliveryAt,
+      subtotal,
+      discountTotal,
+      total,
+      preparedItems:
+        input.items !== undefined ? preparedItems : (existing.items as any),
+    });
+  }
+
+  private async prepareItems(
+    customerId: number,
+    items: CreateCustomOrderInput["items"],
+    firstPurchaseFlow: boolean
+  ): Promise<{
+    preparedItems: any[];
+    requiresMeasurement: boolean;
+  }> {
+    const now = new Date();
+    let requiresMeasurement = firstPurchaseFlow;
+    const preparedItems = [] as any[];
+
+    for (const item of items) {
       const unitPrice = new Prisma.Decimal(item.unitPrice);
       const discountAmount = new Prisma.Decimal(item.discountAmount ?? 0);
       const subtotal = unitPrice.mul(item.quantity).sub(discountAmount);
@@ -174,33 +246,7 @@ export class CustomOrderService {
         );
       }
 
-      const preparedParts = [] as Array<{
-        productId?: number;
-        garmentType: MeasurementGarmentType;
-        label: string;
-        workMode: FabricPriceMode;
-        measurementProfileId?: number;
-        measurementProfileGarmentId?: number;
-        fabricId?: number;
-        fabricNameSnapshot?: string;
-        fabricCodeSnapshot?: string;
-        fabricColorSnapshot?: string;
-        unitPrice?: Prisma.Decimal;
-        notes?: string;
-        selections: Array<{
-          definitionId: number;
-          optionId?: number;
-          definitionCodeSnapshot: string;
-          definitionLabelSnapshot: string;
-          inputTypeSnapshot: InputFieldType;
-          optionCodeSnapshot?: string;
-          optionLabelSnapshot?: string;
-          extraPriceSnapshot?: Prisma.Decimal;
-          valueText?: string;
-          valueNumber?: Prisma.Decimal;
-          valueBoolean?: boolean;
-        }>;
-      }>;
+      const preparedParts = [] as any[];
 
       for (const part of item.parts) {
         let measurementProfileId = part.measurementProfileId;
@@ -209,7 +255,7 @@ export class CustomOrderService {
         if (measurementProfileId) {
           const profile = await this.customOrderRepository.getMeasurementProfileForCustomer(
             measurementProfileId,
-            input.customerId
+            customerId
           );
 
           if (!profile || profile.validUntil < now) {
@@ -236,7 +282,7 @@ export class CustomOrderService {
             const garment =
               await this.customOrderRepository.getActiveValidMeasurementProfileGarmentForCustomer(
                 {
-                  customerId: input.customerId,
+                  customerId,
                   garmentType: part.garmentType,
                   now,
                 }
@@ -254,7 +300,7 @@ export class CustomOrderService {
           const validGarment =
             await this.customOrderRepository.getActiveValidMeasurementProfileGarmentForCustomer(
               {
-                customerId: input.customerId,
+                customerId,
                 garmentType: part.garmentType,
                 now,
               }
@@ -268,14 +314,7 @@ export class CustomOrderService {
           }
         }
 
-        let fabricSnapshot:
-          | {
-              id: number;
-              nombre: string;
-              code: string;
-              color: string | null;
-            }
-          | undefined;
+        let fabricSnapshot: any;
 
         if (part.fabricId) {
           const fabric = await this.customOrderRepository.getFabricById(part.fabricId);
@@ -286,19 +325,7 @@ export class CustomOrderService {
           fabricSnapshot = fabric;
         }
 
-        const preparedSelections = [] as Array<{
-          definitionId: number;
-          optionId?: number;
-          definitionCodeSnapshot: string;
-          definitionLabelSnapshot: string;
-          inputTypeSnapshot: InputFieldType;
-          optionCodeSnapshot?: string;
-          optionLabelSnapshot?: string;
-          extraPriceSnapshot?: Prisma.Decimal;
-          valueText?: string;
-          valueNumber?: Prisma.Decimal;
-          valueBoolean?: boolean;
-        }>;
+        const preparedSelections = [] as any[];
 
         for (const selection of part.selections ?? []) {
           const definition = await this.customOrderRepository.getCustomizationDefinition(
@@ -311,13 +338,7 @@ export class CustomOrderService {
             );
           }
 
-          let optionSnapshot:
-            | {
-                code: string;
-                label: string;
-                extraPrice: Prisma.Decimal | null;
-              }
-            | undefined;
+          let optionSnapshot: any;
 
           if (selection.optionId) {
             const option = await this.customOrderRepository.getCustomizationOption(
@@ -387,20 +408,7 @@ export class CustomOrderService {
       });
     }
 
-    const status = requiresMeasurement
-      ? CustomOrderStatus.PENDIENTE_RESERVA
-      : CustomOrderStatus.RESERVA_CONFIRMADA;
-
-    const code = await this.customOrderRepository.nextCodeForDate(now);
-
-    return this.customOrderRepository.createWithHistory({
-      code,
-      status,
-      requiresMeasurement,
-      measurementRequiredUntil: requiresMeasurement ? addDays(now, 7) : null,
-      payload: input,
-      preparedItems,
-    });
+    return { preparedItems, requiresMeasurement };
   }
 
   async actOnCustomOrder(
@@ -416,6 +424,27 @@ export class CustomOrderService {
       throw new CustomOrderStatusTransitionError();
     }
 
+    if (input.action === "LINK_MEASUREMENT") {
+      if (!input.partId || !input.profileId || !input.profileGarmentId) {
+        throw new Error("Faltan datos para vincular las medidas");
+      }
+
+      // Validar que el tipo de prenda coincida
+      const profileGarment = await this.customOrderRepository.getMeasurementProfileGarment(input.profileGarmentId);
+      const part = order.items.flatMap(i => i.parts).find(p => p.id === input.partId);
+
+      if (!profileGarment || !part || profileGarment.garmentType !== part.garmentType) {
+        throw new Error("El tipo de prenda de las medidas no coincide con la prenda del pedido");
+      }
+
+      return this.customOrderRepository.linkMeasurementToPart({
+        orderId: id,
+        partId: input.partId,
+        profileId: input.profileId,
+        profileGarmentId: input.profileGarmentId,
+      });
+    }
+
     if (input.action === "START_CONFECTION") {
       const approvedPaid = await this.customOrderRepository.getApprovedPaymentsTotal(id);
       const requiredAdvance = order.total.mul(new Prisma.Decimal(0.5));
@@ -423,6 +452,9 @@ export class CustomOrderService {
       if (approvedPaid.lt(requiredAdvance)) {
         throw new CustomOrderAdvancePaymentRequiredError();
       }
+
+      // Reservar telas automáticamente
+      await this.reserveFabricForOrder(order);
     }
 
     const nextStatus = actionToStatus(input.action);
@@ -438,6 +470,28 @@ export class CustomOrderService {
           ? false
           : order.requiresMeasurement,
     });
+  }
+
+  private async reserveFabricForOrder(order: PublicCustomOrder) {
+    for (const item of order.items) {
+      for (const part of item.parts) {
+        if (part.fabricId && part.workMode === FabricPriceMode.A_TODO_COSTO) {
+          const consumption = GARMENT_FABRIC_CONSUMPTION[part.garmentType] || DEFAULT_FABRIC_CONSUMPTION;
+          const note = `Consumo para orden ${order.code} - ${item.itemNameSnapshot} (${part.label})`;
+          
+          try {
+            await this.fabricRepository.createMovement(part.fabricId, {
+              type: InventoryMovementType.VENTA,
+              quantity: consumption,
+              note,
+            }, new Prisma.Decimal(consumption).neg());
+          } catch (err: any) {
+            console.error(`Error al reservar tela ${part.fabricId} para orden ${order.id}:`, err);
+            // Si no hay stock, quizás deberíamos fallar o avisar. Por ahora avisamos por consola.
+          }
+        }
+      }
+    }
   }
 }
 

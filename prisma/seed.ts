@@ -9,9 +9,12 @@ import {
   PrismaClient,
 } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { resolvePrismaConnectionString } from "@/lib/prisma-connection";
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" }),
+  adapter: new PrismaPg({
+    connectionString: resolvePrismaConnectionString(process.env.DATABASE_URL),
+  }),
 });
 
 type MeasurementFieldSeed = {
@@ -29,6 +32,27 @@ type CustomizationDefinitionSeed = {
   sortOrder: number;
   allowFreeText?: boolean;
   options?: Array<{ code: string; label: string; sortOrder: number }>;
+};
+
+type BusinessHourSeed = {
+  dayOfWeek: number;
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean;
+  note?: string | null;
+};
+
+type FabricSeed = {
+  code: string;
+  nombre: string;
+  color?: string;
+  supplier?: string;
+  composition?: string;
+  pattern?: string;
+  metersInStock: number;
+  minMeters: number;
+  costPerMeter?: number;
+  pricePerMeter?: number;
 };
 
 const measurementFields: MeasurementFieldSeed[] = [
@@ -625,6 +649,103 @@ function optionCode(garmentType: MeasurementGarmentType, definitionCodeValue: st
   return `${garmentType.toLowerCase()}__${definitionCodeValue}__${code}`;
 }
 
+const businessHours: BusinessHourSeed[] = [
+  { dayOfWeek: 0, openTime: "09:00", closeTime: "12:00", isClosed: false, note: "Horario dominical" },
+  { dayOfWeek: 1, openTime: "09:00", closeTime: "19:30", isClosed: false },
+  { dayOfWeek: 2, openTime: "09:00", closeTime: "19:30", isClosed: false },
+  { dayOfWeek: 3, openTime: "09:00", closeTime: "19:30", isClosed: false },
+  { dayOfWeek: 4, openTime: "09:00", closeTime: "19:30", isClosed: false },
+  { dayOfWeek: 5, openTime: "09:00", closeTime: "19:30", isClosed: false },
+  { dayOfWeek: 6, openTime: "09:00", closeTime: "19:30", isClosed: false },
+];
+
+const baseFabrics: FabricSeed[] = [
+  {
+    code: "FAB-LANILLA-BARRINGTON-GRIS",
+    nombre: "Lanilla Barrington",
+    color: "Gris marengo",
+    supplier: "Barrington Textiles",
+    composition: "Poliester/Viscosa",
+    pattern: "Liso",
+    metersInStock: 38,
+    minMeters: 8,
+    costPerMeter: 34.5,
+    pricePerMeter: 58,
+  },
+  {
+    code: "FAB-CASIMIR-BARRINGTON-AZUL",
+    nombre: "Casimir Barrington",
+    color: "Azul noche",
+    supplier: "Barrington Textiles",
+    composition: "Lana/Poliester",
+    pattern: "Liso",
+    metersInStock: 25,
+    minMeters: 6,
+    costPerMeter: 49,
+    pricePerMeter: 78,
+  },
+  {
+    code: "FAB-FIFTY-FIFTY-NEGRO",
+    nombre: "Fifty Fifty",
+    color: "Negro",
+    supplier: "Linea Executive",
+    composition: "50% Lana 50% Poliester",
+    pattern: "Liso",
+    metersInStock: 30,
+    minMeters: 7,
+    costPerMeter: 29,
+    pricePerMeter: 52,
+  },
+  {
+    code: "FAB-LANILLA-CARDIF-GRAFITO",
+    nombre: "Lanilla Cardif",
+    color: "Grafito",
+    supplier: "Cardif",
+    composition: "Poliester/Viscosa",
+    pattern: "Liso",
+    metersInStock: 22,
+    minMeters: 5,
+    costPerMeter: 32,
+    pricePerMeter: 55,
+  },
+  {
+    code: "FAB-CARDIF-LIVIANO-ARENA",
+    nombre: "Cardif Liviano",
+    color: "Arena",
+    supplier: "Cardif",
+    composition: "Poliester/Viscosa",
+    pattern: "Liso",
+    metersInStock: 18,
+    minMeters: 4,
+    costPerMeter: 31,
+    pricePerMeter: 54,
+  },
+  {
+    code: "FAB-WOOL-SATIN-LABRADO-BORGO",
+    nombre: "Lan. Ing. Sat. Labrado",
+    color: "Borgona",
+    supplier: "English Wool",
+    composition: "Lana",
+    pattern: "Labrado",
+    metersInStock: 12,
+    minMeters: 3,
+    costPerMeter: 57,
+    pricePerMeter: 92,
+  },
+  {
+    code: "FAB-WOOL-SATIN-LLANO-PERLA",
+    nombre: "Lan. Ing. Sat. Llano",
+    color: "Perla",
+    supplier: "English Wool",
+    composition: "Lana",
+    pattern: "Liso",
+    metersInStock: 16,
+    minMeters: 3,
+    costPerMeter: 55,
+    pricePerMeter: 90,
+  },
+];
+
 async function seedMeasurementFields() {
   for (const field of measurementFields) {
     await prisma.measurementField.upsert({
@@ -710,10 +831,68 @@ async function seedCustomizations() {
   }
 }
 
+async function seedBusinessHours() {
+  for (const item of businessHours) {
+    await prisma.businessHour.upsert({
+      where: { dayOfWeek: item.dayOfWeek },
+      update: {
+        openTime: item.isClosed ? null : item.openTime,
+        closeTime: item.isClosed ? null : item.closeTime,
+        isClosed: item.isClosed,
+        note: item.note ?? null,
+      },
+      create: {
+        dayOfWeek: item.dayOfWeek,
+        openTime: item.isClosed ? null : item.openTime,
+        closeTime: item.isClosed ? null : item.closeTime,
+        isClosed: item.isClosed,
+        note: item.note ?? null,
+      },
+    });
+  }
+}
+
+async function seedFabrics() {
+  for (const fabric of baseFabrics) {
+    await prisma.fabric.upsert({
+      where: { code: fabric.code },
+      update: {
+        nombre: fabric.nombre,
+        color: fabric.color ?? null,
+        supplier: fabric.supplier ?? null,
+        composition: fabric.composition ?? null,
+        pattern: fabric.pattern ?? null,
+        metersInStock: fabric.metersInStock,
+        minMeters: fabric.minMeters,
+        costPerMeter: fabric.costPerMeter ?? null,
+        pricePerMeter: fabric.pricePerMeter ?? null,
+        active: true,
+      },
+      create: {
+        code: fabric.code,
+        nombre: fabric.nombre,
+        color: fabric.color ?? null,
+        supplier: fabric.supplier ?? null,
+        composition: fabric.composition ?? null,
+        pattern: fabric.pattern ?? null,
+        metersInStock: fabric.metersInStock,
+        minMeters: fabric.minMeters,
+        costPerMeter: fabric.costPerMeter ?? null,
+        pricePerMeter: fabric.pricePerMeter ?? null,
+        active: true,
+      },
+    });
+  }
+}
+
 async function main() {
   await seedMeasurementFields();
   await seedCustomizations();
-  console.log("Seed completed: MeasurementField, CustomizationDefinition, CustomizationOption");
+  await seedBusinessHours();
+  await seedFabrics();
+  console.log(
+    "Seed completed: MeasurementField, CustomizationDefinition, CustomizationOption, BusinessHour, Fabric"
+  );
 }
 
 main()

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   BellRing,
@@ -87,6 +88,12 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const pageContext = getPageContext(pathname);
 
   const sidebarContent = (
@@ -166,30 +173,41 @@ export default function AdminShell({
             <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 lg:hidden">
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                  {mounted ? (
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                        >
+                          <Menu className="size-4" />
+                          <span className="sr-only">Abrir menú</span>
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent
+                        side="left"
+                        className="w-[288px] border-white/8 bg-black p-0 text-white"
                       >
-                        <Menu className="size-4" />
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent
-                      side="left"
-                      className="w-[288px] border-white/8 bg-black p-0 text-white"
+                        <SheetHeader className="sr-only">
+                          <SheetTitle>Navegación administrativa</SheetTitle>
+                          <SheetDescription>
+                            Acceso a los módulos del dashboard.
+                          </SheetDescription>
+                        </SheetHeader>
+                        {sidebarContent}
+                      </SheetContent>
+                    </Sheet>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                      disabled
                     >
-                      <SheetHeader className="sr-only">
-                        <SheetTitle>Navegación administrativa</SheetTitle>
-                        <SheetDescription>
-                          Acceso a los módulos del dashboard.
-                        </SheetDescription>
-                      </SheetHeader>
-                      {sidebarContent}
-                    </SheetContent>
-                  </Sheet>
+                      <Menu className="size-4" />
+                    </Button>
+                  )}
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
                       Panel admin

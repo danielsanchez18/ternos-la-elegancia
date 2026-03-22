@@ -1,5 +1,6 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { resolvePrismaConnectionString } from "@/lib/prisma-connection";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -11,7 +12,9 @@ const prismaLogs: Prisma.LogLevel[] =
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" }),
+    adapter: new PrismaPg({
+      connectionString: resolvePrismaConnectionString(process.env.DATABASE_URL),
+    }),
     log: prismaLogs,
   });
 

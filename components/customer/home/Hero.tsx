@@ -3,7 +3,7 @@ import Image1 from "@/assets/images/ternos-hero.jpg";
 
 export const Hero = () => {
     return (
-        <div id="hero" className="lg:px-4">
+        <div id="hero">
             <div className="h-200 transition-all bg-black/80 overflow-hidden w-full relative">
 
                 {/* Image background */}

@@ -9,8 +9,11 @@ import { authClient } from "@/lib/auth-client";
 export default function SignUpForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [name, setName] = useState("");
+  const [nombres, setNombres] = useState("");
+  const [apellidos, setApellidos] = useState("");
   const [email, setEmail] = useState("");
+  const [dni, setDni] = useState("");
+  const [celular, setCelular] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -29,10 +32,22 @@ export default function SignUpForm() {
       return;
     }
 
+    if (dni.trim().length < 8) {
+      setErrorMessage("El DNI debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    const displayName = `${nombres.trim()} ${apellidos.trim()}`.trim();
+
+    if (!displayName) {
+      setErrorMessage("Debes completar nombres y apellidos.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const { error } = await authClient.signUp.email({
-          name,
+          name: displayName,
           email,
           password,
           callbackURL: "/profile",
@@ -40,6 +55,32 @@ export default function SignUpForm() {
 
         if (error) {
           setErrorMessage(error.message ?? "No se pudo crear la cuenta.");
+          return;
+        }
+
+        const bootstrapResponse = await fetch("/api/customers/bootstrap", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            nombres: nombres.trim(),
+            apellidos: apellidos.trim(),
+            dni: dni.trim(),
+            celular: celular.trim() || undefined,
+            password,
+          }),
+        });
+
+        if (!bootstrapResponse.ok) {
+          const payload = (await bootstrapResponse.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+
+          setErrorMessage(
+            payload?.error ?? "Tu cuenta se creo, pero no se pudo completar tu perfil de cliente."
+          );
           return;
         }
 
@@ -67,14 +108,27 @@ export default function SignUpForm() {
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <label className="space-y-1 flex flex-col">
-          <span className="text-sm font-medium text-neutral-800">Nombre</span>
+          <span className="text-sm font-medium text-neutral-800">Nombres</span>
           <input
             type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
+            value={nombres}
+            onChange={(event) => setNombres(event.target.value)}
             className="w-full border border-black/10 bg-neutral-50 px-4 py-3 outline-none transition focus:border-primary focus:bg-white"
-            placeholder="Tu nombre"
+            placeholder="Tus nombres"
             autoComplete="name"
+            required
+          />
+        </label>
+
+        <label className="space-y-1 flex flex-col">
+          <span className="text-sm font-medium text-neutral-800">Apellidos</span>
+          <input
+            type="text"
+            value={apellidos}
+            onChange={(event) => setApellidos(event.target.value)}
+            className="w-full border border-black/10 bg-neutral-50 px-4 py-3 outline-none transition focus:border-primary focus:bg-white"
+            placeholder="Tus apellidos"
+            autoComplete="family-name"
             required
           />
         </label>
@@ -91,6 +145,33 @@ export default function SignUpForm() {
             required
           />
         </label>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1 flex flex-col">
+            <span className="text-sm font-medium text-neutral-800">DNI</span>
+            <input
+              type="text"
+              value={dni}
+              onChange={(event) => setDni(event.target.value)}
+              className="w-full border border-black/10 bg-neutral-50 px-4 py-3 outline-none transition focus:border-primary focus:bg-white"
+              placeholder="12345678"
+              autoComplete="off"
+              required
+            />
+          </label>
+
+          <label className="space-y-1 flex flex-col">
+            <span className="text-sm font-medium text-neutral-800">Celular</span>
+            <input
+              type="tel"
+              value={celular}
+              onChange={(event) => setCelular(event.target.value)}
+              className="w-full border border-black/10 bg-neutral-50 px-4 py-3 outline-none transition focus:border-primary focus:bg-white"
+              placeholder="999 999 999"
+              autoComplete="tel"
+            />
+          </label>
+        </div>
 
         <label className="space-y-1 flex flex-col">
           <span className="text-sm font-medium text-neutral-800">Contraseña</span>

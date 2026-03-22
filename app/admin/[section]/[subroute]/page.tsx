@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 
 import { AdminConfigurationSubroute } from "@/components/admin/AdminConfigurationModule";
 import { AdminCustomersSubroute } from "@/components/admin/AdminCustomersModule";
+import { AdminAppointmentsSubroute } from "@/components/admin/AdminAppointmentsModule";
+import { AdminInventorySubroute } from "@/components/admin/AdminInventoryModule";
+import { AdminOrdersSubroute } from "@/components/admin/AdminOrdersModule";
 import { getAdminSection, getAdminSubroute } from "@/lib/admin-dashboard";
 
 export default async function AdminSubroutePage({
@@ -19,6 +22,18 @@ export default async function AdminSubroutePage({
 
   if (section === "clientes") {
     return <AdminCustomersSubroute subroute={subroute} />;
+  }
+
+  if (section === "citas") {
+    return <AdminAppointmentsSubroute subroute={subroute} />;
+  }
+
+  if (section === "inventario") {
+    return <AdminInventorySubroute subroute={subroute} />;
+  }
+
+  if (section === "ordenes") {
+    return <AdminOrdersSubroute subroute={subroute} />;
   }
 
   if (section === "configuracion") {

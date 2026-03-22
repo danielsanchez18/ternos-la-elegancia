@@ -11,6 +11,7 @@ import {
   customOrderActionSchema,
   customOrderIdParamSchema,
   formatZodIssues,
+  updateCustomOrderSchema,
 } from "@/src/modules/custom-orders/presentation/custom-order.schemas";
 
 type RouteContext = {
@@ -107,6 +108,71 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     if (error instanceof CustomOrderAdvancePaymentRequiredError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    return NextResponse.json(
+      { error: "Could not update custom order" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request, { params }: RouteContext) {
+  try {
+    const auth = await requireApiAuth(request, "admin");
+    if (!auth.ok) {
+      return auth.response;
+    }
+
+    const parsedParams = customOrderIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid route params",
+          issues: formatZodIssues(parsedParams.error),
+        },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const parsedBody = updateCustomOrderSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request body",
+          issues: formatZodIssues(parsedBody.error),
+        },
+        { status: 400 }
+      );
+    }
+
+    const order = await customOrderService.updateCustomOrder(
+      parsedParams.data.id,
+      parsedBody.data
+    );
+
+    return NextResponse.json(order);
+  } catch (error: unknown) {
+    if (error instanceof CustomOrderNotFoundError) {
+      return NextResponse.json(
+        { error: "Custom order not found" },
+        { status: 404 }
+      );
+    }
+
+    if (error instanceof CustomOrderFabricNotFoundError) {
+      return NextResponse.json({ error: "Fabric not found" }, { status: 404 });
+    }
+
+    if (error instanceof CustomOrderCustomizationNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof CustomOrderMeasurementNotValidError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 

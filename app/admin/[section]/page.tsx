@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 
 import { AdminConfigurationSection } from "@/components/admin/AdminConfigurationModule";
 import { AdminCustomersSection } from "@/components/admin/AdminCustomersModule";
+import { AdminAppointmentsSection } from "@/components/admin/AdminAppointmentsModule";
+import { AdminInventorySection } from "@/components/admin/AdminInventoryModule";
+import { AdminOrdersSection } from "@/components/admin/AdminOrdersModule";
 import { getAdminSection } from "@/lib/admin-dashboard";
 
 export default async function AdminSectionPage({
@@ -21,8 +24,20 @@ export default async function AdminSectionPage({
     return <AdminCustomersSection />;
   }
 
+  if (section === "citas") {
+    return <AdminAppointmentsSection />;
+  }
+
   if (section === "configuracion") {
     return <AdminConfigurationSection />;
+  }
+
+  if (section === "inventario") {
+    return <AdminInventorySection />;
+  }
+
+  if (section === "ordenes") {
+    return <AdminOrdersSection />;
   }
 
   return (

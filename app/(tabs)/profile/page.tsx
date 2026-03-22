@@ -25,7 +25,7 @@ export default async function ProfilePage() {
             Mi cuenta
           </p>
           <h1 className="text-5xl font-oswald uppercase text-neutral-950">
-            Sesión activa
+            {access.session.user.name}
           </h1>
           <p className="max-w-2xl text-base leading-7 text-neutral-700">
             Este es el punto de llegada inicial después de `login` y `signup`.
@@ -34,21 +34,15 @@ export default async function ProfilePage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-[2rem] border border-black/10 bg-white p-6">
-            <p className="text-sm text-neutral-500">Nombre</p>
-            <p className="mt-2 text-xl font-medium text-neutral-950">
-              {access.session.user.name}
-            </p>
-          </article>
 
-          <article className="rounded-[2rem] border border-black/10 bg-white p-6">
+          <article className="col-span-2 rounded-[2rem] border border-black/10 bg-white p-6">
             <p className="text-sm text-neutral-500">Correo</p>
             <p className="mt-2 text-xl font-medium text-neutral-950">
               {access.session.user.email}
             </p>
           </article>
 
-          <article className="rounded-[2rem] border border-black/10 bg-white p-6">
+          <article className="col-span-1 rounded-[2rem] border border-black/10 bg-white p-6">
             <p className="text-sm text-neutral-500">Perfil</p>
             <p className="mt-2 text-xl font-medium text-neutral-950">
               {roleLabel}
@@ -56,22 +50,10 @@ export default async function ProfilePage() {
           </article>
         </div>
 
-        <div className="rounded-[2rem] border border-black/10 bg-white p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-medium text-neutral-950">
-                Estado de integración
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-neutral-600">
-                La autenticación ya funciona con Better Auth. El siguiente paso
-                natural es enlazar este usuario con el perfil de negocio
-                correspondiente dentro de `Customer`.
-              </p>
-            </div>
-
-            <SignOutButton />
-          </div>
+        <div className="flex w-full justify-end">
+          <SignOutButton />
         </div>
+        
       </div>
     </section>
   );

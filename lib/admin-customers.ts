@@ -283,6 +283,8 @@ export async function getAdminCustomersListData() {
   return customers.map((customer) => ({
     id: customer.id,
     fullName: fullName(customer),
+    nombres: customer.nombres,
+    apellidos: customer.apellidos,
     email: customer.email,
     celular: customer.celular,
     dni: customer.dni,
@@ -619,6 +621,142 @@ export async function getAdminCustomersCommunicationsData() {
       customerName: notification.customer
         ? fullName(notification.customer)
         : "Operacion interna",
+    })),
+  };
+}
+
+export async function getAdminCustomerDetail(id: number) {
+  const customer = await prisma.customer.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      nombres: true,
+      apellidos: true,
+      email: true,
+      celular: true,
+      dni: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      appointments: {
+        orderBy: { scheduledAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          code: true,
+          type: true,
+          status: true,
+          scheduledAt: true,
+        },
+      },
+      saleOrders: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          total: true,
+          createdAt: true,
+        },
+      },
+      customOrders: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          total: true,
+          createdAt: true,
+        },
+      },
+      measurementProfiles: {
+        orderBy: { takenAt: "desc" },
+        take: 3,
+        select: {
+          id: true,
+          takenAt: true,
+          validUntil: true,
+          isActive: true,
+        },
+      },
+      notes: {
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          note: true,
+          createdAt: true,
+          adminUser: {
+            select: { nombres: true, apellidos: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!customer) return null;
+
+  return {
+    ...customer,
+    fullName: `${customer.nombres} ${customer.apellidos ?? ""}`.trim(),
+    saleOrders: customer.saleOrders.map(o => ({
+      ...o,
+      total: Number(o.total)
+    })),
+    customOrders: customer.customOrders.map(o => ({
+      ...o,
+      total: Number(o.total)
+    }))
+  };
+}
+
+export async function getAdminCustomerMeasurements(customerId: number) {
+  const profiles = await prisma.measurementProfile.findMany({
+    where: { customerId },
+    orderBy: { takenAt: "desc" },
+    select: {
+      id: true,
+      takenAt: true,
+      validUntil: true,
+      notes: true,
+      isActive: true,
+      garments: {
+        select: {
+          id: true,
+          garmentType: true,
+          values: {
+            select: {
+              id: true,
+              field: {
+                select: { label: true, code: true },
+              },
+              valueNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { nombres: true, apellidos: true },
+  });
+
+  return {
+    customerName: customer ? `${customer.nombres} ${customer.apellidos ?? ""}`.trim() : "Cliente desconocido",
+    profiles: profiles.map(p => ({
+      ...p,
+      garments: p.garments.map(g => ({
+        ...g,
+        values: g.values.map(v => ({
+          id: v.id,
+          definition: v.field,
+          value: Number(v.valueNumber || 0)
+        }))
+      }))
     })),
   };
 }

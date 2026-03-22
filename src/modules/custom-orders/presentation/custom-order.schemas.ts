@@ -77,6 +77,14 @@ export const createCustomOrderSchema = z.object({
   items: z.array(createCustomOrderItemSchema).min(1),
 });
 
+export const updateCustomOrderSchema = z.object({
+  requestedDeliveryAt: z.coerce.date().optional(),
+  promisedDeliveryAt: z.coerce.date().optional(),
+  notes: z.string().trim().max(2000).optional(),
+  internalNotes: z.string().trim().max(2000).optional(),
+  items: z.array(createCustomOrderItemSchema).optional(),
+});
+
 export const customOrderActionSchema = z.object({
   action: z.enum([
     "CONFIRM_RESERVATION",
@@ -86,8 +94,12 @@ export const customOrderActionSchema = z.object({
     "MARK_READY",
     "MARK_DELIVERED",
     "CANCEL",
+    "LINK_MEASUREMENT",
   ]),
   note: z.string().trim().max(1000).optional(),
+  partId: z.number().int().positive().optional(),
+  profileId: z.number().int().positive().optional(),
+  profileGarmentId: z.number().int().positive().optional(),
 });
 
 export function formatZodIssues(error: z.ZodError) {

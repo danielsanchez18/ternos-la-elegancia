@@ -40,7 +40,7 @@ export const adminDashboardSections: AdminSection[] = [
       {
         slug: "listado",
         label: "Listado",
-        description: "Vista maestra de clientes, estado y actividad comercial.",
+        description: "Vista de clientes, estado y actividad comercial.",
         href: "/admin/clientes/listado",
         models: ["Customer"],
       },
@@ -48,7 +48,7 @@ export const adminDashboardSections: AdminSection[] = [
         slug: "medidas",
         label: "Medidas",
         description:
-          "Perfiles de medicion, prendas medidas y valores historicos por cliente.",
+          "Perfiles de medicion y valores historicos por cliente.",
         href: "/admin/clientes/medidas",
         models: ["MeasurementProfile", "MeasurementProfileGarment", "MeasurementValue"],
       },
