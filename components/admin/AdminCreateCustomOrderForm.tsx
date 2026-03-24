@@ -1,24 +1,31 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, Scissors } from "lucide-react";
 import Link from "next/link";
-
-type Customer = { id: number; nombres: string; apellidos: string; dni: string | null };
-type Fabric = { id: number; code: string; nombre: string; color: string | null };
-
-const GARMENT_TYPES = [
-  "SACO_CABALLERO",
-  "PANTALON_CABALLERO",
-  "SACO_DAMA",
-  "PANTALON_DAMA",
-  "CAMISA",
-  "BLUSA",
-  "CHALECO",
-  "FALDA",
-  "SMOKING",
-];
+import {
+  addItemDraft,
+  addPartDraft,
+  buildCreateCustomOrderPayload,
+  calculateCustomOrderTotal,
+  createCustomOrderFormInitialState,
+  createCustomOrderInitialItems,
+  fetchCustomerProfiles,
+  GARMENT_TYPES,
+  getProfileGarments,
+  removeItemDraft,
+  removePartDraft,
+  resolveCreateErrorMessage,
+  type Customer,
+  type Fabric,
+  updateItemDraft,
+  updatePartDraft,
+} from "@/components/admin/orders/custom-order-form";
 
 export default function AdminCreateCustomOrderForm({
   customers,
@@ -32,57 +39,26 @@ export default function AdminCreateCustomOrderForm({
   const [errorMsg, setErrorMsg] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; itemIdx: number; partIdx: number } | null>(null);
 
-  const [form, setForm] = useState({
-    customerId: "",
-    requestedDeliveryAt: "",
-    promisedDeliveryAt: "",
-    notes: "",
-    internalNotes: "",
-  });
+  const [form, setForm] = useState(createCustomOrderFormInitialState);
 
   const [customerProfiles, setCustomerProfiles] = useState<any[]>([]);
   const [isFetchingProfiles, setIsFetchingProfiles] = useState(false);
 
-  const [items, setItems] = useState([
-    {
-      id: crypto.randomUUID(),
-      itemNameSnapshot: "Terno a Medida",
-      quantity: 1,
-      unitPrice: 0,
-      discountAmount: 0,
-      notes: "",
-      parts: [
-        {
-          id: crypto.randomUUID(),
-          garmentType: "SACO_CABALLERO",
-          label: "Saco Principal",
-          workMode: "A_TODO_COSTO" as "A_TODO_COSTO" | "SOLO_CONFECCION",
-          fabricId: "",
-          unitPrice: 0,
-          notes: "",
-          measurementProfileId: "",
-          measurementProfileGarmentId: "",
-        },
-      ],
-    },
-  ]);
+  const [items, setItems] = useState(createCustomOrderInitialItems);
 
   const updateForm = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     
     if (key === "customerId" && value) {
-      void fetchCustomerProfiles(Number(value));
+      void fetchCustomerProfilesForCustomer(Number(value));
     }
   };
 
-  const fetchCustomerProfiles = async (id: number) => {
+  const fetchCustomerProfilesForCustomer = async (id: number) => {
     setIsFetchingProfiles(true);
     try {
-      const res = await fetch(`/api/customers/${id}/measurement-profiles`);
-      if (res.ok) {
-        const data = await res.json();
-        setCustomerProfiles(data);
-      }
+      const data = await fetchCustomerProfiles(id);
+      setCustomerProfiles(data);
     } catch (err) {
       console.error("Error fetching customer profiles", err);
     } finally {
@@ -91,58 +67,27 @@ export default function AdminCreateCustomOrderForm({
   };
 
   const updateItem = (index: number, key: string, value: any) => {
-    const newItems = [...items];
-    (newItems[index] as any)[key] = value;
-    setItems(newItems);
+    setItems((prev) => updateItemDraft(prev, index, key, value));
   };
 
   const updatePart = (itemIndex: number, partIndex: number, key: string, value: any) => {
-    const newItems = [...items];
-    (newItems[itemIndex].parts[partIndex] as any)[key] = value;
-    setItems(newItems);
+    setItems((prev) => updatePartDraft(prev, itemIndex, partIndex, key, value));
   };
 
   const addPart = (itemIndex: number) => {
-    const newItems = [...items];
-    newItems[itemIndex].parts.push({
-      id: crypto.randomUUID(),
-      garmentType: "PANTALON_CABALLERO",
-      label: "Pantalón",
-      workMode: "A_TODO_COSTO",
-      fabricId: "",
-      unitPrice: 0,
-      notes: "",
-      measurementProfileId: "",
-      measurementProfileGarmentId: "",
-    });
-    setItems(newItems);
+    setItems((prev) => addPartDraft(prev, itemIndex));
   };
 
   const removePart = (itemIndex: number, partIndex: number) => {
-    const newItems = [...items];
-    newItems[itemIndex].parts.splice(partIndex, 1);
-    setItems(newItems);
+    setItems((prev) => removePartDraft(prev, itemIndex, partIndex));
   };
 
   const addItem = () => {
-    setItems([
-      ...items,
-      {
-        id: crypto.randomUUID(),
-        itemNameSnapshot: "Prenda Adicional",
-        quantity: 1,
-        unitPrice: 0,
-        discountAmount: 0,
-        notes: "",
-        parts: [],
-      },
-    ]);
+    setItems((prev) => addItemDraft(prev));
   };
 
   const removeItem = (index: number) => {
-    const newItems = [...items];
-    newItems.splice(index, 1);
-    setItems(newItems);
+    setItems((prev) => removeItemDraft(prev, index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -161,32 +106,7 @@ export default function AdminCreateCustomOrderForm({
 
     startTransition(async () => {
       try {
-        const payload = {
-          customerId: Number(form.customerId),
-          firstPurchaseFlow: false,
-          requestedDeliveryAt: form.requestedDeliveryAt ? new Date(form.requestedDeliveryAt).toISOString() : undefined,
-          promisedDeliveryAt: form.promisedDeliveryAt ? new Date(form.promisedDeliveryAt).toISOString() : undefined,
-          notes: form.notes.trim() || undefined,
-          internalNotes: form.internalNotes.trim() || undefined,
-          items: items.map((item) => ({
-            itemNameSnapshot: item.itemNameSnapshot,
-            quantity: Number(item.quantity) || 1,
-            unitPrice: Number(item.unitPrice) || 0,
-            discountAmount: Number(item.discountAmount) || 0,
-            notes: item.notes.trim() || undefined,
-            parts: item.parts.map((p) => ({
-              garmentType: p.garmentType,
-              label: p.label,
-              workMode: p.workMode,
-              fabricId: p.fabricId ? Number(p.fabricId) : undefined,
-              measurementProfileId: p.measurementProfileId ? Number(p.measurementProfileId) : undefined,
-              measurementProfileGarmentId: p.measurementProfileGarmentId ? Number(p.measurementProfileGarmentId) : undefined,
-              unitPrice: Number(p.unitPrice) || undefined,
-              notes: p.notes.trim() || undefined,
-              selections: [], // Empty selections for MVP
-            })),
-          })),
-        };
+        const payload = buildCreateCustomOrderPayload(form, items);
 
         const res = await fetch(`/api/custom-orders`, {
           method: "POST",
@@ -205,13 +125,7 @@ export default function AdminCreateCustomOrderForm({
 
         if (!res.ok) {
           console.error("API Error Response:", resData);
-          let parsedMsg = "Error al crear orden";
-          if (resData?.error?.message) {
-            parsedMsg = resData.error.message;
-          } else if (resData?.error) {
-            parsedMsg = typeof resData.error === "string" ? resData.error : JSON.stringify(resData.error);
-          }
-          setErrorMsg(parsedMsg);
+          setErrorMsg(resolveCreateErrorMessage(resData));
           return;
         }
       } catch (err) {
@@ -220,10 +134,7 @@ export default function AdminCreateCustomOrderForm({
     });
   };
 
-  const totalOrder = items.reduce(
-    (acc, item) => acc + (Number(item.unitPrice) * Number(item.quantity) - Number(item.discountAmount)),
-    0
-  );
+  const totalOrder = calculateCustomOrderTotal(items);
 
   const inputClasses =
     "w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder-stone-500 outline-none transition focus:border-emerald-500/50";
@@ -443,9 +354,10 @@ export default function AdminCreateCustomOrderForm({
                                         className={`${inputClasses} bg-transparent border-stone-800 text-[11px]`}
                                       >
                                         <option value="" className="bg-stone-900">-- Elegir tipo --</option>
-                                        {customerProfiles
-                                          .find(p => p.id === Number(part.measurementProfileId))
-                                          ?.garments.map((g: any) => (
+                                        {getProfileGarments(
+                                          customerProfiles,
+                                          part.measurementProfileId
+                                        ).map((g: any) => (
                                             <option key={g.id} value={g.id} className="bg-stone-900">
                                               {g.garmentType.replace(/_/g, " ")}
                                             </option>

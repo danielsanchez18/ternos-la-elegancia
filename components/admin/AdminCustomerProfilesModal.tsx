@@ -1,40 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Ruler } from "lucide-react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { useEffect, useState } from "react";
+import { Ruler, X } from "lucide-react";
+import AdminMeasurementGarmentChips from "@/components/admin/AdminMeasurementGarmentChips";
 import AdminMeasurementProfileActions from "@/components/admin/AdminMeasurementProfileActions";
 import type { MeasurementProfileActionData } from "@/components/admin/AdminMeasurementProfileActions";
-import AdminMeasurementGarmentChips from "@/components/admin/AdminMeasurementGarmentChips";
+import {
+  formatDate,
+  statusChipClasses,
+} from "@/components/admin/customers/formatters";
 
-const dateFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "medium",
-});
-
-function parseDateValue(value: Date | string | null | undefined): Date | null {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value: Date | string | null | undefined): string {
-  const parsed = parseDateValue(value);
-  return parsed ? dateFormatter.format(parsed) : "--";
-}
-
-function statusChipClasses(isPositive: boolean) {
-  return isPositive
-    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-    : "border-stone-500/20 bg-stone-500/10 text-stone-300";
-}
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-// Simplificación del tipo que devuelve el endpoint
 type ProfileResponse = {
   id: number;
   customerId: number;
@@ -48,10 +25,6 @@ type ProfileResponse = {
     values: any[];
   }>;
 };
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export default function AdminCustomerProfilesModal({
   customerId,
@@ -71,18 +44,24 @@ export default function AdminCustomerProfilesModal({
 
     async function fetchProfiles() {
       try {
-        const res = await fetch(`/api/customers/${customerId}/measurement-profiles`);
-        if (!res.ok) throw new Error("Error fetching profiles");
-        
-        const data = (await res.json()) as ProfileResponse[];
+        const response = await fetch(`/api/customers/${customerId}/measurement-profiles`);
+        if (!response.ok) {
+          throw new Error("Error fetching profiles");
+        }
+
+        const data = (await response.json()) as ProfileResponse[];
         if (active) {
           setProfiles(data);
           setError(null);
         }
-      } catch (err) {
-        if (active) setError("No se pudieron cargar los perfiles.");
+      } catch {
+        if (active) {
+          setError("No se pudieron cargar los perfiles.");
+        }
       } finally {
-        if (active) setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -94,30 +73,30 @@ export default function AdminCustomerProfilesModal({
   }, [customerId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-4xl my-auto">
-        <div className="rounded-[2rem] border border-white/8 bg-[#0e0e0e] flex flex-col max-h-[90vh]">
-          {/* Header */}
-          <div className="flex items-start justify-between border-b border-white/5 p-6 shrink-0">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-                Historial técnico
-              </p>
-              <h3 className="mt-1 text-xl font-semibold text-white">
-                Perfiles de medidas de {customerName}
-              </h3>
+      <div className="relative z-10 my-auto w-full max-w-4xl">
+        <div className="flex max-h-[90vh] flex-col rounded-[2rem] border border-white/8 bg-[#0e0e0e]">
+          <div className="shrink-0 border-b border-white/5 p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
+                  Historial técnico
+                </p>
+                <h3 className="mt-1 text-xl font-semibold text-white">
+                  Perfiles de medidas de {customerName}
+                </h3>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <X className="size-4" />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
-            >
-              <X className="size-4" />
-            </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto">
+          <div className="overflow-y-auto p-6">
             {isLoading ? (
               <div className="flex h-32 items-center justify-center">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
@@ -133,9 +112,9 @@ export default function AdminCustomerProfilesModal({
             ) : (
               <div className="grid gap-4">
                 {profiles.map((profile) => {
-                  const garmentTypes = profile.garments.map((g) => g.garmentType);
+                  const garmentTypes = profile.garments.map((garment) => garment.garmentType);
                   const totalValues = profile.garments.reduce(
-                    (acc, g) => acc + g.values.length,
+                    (total, garment) => total + garment.values.length,
                     0
                   );
 
@@ -159,7 +138,8 @@ export default function AdminCustomerProfilesModal({
                         <div className="flex items-center gap-3">
                           <span
                             className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.2em] ${statusChipClasses(
-                              profile.isActive
+                              profile.isActive,
+                              "table"
                             )}`}
                           >
                             {profile.isActive ? "Activo" : "Inactivo"}

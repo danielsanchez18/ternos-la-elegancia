@@ -1,33 +1,20 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Ruler } from "lucide-react";
-
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
-const GARMENT_TYPES = [
-  { value: "SACO_CABALLERO", label: "Saco caballero" },
-  { value: "PANTALON_CABALLERO", label: "Pantalón caballero" },
-  { value: "SACO_DAMA", label: "Saco dama" },
-  { value: "PANTALON_DAMA", label: "Pantalón dama" },
-  { value: "CAMISA", label: "Camisa" },
-  { value: "BLUSA", label: "Blusa" },
-  { value: "CHALECO", label: "Chaleco" },
-  { value: "FALDA", label: "Falda" },
-  { value: "SMOKING", label: "Smoking" },
-] as const;
+import { GARMENT_OPTIONS } from "@/components/admin/customers/measurement-garments";
+import {
+  buildCreateMeasurementProfilePayload,
+  resolveCustomerId,
+} from "@/components/admin/customers/measurement-profile-form-helpers";
 
 const inputClasses =
   "w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-300/40";
 
 const labelClasses = "text-xs uppercase tracking-[0.18em] text-stone-500";
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export default function AdminCreateMeasurementProfileForm({
   customerId: initialCustomerId,
@@ -46,18 +33,16 @@ export default function AdminCreateMeasurementProfileForm({
     initialCustomerId?.toString() ?? ""
   );
   const [notes, setNotes] = useState("");
-  const [takenAt, setTakenAt] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [takenAt, setTakenAt] = useState(new Date().toISOString().split("T")[0]);
   const [selectedGarments, setSelectedGarments] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   function toggleGarment(garment: string) {
-    setSelectedGarments((prev) =>
-      prev.includes(garment)
-        ? prev.filter((g) => g !== garment)
-        : [...prev, garment]
+    setSelectedGarments((previous) =>
+      previous.includes(garment)
+        ? previous.filter((item) => item !== garment)
+        : [...previous, garment]
     );
   }
 
@@ -66,41 +51,35 @@ export default function AdminCreateMeasurementProfileForm({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const resolvedCustomerId = initialCustomerId ?? Number(customerIdInput);
-
-    if (!resolvedCustomerId || isNaN(resolvedCustomerId)) {
+    const resolvedCustomer = resolveCustomerId(initialCustomerId, customerIdInput);
+    if (!resolvedCustomer || Number.isNaN(resolvedCustomer)) {
       setErrorMessage("Ingresa un ID de cliente válido.");
       return;
     }
 
     startTransition(async () => {
       try {
-        const body: Record<string, unknown> = {
-          notes: notes.trim() || undefined,
-          takenAt: new Date(takenAt).toISOString(),
-        };
-
-        if (selectedGarments.length > 0) {
-          body.garmentTypes = selectedGarments;
-        }
-
         const response = await fetch(
-          `/api/customers/${resolvedCustomerId}/measurement-profiles`,
+          `/api/customers/${resolvedCustomer}/measurement-profiles`,
           {
             method: "POST",
             headers: { "content-type": "application/json" },
             credentials: "include",
-            body: JSON.stringify(body),
+            body: JSON.stringify(
+              buildCreateMeasurementProfilePayload({
+                notes,
+                takenAt,
+                selectedGarments,
+              })
+            ),
           }
         );
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as {
-            error?: string;
-          } | null;
-          setErrorMessage(
-            payload?.error ?? "No se pudo crear el perfil de medidas."
-          );
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          setErrorMessage(payload?.error ?? "No se pudo crear el perfil de medidas.");
           return;
         }
 
@@ -124,9 +103,14 @@ export default function AdminCreateMeasurementProfileForm({
         </p>
         <h2 className="text-2xl font-semibold text-white">Crear perfil de medidas</h2>
         <p className="text-sm text-stone-400">
-          Registra un nuevo perfil de medición{customerName ? (
-            <> para <span className="font-medium text-white">{customerName}</span></>
-          ) : null}. Válido por 3 meses desde la fecha de toma.
+          Registra un nuevo perfil de medición
+          {customerName ? (
+            <>
+              {" "}
+              para <span className="font-medium text-white">{customerName}</span>
+            </>
+          ) : null}
+          . Válido por 3 meses desde la fecha de toma.
         </p>
       </div>
 
@@ -138,16 +122,16 @@ export default function AdminCreateMeasurementProfileForm({
               {customers.length > 0 ? (
                 <select
                   value={customerIdInput}
-                  onChange={(e) => setCustomerIdInput(e.target.value)}
+                  onChange={(event) => setCustomerIdInput(event.target.value)}
                   className={inputClasses}
                   required
                 >
                   <option value="" disabled>
                     Selecciona un cliente...
                   </option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
                     </option>
                   ))}
                 </select>
@@ -155,7 +139,7 @@ export default function AdminCreateMeasurementProfileForm({
                 <input
                   type="number"
                   value={customerIdInput}
-                  onChange={(e) => setCustomerIdInput(e.target.value)}
+                  onChange={(event) => setCustomerIdInput(event.target.value)}
                   placeholder="ID del cliente (ej: 1)"
                   className={inputClasses}
                   min={1}
@@ -169,7 +153,7 @@ export default function AdminCreateMeasurementProfileForm({
             <input
               type="date"
               value={takenAt}
-              onChange={(e) => setTakenAt(e.target.value)}
+              onChange={(event) => setTakenAt(event.target.value)}
               className={inputClasses}
               required
             />
@@ -179,7 +163,7 @@ export default function AdminCreateMeasurementProfileForm({
             <span className={labelClasses}>Notas (opcional)</span>
             <input
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(event) => setNotes(event.target.value)}
               placeholder="Observaciones del perfil..."
               className={inputClasses}
             />
@@ -189,7 +173,7 @@ export default function AdminCreateMeasurementProfileForm({
         <div className="space-y-2">
           <p className={labelClasses}>Tipos de prenda</p>
           <div className="flex flex-wrap gap-2">
-            {GARMENT_TYPES.map((garment) => {
+            {GARMENT_OPTIONS.map((garment) => {
               const isSelected = selectedGarments.includes(garment.value);
 
               return (
@@ -203,9 +187,7 @@ export default function AdminCreateMeasurementProfileForm({
                       : "border-white/8 bg-white/[0.03] text-stone-400 hover:bg-white/[0.06]"
                   }`}
                 >
-                  {isSelected ? (
-                    <span className="mr-1">✓</span>
-                  ) : null}
+                  {isSelected ? <span className="mr-1">✓</span> : null}
                   {garment.label}
                 </button>
               );
@@ -228,9 +210,7 @@ export default function AdminCreateMeasurementProfileForm({
             {isPending ? "Creando..." : "Crear perfil"}
           </button>
 
-          {errorMessage ? (
-            <p className="text-sm text-rose-300">{errorMessage}</p>
-          ) : null}
+          {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
           {successMessage ? (
             <p className="text-sm text-emerald-300">{successMessage}</p>
           ) : null}

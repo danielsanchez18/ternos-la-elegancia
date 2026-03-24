@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
-import { getAdminCustomOrderDetail } from "@/lib/admin-orders";
+import {
+  getAdminCustomOrderDetail,
+  parseAdminCustomOrderId,
+} from "@/lib/admin-orders";
 import AdminCustomOrderDetailView from "@/components/admin/AdminCustomOrderDetailView";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const id = parseInt(resolvedParams.id);
+  const id = parseAdminCustomOrderId(resolvedParams.id);
   
-  if (isNaN(id)) {
+  if (id === null) {
     notFound();
   }
 

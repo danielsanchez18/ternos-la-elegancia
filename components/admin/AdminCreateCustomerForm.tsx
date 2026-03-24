@@ -2,24 +2,11 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-
-type FormState = {
-  nombres: string;
-  apellidos: string;
-  email: string;
-  celular: string;
-  dni: string;
-  password: string;
-};
-
-const initialFormState: FormState = {
-  nombres: "",
-  apellidos: "",
-  email: "",
-  celular: "",
-  dni: "",
-  password: "",
-};
+import {
+  buildCreateCustomerPayload,
+  initialCreateCustomerFormState,
+  type CreateCustomerFormState,
+} from "@/components/admin/customers/customer-form-helpers";
 
 export default function AdminCreateCustomerForm({
   onClose,
@@ -28,11 +15,16 @@ export default function AdminCreateCustomerForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [form, setForm] = useState<FormState>(initialFormState);
+  const [form, setForm] = useState<CreateCustomerFormState>(
+    initialCreateCustomerFormState
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+  function updateField<K extends keyof CreateCustomerFormState>(
+    key: K,
+    value: CreateCustomerFormState[K]
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -49,14 +41,7 @@ export default function AdminCreateCustomerForm({
             "content-type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify({
-            nombres: form.nombres.trim(),
-            apellidos: form.apellidos.trim(),
-            email: form.email.trim().toLowerCase(),
-            celular: form.celular.trim() || undefined,
-            dni: form.dni.trim(),
-            password: form.password,
-          }),
+          body: JSON.stringify(buildCreateCustomerPayload(form)),
         });
 
         if (!response.ok) {
@@ -79,7 +64,7 @@ export default function AdminCreateCustomerForm({
         }
 
         setSuccessMessage("Cliente registrado correctamente.");
-        setForm(initialFormState);
+        setForm(initialCreateCustomerFormState);
         router.refresh();
       } catch {
         setErrorMessage("Ocurrio un problema al registrar el cliente.");

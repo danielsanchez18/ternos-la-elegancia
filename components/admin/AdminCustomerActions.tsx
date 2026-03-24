@@ -2,97 +2,17 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, UserX, X, Check, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Pencil, UserX, X } from "lucide-react";
+import {
+  buildCustomerPatchPayload,
+  detectCustomerChanges,
+  fullCustomerName,
+  type ChangeSummaryEntry,
+  type CustomerActionData,
+  type EditCustomerFormState,
+} from "@/components/admin/customers/customer-action-helpers";
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-export type CustomerActionData = {
-  id: number;
-  nombres: string;
-  apellidos: string;
-  email: string;
-  celular: string | null;
-  dni: string;
-  isActive: boolean;
-};
-
-type EditFormState = {
-  nombres: string;
-  apellidos: string;
-  email: string;
-  celular: string;
-  dni: string;
-};
-
-type ChangeSummaryEntry = {
-  field: string;
-  from: string;
-  to: string;
-};
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-function fullName(customer: CustomerActionData) {
-  return `${customer.nombres} ${customer.apellidos}`.trim();
-}
-
-function detectChanges(
-  original: CustomerActionData,
-  edited: EditFormState
-): ChangeSummaryEntry[] {
-  const changes: ChangeSummaryEntry[] = [];
-
-  if (edited.nombres.trim() !== original.nombres) {
-    changes.push({
-      field: "Nombres",
-      from: original.nombres,
-      to: edited.nombres.trim(),
-    });
-  }
-
-  if (edited.apellidos.trim() !== original.apellidos) {
-    changes.push({
-      field: "Apellidos",
-      from: original.apellidos,
-      to: edited.apellidos.trim(),
-    });
-  }
-
-  if (edited.email.trim().toLowerCase() !== original.email) {
-    changes.push({
-      field: "Correo",
-      from: original.email,
-      to: edited.email.trim().toLowerCase(),
-    });
-  }
-
-  const originalCelular = original.celular ?? "";
-  if (edited.celular.trim() !== originalCelular) {
-    changes.push({
-      field: "Celular",
-      from: originalCelular || "(vacío)",
-      to: edited.celular.trim() || "(vacío)",
-    });
-  }
-
-  if (edited.dni.trim() !== original.dni) {
-    changes.push({
-      field: "DNI",
-      from: original.dni,
-      to: edited.dni.trim(),
-    });
-  }
-
-  return changes;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Shared UI primitives                                               */
-/* ------------------------------------------------------------------ */
+export type { CustomerActionData };
 
 function Overlay({
   children,
@@ -103,14 +23,8 @@ function Overlay({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div className="relative z-10 w-full max-w-lg mx-4">
-        {children}
-      </div>
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 mx-4 w-full max-w-lg">{children}</div>
     </div>
   );
 }
@@ -152,10 +66,6 @@ const inputClasses =
 
 const labelClasses = "text-xs uppercase tracking-[0.18em] text-stone-500";
 
-/* ------------------------------------------------------------------ */
-/*  Edit Modal                                                         */
-/* ------------------------------------------------------------------ */
-
 type EditStep = "form" | "confirm";
 
 function EditModal({
@@ -169,36 +79,33 @@ function EditModal({
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState<EditStep>("form");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const [form, setForm] = useState<EditFormState>({
+  const [form, setForm] = useState<EditCustomerFormState>({
     nombres: customer.nombres,
     apellidos: customer.apellidos,
     email: customer.email,
     celular: customer.celular ?? "",
     dni: customer.dni,
   });
-
   const [changes, setChanges] = useState<ChangeSummaryEntry[]>([]);
 
-  function updateField<K extends keyof EditFormState>(
+  function updateField<K extends keyof EditCustomerFormState>(
     key: K,
-    value: EditFormState[K]
+    value: EditCustomerFormState[K]
   ) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((previous) => ({ ...previous, [key]: value }));
   }
 
   function handleReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
 
-    const detected = detectChanges(customer, form);
-
-    if (detected.length === 0) {
+    const detectedChanges = detectCustomerChanges(customer, form);
+    if (detectedChanges.length === 0) {
       setErrorMessage("No se detectaron cambios.");
       return;
     }
 
-    setChanges(detected);
+    setChanges(detectedChanges);
     setStep("confirm");
   }
 
@@ -207,25 +114,7 @@ function EditModal({
 
     startTransition(async () => {
       try {
-        const body: Record<string, unknown> = {};
-
-        for (const change of changes) {
-          if (change.field === "Nombres") {
-            body.nombres = form.nombres.trim();
-          }
-          if (change.field === "Apellidos") {
-            body.apellidos = form.apellidos.trim();
-          }
-          if (change.field === "Correo") {
-            body.email = form.email.trim().toLowerCase();
-          }
-          if (change.field === "Celular") {
-            body.celular = form.celular.trim() || null;
-          }
-          if (change.field === "DNI") {
-            body.dni = form.dni.trim();
-          }
-        }
+        const body = buildCustomerPatchPayload(changes, form);
 
         const response = await fetch(`/api/customers/${customer.id}`, {
           method: "PATCH",
@@ -235,10 +124,12 @@ function EditModal({
         });
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as {
-            error?: string;
-            fields?: string[];
-          } | null;
+          const payload = (await response.json().catch(() => null)) as
+            | {
+                error?: string;
+                fields?: string[];
+              }
+            | null;
 
           if (response.status === 409 && payload?.fields?.length) {
             setErrorMessage(
@@ -248,9 +139,7 @@ function EditModal({
             return;
           }
 
-          setErrorMessage(
-            payload?.error ?? "No se pudo actualizar el cliente."
-          );
+          setErrorMessage(payload?.error ?? "No se pudo actualizar el cliente.");
           setStep("form");
           return;
         }
@@ -274,7 +163,7 @@ function EditModal({
         >
           <p className="text-sm text-stone-400">
             Se aplicarán los siguientes cambios a{" "}
-            <span className="font-medium text-white">{fullName(customer)}</span>:
+            <span className="font-medium text-white">{fullCustomerName(customer)}</span>:
           </p>
 
           <div className="mt-4 space-y-2">
@@ -287,9 +176,7 @@ function EditModal({
                   {change.field}
                 </p>
                 <div className="mt-1 flex items-center gap-2 text-sm">
-                  <span className="text-rose-300 line-through">
-                    {change.from}
-                  </span>
+                  <span className="line-through text-rose-300">{change.from}</span>
                   <span className="text-stone-500">→</span>
                   <span className="text-emerald-300">{change.to}</span>
                 </div>
@@ -297,9 +184,7 @@ function EditModal({
             ))}
           </div>
 
-          {errorMessage ? (
-            <p className="mt-4 text-sm text-rose-300">{errorMessage}</p>
-          ) : null}
+          {errorMessage ? <p className="mt-4 text-sm text-rose-300">{errorMessage}</p> : null}
 
           <div className="mt-5 flex items-center gap-3">
             <button
@@ -328,14 +213,14 @@ function EditModal({
       <ModalCard
         onClose={onClose}
         eyebrow="Edición"
-        title={`Editar a ${fullName(customer)}`}
+        title={`Editar a ${fullCustomerName(customer)}`}
       >
         <form onSubmit={handleReview} className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1">
             <span className={labelClasses}>Nombres</span>
             <input
               value={form.nombres}
-              onChange={(e) => updateField("nombres", e.target.value)}
+              onChange={(event) => updateField("nombres", event.target.value)}
               className={inputClasses}
               required
             />
@@ -345,7 +230,7 @@ function EditModal({
             <span className={labelClasses}>Apellidos</span>
             <input
               value={form.apellidos}
-              onChange={(e) => updateField("apellidos", e.target.value)}
+              onChange={(event) => updateField("apellidos", event.target.value)}
               className={inputClasses}
               required
             />
@@ -356,7 +241,7 @@ function EditModal({
             <input
               type="email"
               value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
+              onChange={(event) => updateField("email", event.target.value)}
               className={inputClasses}
               required
             />
@@ -367,7 +252,7 @@ function EditModal({
             <input
               type="tel"
               value={form.celular}
-              onChange={(e) => updateField("celular", e.target.value)}
+              onChange={(event) => updateField("celular", event.target.value)}
               className={inputClasses}
             />
           </label>
@@ -376,7 +261,7 @@ function EditModal({
             <span className={labelClasses}>DNI</span>
             <input
               value={form.dni}
-              onChange={(e) => updateField("dni", e.target.value)}
+              onChange={(event) => updateField("dni", event.target.value)}
               className={inputClasses}
               minLength={8}
               required
@@ -384,9 +269,7 @@ function EditModal({
           </label>
 
           {errorMessage ? (
-            <p className="sm:col-span-2 text-sm text-rose-300">
-              {errorMessage}
-            </p>
+            <p className="text-sm text-rose-300 sm:col-span-2">{errorMessage}</p>
           ) : null}
 
           <div className="sm:col-span-2 flex items-center gap-3">
@@ -411,10 +294,6 @@ function EditModal({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Deactivate Modal (double confirmation)                             */
-/* ------------------------------------------------------------------ */
-
 type DeactivateStep = "ask" | "type-confirm";
 
 function DeactivateModal({
@@ -430,8 +309,8 @@ function DeactivateModal({
   const [confirmText, setConfirmText] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const CONFIRM_WORD = "DESACTIVAR";
-  const isConfirmValid = confirmText.trim() === CONFIRM_WORD;
+  const confirmWord = "DESACTIVAR";
+  const isConfirmValid = confirmText.trim() === confirmWord;
 
   function handleDeactivate() {
     setErrorMessage(null);
@@ -444,13 +323,10 @@ function DeactivateModal({
         });
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as {
-            error?: string;
-          } | null;
-
-          setErrorMessage(
-            payload?.error ?? "No se pudo desactivar el cliente."
-          );
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          setErrorMessage(payload?.error ?? "No se pudo desactivar el cliente.");
           return;
         }
 
@@ -476,11 +352,11 @@ function DeactivateModal({
               <p className="text-sm leading-6 text-amber-200">
                 Para desactivar a{" "}
                 <span className="font-semibold text-white">
-                  {fullName(customer)}
+                  {fullCustomerName(customer)}
                 </span>
                 , escribe{" "}
                 <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-amber-100">
-                  {CONFIRM_WORD}
+                  {confirmWord}
                 </code>{" "}
                 en el campo de abajo.
               </p>
@@ -491,16 +367,14 @@ function DeactivateModal({
             <span className={labelClasses}>Confirmación</span>
             <input
               value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={CONFIRM_WORD}
+              onChange={(event) => setConfirmText(event.target.value)}
+              placeholder={confirmWord}
               className={inputClasses}
               autoFocus
             />
           </label>
 
-          {errorMessage ? (
-            <p className="mt-4 text-sm text-rose-300">{errorMessage}</p>
-          ) : null}
+          {errorMessage ? <p className="mt-4 text-sm text-rose-300">{errorMessage}</p> : null}
 
           <div className="mt-5 flex items-center gap-3">
             <button
@@ -529,19 +403,13 @@ function DeactivateModal({
 
   return (
     <Overlay onClose={onClose}>
-      <ModalCard
-        onClose={onClose}
-        eyebrow="Acción destructiva"
-        title="Desactivar cliente"
-      >
+      <ModalCard onClose={onClose} eyebrow="Acción destructiva" title="Desactivar cliente">
         <div className="rounded-xl border border-rose-400/15 bg-rose-400/5 px-4 py-3">
           <p className="text-sm leading-6 text-rose-200">
             ¿Estás seguro de que deseas desactivar a{" "}
-            <span className="font-semibold text-white">
-              {fullName(customer)}
-            </span>
-            ? El cliente quedará marcado como inactivo y no podrá operar hasta
-            ser reactivado.
+            <span className="font-semibold text-white">{fullCustomerName(customer)}</span>? El
+            cliente quedará marcado como inactivo y no podrá operar hasta ser
+            reactivado.
           </p>
         </div>
 
@@ -573,10 +441,6 @@ function DeactivateModal({
     </Overlay>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Main export                                                        */
-/* ------------------------------------------------------------------ */
 
 type ModalState = "closed" | "edit" | "deactivate";
 
@@ -614,10 +478,7 @@ export default function AdminCustomerActions({
       ) : null}
 
       {modal === "deactivate" ? (
-        <DeactivateModal
-          customer={customer}
-          onClose={() => setModal("closed")}
-        />
+        <DeactivateModal customer={customer} onClose={() => setModal("closed")} />
       ) : null}
     </>
   );

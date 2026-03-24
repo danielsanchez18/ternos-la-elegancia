@@ -3,18 +3,7 @@
 import { useState } from "react";
 import { MeasurementValuesModal } from "@/components/admin/AdminMeasurementValuesForm";
 import type { MeasurementGarmentType } from "@/components/admin/AdminMeasurementValuesForm";
-
-const GARMENT_LABELS: Record<string, string> = {
-  SACO_CABALLERO: "Saco",
-  PANTALON_CABALLERO: "Pantalón",
-  SACO_DAMA: "Saco",
-  PANTALON_DAMA: "Pantalón",
-  CAMISA: "Camisa",
-  BLUSA: "Blusa",
-  CHALECO: "Chaleco",
-  FALDA: "Falda",
-  SMOKING: "Smoking",
-};
+import { GARMENT_LABELS } from "@/components/admin/customers/measurement-garments";
 
 export default function AdminMeasurementGarmentChips({
   profileId,
@@ -40,7 +29,7 @@ export default function AdminMeasurementGarmentChips({
             onClick={() => setActiveGarment(garment as MeasurementGarmentType)}
             className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white transition hover:bg-white/10"
           >
-            {GARMENT_LABELS[garment] ?? garment.toLowerCase()}
+            {GARMENT_LABELS[garment as MeasurementGarmentType] ?? garment.toLowerCase()}
           </button>
         ))}
       </div>
@@ -56,3 +45,4 @@ export default function AdminMeasurementGarmentChips({
     </>
   );
 }
+

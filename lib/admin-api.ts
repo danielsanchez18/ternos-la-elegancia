@@ -122,6 +122,13 @@ class AdminApiError extends Error {
   }
 }
 
+type AdminFallbackTask<T> = {
+  path: string;
+  successLogMessage: string;
+  fallbackLogMessage: (status: number) => string;
+  fallback: () => Promise<T>;
+};
+
 function logDev(message: string) {
   if (process.env.NODE_ENV === "development") {
     console.info(`[admin-api] ${message}`);
@@ -147,55 +154,53 @@ async function resolveBaseUrl() {
   return `${protocol}://${host}`;
 }
 
-export async function getAdminDashboardMetricsFromApi(): Promise<AdminDashboardMetrics> {
+function isAuthFallbackError(error: unknown): error is AdminApiError {
+  return error instanceof AdminApiError && (error.status === 401 || error.status === 403);
+}
+
+async function getWithAuthFallback<T>(task: AdminFallbackTask<T>): Promise<T> {
   try {
-    const data = await getAuthenticatedJson<AdminDashboardMetrics>(
-      "/api/admin/dashboard/metrics"
-    );
-    logDev("dashboard metrics served via /api/admin/dashboard/metrics");
+    const data = await getAuthenticatedJson<T>(task.path);
+    logDev(task.successLogMessage);
     return data;
   } catch (error: unknown) {
-    if (!(error instanceof AdminApiError) || (error.status !== 401 && error.status !== 403)) {
+    if (!isAuthFallbackError(error)) {
       throw error;
     }
 
-    logDev(`dashboard metrics fallback activated (status=${error.status})`);
-    return (await getAdminDashboardMetrics()) as unknown as AdminDashboardMetrics;
+    logDev(task.fallbackLogMessage(error.status));
+    return task.fallback();
   }
+}
+
+export async function getAdminDashboardMetricsFromApi(): Promise<AdminDashboardMetrics> {
+  return getWithAuthFallback<AdminDashboardMetrics>({
+    path: "/api/admin/dashboard/metrics",
+    successLogMessage: "dashboard metrics served via /api/admin/dashboard/metrics",
+    fallbackLogMessage: (status) =>
+      `dashboard metrics fallback activated (status=${status})`,
+    fallback: async () => (await getAdminDashboardMetrics()) as unknown as AdminDashboardMetrics,
+  });
 }
 
 export async function getAdminCustomersOverviewFromApi(): Promise<AdminCustomersOverview> {
-  try {
-    const data = await getAuthenticatedJson<AdminCustomersOverview>(
-      "/api/admin/customers/overview"
-    );
-    logDev("customers overview served via /api/admin/customers/overview");
-    return data;
-  } catch (error: unknown) {
-    if (!(error instanceof AdminApiError) || (error.status !== 401 && error.status !== 403)) {
-      throw error;
-    }
-
-    logDev(`customers overview fallback activated (status=${error.status})`);
-    return (await getAdminCustomersOverviewData()) as unknown as AdminCustomersOverview;
-  }
+  return getWithAuthFallback<AdminCustomersOverview>({
+    path: "/api/admin/customers/overview",
+    successLogMessage: "customers overview served via /api/admin/customers/overview",
+    fallbackLogMessage: (status) =>
+      `customers overview fallback activated (status=${status})`,
+    fallback: async () =>
+      (await getAdminCustomersOverviewData()) as unknown as AdminCustomersOverview,
+  });
 }
 
 export async function getAdminCustomersListFromApi(): Promise<AdminCustomersList> {
-  try {
-    const data = await getAuthenticatedJson<AdminCustomersList>(
-      "/api/admin/customers/list"
-    );
-    logDev("customers list served via /api/admin/customers/list");
-    return data;
-  } catch (error: unknown) {
-    if (!(error instanceof AdminApiError) || (error.status !== 401 && error.status !== 403)) {
-      throw error;
-    }
-
-    logDev(`customers list fallback activated (status=${error.status})`);
-    return (await getAdminCustomersListData()) as unknown as AdminCustomersList;
-  }
+  return getWithAuthFallback<AdminCustomersList>({
+    path: "/api/admin/customers/list",
+    successLogMessage: "customers list served via /api/admin/customers/list",
+    fallbackLogMessage: (status) => `customers list fallback activated (status=${status})`,
+    fallback: async () => (await getAdminCustomersListData()) as unknown as AdminCustomersList,
+  });
 }
 
 async function getAuthenticatedJson<T>(path: string): Promise<T> {

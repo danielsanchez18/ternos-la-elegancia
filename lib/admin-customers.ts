@@ -1,4 +1,4 @@
-import { NotificationChannel, NotificationStatus } from "@prisma/client";
+import { NotificationChannel, NotificationStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
@@ -32,6 +32,280 @@ function toOrderCount(input: {
     input.rentalOrders +
     input.alterationOrders
   );
+}
+
+type CustomerRecentOverviewSource = {
+  id: number;
+  nombres: string;
+  apellidos: string | null;
+  email: string;
+  celular: string | null;
+  dni: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: {
+    appointments: number;
+    saleOrders: number;
+    customOrders: number;
+    rentalOrders: number;
+    alterationOrders: number;
+    measurementProfiles: number;
+    notes: number;
+    files: number;
+    notifications: number;
+  };
+  measurementProfiles: Array<{ validUntil: Date }>;
+  appointments: Array<{ scheduledAt: Date; status: string }>;
+};
+
+type UpcomingAppointmentSource = {
+  id: number;
+  code: string;
+  type: string;
+  status: string;
+  scheduledAt: Date;
+  customer: {
+    nombres: string;
+    apellidos: string | null;
+  };
+};
+
+type CustomerListSource = {
+  id: number;
+  nombres: string;
+  apellidos: string | null;
+  email: string;
+  celular: string | null;
+  dni: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: {
+    appointments: number;
+    saleOrders: number;
+    customOrders: number;
+    rentalOrders: number;
+    alterationOrders: number;
+    measurementProfiles: number;
+    notes: number;
+    files: number;
+  };
+  measurementProfiles: Array<{ validUntil: Date }>;
+  appointments: Array<{ scheduledAt: Date; status: string }>;
+};
+
+type RecentMeasurementProfileSource = {
+  id: number;
+  takenAt: Date;
+  validUntil: Date;
+  notes: string | null;
+  isActive: boolean;
+  customer: {
+    id: number;
+    nombres: string;
+    apellidos: string | null;
+  };
+  garments: Array<{
+    id: number;
+    garmentType: string;
+    values: Array<{ id: number }>;
+  }>;
+};
+
+type RecentCustomerNoteSource = {
+  id: number;
+  note: string;
+  createdAt: Date;
+  customer: {
+    id: number;
+    nombres: string;
+    apellidos: string | null;
+  };
+  adminUser: {
+    nombres: string;
+    apellidos: string | null;
+    email: string;
+  } | null;
+};
+
+type RecentCustomerFileSource = {
+  id: number;
+  fileName: string;
+  mimeType: string | null;
+  description: string | null;
+  fileUrl: string;
+  createdAt: Date;
+  customer: {
+    id: number;
+    nombres: string;
+    apellidos: string | null;
+  };
+};
+
+type RecentNotificationSource = {
+  id: number;
+  channel: NotificationChannel;
+  status: NotificationStatus;
+  subject: string | null;
+  message: string;
+  sentAt: Date | null;
+  relatedCode: string | null;
+  createdAt: Date;
+  customer: {
+    id: number;
+    nombres: string;
+    apellidos: string | null;
+  } | null;
+};
+
+type NumericLike = number | string | bigint | Prisma.Decimal | null | undefined;
+
+type MeasurementGarmentSource = {
+  id: number;
+  garmentType: string;
+  values: Array<{
+    id: number;
+    field: {
+      label: string;
+      code: string;
+    };
+    valueNumber: NumericLike;
+  }>;
+};
+
+function mapRecentCustomerOverview(customer: CustomerRecentOverviewSource) {
+  return {
+    id: customer.id,
+    fullName: fullName(customer),
+    email: customer.email,
+    celular: customer.celular,
+    dni: customer.dni,
+    isActive: customer.isActive,
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+    orderCount: toOrderCount(customer._count),
+    appointmentCount: customer._count.appointments,
+    measurementProfileCount: customer._count.measurementProfiles,
+    notesCount: customer._count.notes,
+    filesCount: customer._count.files,
+    notificationsCount: customer._count.notifications,
+    validMeasurementUntil: customer.measurementProfiles[0]?.validUntil ?? null,
+    nextAppointmentAt: customer.appointments[0]?.scheduledAt ?? null,
+    nextAppointmentStatus: customer.appointments[0]?.status ?? null,
+  };
+}
+
+function mapUpcomingAppointment(appointment: UpcomingAppointmentSource) {
+  return {
+    id: appointment.id,
+    code: appointment.code,
+    type: appointment.type,
+    status: appointment.status,
+    scheduledAt: appointment.scheduledAt,
+    customerName: fullName(appointment.customer),
+  };
+}
+
+function mapCustomerListItem(customer: CustomerListSource) {
+  return {
+    id: customer.id,
+    fullName: fullName(customer),
+    nombres: customer.nombres,
+    apellidos: customer.apellidos,
+    email: customer.email,
+    celular: customer.celular,
+    dni: customer.dni,
+    isActive: customer.isActive,
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+    orderCount: toOrderCount(customer._count),
+    appointmentCount: customer._count.appointments,
+    profileCount: customer._count.measurementProfiles,
+    notesCount: customer._count.notes,
+    filesCount: customer._count.files,
+    validMeasurementUntil: customer.measurementProfiles[0]?.validUntil ?? null,
+    lastAppointmentAt: customer.appointments[0]?.scheduledAt ?? null,
+    lastAppointmentStatus: customer.appointments[0]?.status ?? null,
+  };
+}
+
+function mapRecentMeasurementProfile(profile: RecentMeasurementProfileSource) {
+  return {
+    id: profile.id,
+    customerId: profile.customer.id,
+    customerName: fullName(profile.customer),
+    takenAt: profile.takenAt,
+    validUntil: profile.validUntil,
+    notes: profile.notes,
+    isActive: profile.isActive,
+    garmentCount: profile.garments.length,
+    valueCount: profile.garments.reduce(
+      (total, garment) => total + garment.values.length,
+      0
+    ),
+    garments: profile.garments.map((garment) => garment.garmentType),
+  };
+}
+
+function mapRecentNote(note: RecentCustomerNoteSource) {
+  return {
+    id: note.id,
+    note: note.note,
+    createdAt: note.createdAt,
+    customerId: note.customer.id,
+    customerName: fullName(note.customer),
+    adminName: note.adminUser ? fullName(note.adminUser) : "Sin responsable",
+    adminEmail: note.adminUser?.email ?? null,
+  };
+}
+
+function mapRecentFile(file: RecentCustomerFileSource) {
+  return {
+    id: file.id,
+    fileName: file.fileName,
+    mimeType: file.mimeType,
+    description: file.description,
+    fileUrl: file.fileUrl,
+    createdAt: file.createdAt,
+    customerId: file.customer.id,
+    customerName: fullName(file.customer),
+  };
+}
+
+function mapRecentNotification(notification: RecentNotificationSource) {
+  return {
+    id: notification.id,
+    channel: notification.channel,
+    status: notification.status,
+    subject: notification.subject,
+    message: notification.message,
+    sentAt: notification.sentAt,
+    relatedCode: notification.relatedCode,
+    createdAt: notification.createdAt,
+    customerId: notification.customer?.id ?? null,
+    customerName: notification.customer
+      ? fullName(notification.customer)
+      : "Operacion interna",
+  };
+}
+
+function mapOrderWithNumericTotal<T extends { total: NumericLike }>(order: T) {
+  return {
+    ...order,
+    total: Number(order.total),
+  };
+}
+
+function mapMeasurementGarmentForView(garment: MeasurementGarmentSource) {
+  return {
+    ...garment,
+    values: garment.values.map((value) => ({
+      id: value.id,
+      definition: value.field,
+      value: Number(value.valueNumber || 0),
+    })),
+  };
 }
 
 export async function getAdminCustomersOverviewData() {
@@ -186,33 +460,8 @@ export async function getAdminCustomersOverviewData() {
       totalFiles,
       pendingNotifications,
     },
-    recentCustomers: recentCustomers.map((customer) => ({
-      id: customer.id,
-      fullName: fullName(customer),
-      email: customer.email,
-      celular: customer.celular,
-      dni: customer.dni,
-      isActive: customer.isActive,
-      createdAt: customer.createdAt,
-      updatedAt: customer.updatedAt,
-      orderCount: toOrderCount(customer._count),
-      appointmentCount: customer._count.appointments,
-      measurementProfileCount: customer._count.measurementProfiles,
-      notesCount: customer._count.notes,
-      filesCount: customer._count.files,
-      notificationsCount: customer._count.notifications,
-      validMeasurementUntil: customer.measurementProfiles[0]?.validUntil ?? null,
-      nextAppointmentAt: customer.appointments[0]?.scheduledAt ?? null,
-      nextAppointmentStatus: customer.appointments[0]?.status ?? null,
-    })),
-    upcomingAppointments: upcomingAppointments.map((appointment) => ({
-      id: appointment.id,
-      code: appointment.code,
-      type: appointment.type,
-      status: appointment.status,
-      scheduledAt: appointment.scheduledAt,
-      customerName: fullName(appointment.customer),
-    })),
+    recentCustomers: recentCustomers.map(mapRecentCustomerOverview),
+    upcomingAppointments: upcomingAppointments.map(mapUpcomingAppointment),
   };
 }
 
@@ -280,26 +529,7 @@ export async function getAdminCustomersListData() {
     },
   });
 
-  return customers.map((customer) => ({
-    id: customer.id,
-    fullName: fullName(customer),
-    nombres: customer.nombres,
-    apellidos: customer.apellidos,
-    email: customer.email,
-    celular: customer.celular,
-    dni: customer.dni,
-    isActive: customer.isActive,
-    createdAt: customer.createdAt,
-    updatedAt: customer.updatedAt,
-    orderCount: toOrderCount(customer._count),
-    appointmentCount: customer._count.appointments,
-    profileCount: customer._count.measurementProfiles,
-    notesCount: customer._count.notes,
-    filesCount: customer._count.files,
-    validMeasurementUntil: customer.measurementProfiles[0]?.validUntil ?? null,
-    lastAppointmentAt: customer.appointments[0]?.scheduledAt ?? null,
-    lastAppointmentStatus: customer.appointments[0]?.status ?? null,
-  }));
+  return customers.map(mapCustomerListItem);
 }
 
 export async function getAdminCustomersMeasurementsData() {
@@ -390,21 +620,7 @@ export async function getAdminCustomersMeasurementsData() {
       customersWithoutProfiles,
       customersWithoutValidProfiles,
     },
-    recentProfiles: recentProfiles.map((profile) => ({
-      id: profile.id,
-      customerId: profile.customer.id,
-      customerName: fullName(profile.customer),
-      takenAt: profile.takenAt,
-      validUntil: profile.validUntil,
-      notes: profile.notes,
-      isActive: profile.isActive,
-      garmentCount: profile.garments.length,
-      valueCount: profile.garments.reduce(
-        (total, garment) => total + garment.values.length,
-        0
-      ),
-      garments: profile.garments.map((garment) => garment.garmentType),
-    })),
+    recentProfiles: recentProfiles.map(mapRecentMeasurementProfile),
   };
 }
 
@@ -509,25 +725,8 @@ export async function getAdminCustomersRecordsData() {
       filesThisMonth,
       customersWithFiles,
     },
-    recentNotes: recentNotes.map((note) => ({
-      id: note.id,
-      note: note.note,
-      createdAt: note.createdAt,
-      customerId: note.customer.id,
-      customerName: fullName(note.customer),
-      adminName: note.adminUser ? fullName(note.adminUser) : "Sin responsable",
-      adminEmail: note.adminUser?.email ?? null,
-    })),
-    recentFiles: recentFiles.map((file) => ({
-      id: file.id,
-      fileName: file.fileName,
-      mimeType: file.mimeType,
-      description: file.description,
-      fileUrl: file.fileUrl,
-      createdAt: file.createdAt,
-      customerId: file.customer.id,
-      customerName: fullName(file.customer),
-    })),
+    recentNotes: recentNotes.map(mapRecentNote),
+    recentFiles: recentFiles.map(mapRecentFile),
   };
 }
 
@@ -608,20 +807,7 @@ export async function getAdminCustomersCommunicationsData() {
       whatsappNotifications,
       internalNotifications,
     },
-    recentNotifications: recentNotifications.map((notification) => ({
-      id: notification.id,
-      channel: notification.channel,
-      status: notification.status,
-      subject: notification.subject,
-      message: notification.message,
-      sentAt: notification.sentAt,
-      relatedCode: notification.relatedCode,
-      createdAt: notification.createdAt,
-      customerId: notification.customer?.id ?? null,
-      customerName: notification.customer
-        ? fullName(notification.customer)
-        : "Operacion interna",
-    })),
+    recentNotifications: recentNotifications.map(mapRecentNotification),
   };
 }
 
@@ -701,14 +887,8 @@ export async function getAdminCustomerDetail(id: number) {
   return {
     ...customer,
     fullName: `${customer.nombres} ${customer.apellidos ?? ""}`.trim(),
-    saleOrders: customer.saleOrders.map(o => ({
-      ...o,
-      total: Number(o.total)
-    })),
-    customOrders: customer.customOrders.map(o => ({
-      ...o,
-      total: Number(o.total)
-    }))
+    saleOrders: customer.saleOrders.map(mapOrderWithNumericTotal),
+    customOrders: customer.customOrders.map(mapOrderWithNumericTotal),
   };
 }
 
@@ -747,16 +927,9 @@ export async function getAdminCustomerMeasurements(customerId: number) {
 
   return {
     customerName: customer ? `${customer.nombres} ${customer.apellidos ?? ""}`.trim() : "Cliente desconocido",
-    profiles: profiles.map(p => ({
-      ...p,
-      garments: p.garments.map(g => ({
-        ...g,
-        values: g.values.map(v => ({
-          id: v.id,
-          definition: v.field,
-          value: Number(v.valueNumber || 0)
-        }))
-      }))
+    profiles: profiles.map((profile) => ({
+      ...profile,
+      garments: profile.garments.map(mapMeasurementGarmentForView),
     })),
   };
 }

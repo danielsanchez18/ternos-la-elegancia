@@ -11,27 +11,12 @@ import {
   Eye,
   Edit,
 } from "lucide-react";
-
-export type AdminCustomOrderActionData = {
-  id: number;
-  status: string;
-};
-
-const ACTION_MAP: Record<
-  string,
-  { nextAction: string; label: string; requiresAdvance?: boolean }
-> = {
-  PENDIENTE_RESERVA: { nextAction: "CONFIRM_RESERVATION", label: "Confirmar Reserva" },
-  RESERVA_CONFIRMADA: { nextAction: "MARK_MEASUREMENTS_TAKEN", label: "Marcar Medidas Tomadas" },
-  MEDIDAS_TOMADAS: {
-    nextAction: "START_CONFECTION",
-    label: "Iniciar Confección",
-    requiresAdvance: true,
-  },
-  EN_CONFECCION: { nextAction: "START_FITTING", label: "Pasar a Prueba" },
-  EN_PRUEBA: { nextAction: "MARK_READY", label: "Marcar Listo" },
-  LISTO: { nextAction: "MARK_DELIVERED", label: "Marcar Entregado" },
-};
+import {
+  type AdminCustomOrderActionData,
+  getCustomOrderTransition,
+  patchCustomOrderAction,
+  shouldShowCancelAction,
+} from "@/components/admin/orders/custom-order-actions";
 
 export default function AdminCustomOrderActions({
   order,
@@ -50,7 +35,7 @@ export default function AdminCustomOrderActions({
     isCancel: boolean;
   }>({ isOpen: false, action: "", label: "", isCancel: false });
 
-  const possibleTransition = ACTION_MAP[order.status];
+  const possibleTransition = getCustomOrderTransition(order.status);
 
   function promptTransition(action: string, label: string) {
     setIsOpen(false);
@@ -59,7 +44,12 @@ export default function AdminCustomOrderActions({
 
   function promptCancel() {
     setIsOpen(false);
-    setConfirmDialog({ isOpen: true, action: "CANCEL", label: "Cancelar orden", isCancel: true });
+    setConfirmDialog({
+      isOpen: true,
+      action: "CANCEL",
+      label: "Cancelar orden",
+      isCancel: true,
+    });
   }
 
   function handleConfirm() {
@@ -68,26 +58,14 @@ export default function AdminCustomOrderActions({
     setConfirmDialog({ isOpen: false, action: "", label: "", isCancel: false });
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/custom-orders/${order.id}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ action: actionToPerform }),
-        });
+      const result = await patchCustomOrderAction(order.id, actionToPerform);
 
-        if (!res.ok) {
-          const payload = await res.json().catch(() => null);
-          setErrorMsg(
-            payload?.error?.message || "Error al avanzar el estado. Verifica si requiere 50% de pago."
-          );
-          return;
-        }
-
-        router.refresh();
-      } catch (err) {
-        setErrorMsg("Error de red");
+      if (!result.ok) {
+        setErrorMsg(result.errorMessage);
+        return;
       }
+
+      router.refresh();
     });
   }
 
@@ -143,7 +121,12 @@ export default function AdminCustomOrderActions({
                 <>
                   <hr className="my-1 border-white/10" />
                   <button
-                    onClick={() => promptTransition(possibleTransition.nextAction, possibleTransition.label)}
+                    onClick={() =>
+                      promptTransition(
+                        possibleTransition.nextAction,
+                        possibleTransition.label
+                      )
+                    }
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-400 transition hover:bg-white/5 text-left"
                   >
                     <ArrowRightCircle className="size-4 flex-shrink-0" />
@@ -159,7 +142,7 @@ export default function AdminCustomOrderActions({
                 </>
               )}
 
-              {order.status !== "CANCELADO" && order.status !== "ENTREGADO" && (
+              {shouldShowCancelAction(order.status) && (
                 <>
                   <hr className="my-1 border-white/10" />
                   <button
@@ -180,13 +163,14 @@ export default function AdminCustomOrderActions({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-[#0e0e0e] p-6 shadow-2xl text-left">
             <h3 className="text-xl font-semibold text-white mb-2">
-              {confirmDialog.isCancel ? "Confirmar Cancelación" : "Avanzar Estado"}
+              {confirmDialog.isCancel
+                ? "Confirmar Cancelación"
+                : "Avanzar Estado"}
             </h3>
             <p className="text-sm text-stone-400 mb-6">
-              {confirmDialog.isCancel 
+              {confirmDialog.isCancel
                 ? "¿Estás seguro de cancelar esta orden? Esta acción no se puede deshacer."
-                : `¿Estás seguro de avanzar la orden a "${confirmDialog.label}"?`
-              }
+                : `¿Estás seguro de avanzar la orden a "${confirmDialog.label}"?`}
             </p>
             <div className="flex items-center justify-end gap-3">
               <button

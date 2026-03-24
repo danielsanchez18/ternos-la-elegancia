@@ -4,6 +4,9 @@ import { requireApiAuth } from "@/lib/api-auth";
 import { customOrderService } from "@/src/modules/custom-orders/application/custom-order.service";
 import {
   CustomOrderAdvancePaymentRequiredError,
+  CustomOrderCustomizationNotFoundError,
+  CustomOrderFabricNotFoundError,
+  CustomOrderMeasurementNotValidError,
   CustomOrderNotFoundError,
   CustomOrderStatusTransitionError,
 } from "@/src/modules/custom-orders/domain/custom-order.errors";

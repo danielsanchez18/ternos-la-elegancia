@@ -1,13 +1,26 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
 import { notFound } from "next/navigation";
-import { getAdminWorkshopSheetData } from "@/lib/admin-orders";
+import {
+  getAdminWorkshopSheetData,
+  parseAdminCustomOrderId,
+} from "@/lib/admin-orders";
 import { Scissors, Ruler, User, Calendar, MapPin, Package, CheckCircle2, Info } from "lucide-react";
 import AdminWorkshopSheetPrintButton from "@/components/admin/AdminWorkshopSheetPrintButton";
+import {
+  formatWorkshopDate,
+  formatWorkshopDateTime,
+  formatWorkshopGarmentType,
+  formatWorkshopWorkModeLabel,
+  getWorkshopSelectionValue,
+  workshopSheetPrintStyles,
+} from "@/components/admin/orders/workshop-sheet";
 
 export default async function WorkshopSheetPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const id = parseInt(resolvedParams.id);
+  const id = parseAdminCustomOrderId(resolvedParams.id);
   
-  if (isNaN(id)) {
+  if (id === null) {
     notFound();
   }
 
@@ -57,12 +70,12 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
             <div className="space-y-1">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-stone-500">Fecha Pedido:</span>
-                <span className="font-medium">{new Date(order.createdAt).toLocaleDateString("es-PE")}</span>
+                <span className="font-medium">{formatWorkshopDate(order.createdAt)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-stone-500 font-bold text-rose-600">ENTREGA PROMETIDA:</span>
                 <span className="font-bold text-rose-600">
-                  {order.promisedDeliveryAt ? new Date(order.promisedDeliveryAt).toLocaleDateString("es-PE") : "No definida"}
+                  {order.promisedDeliveryAt ? formatWorkshopDate(order.promisedDeliveryAt) : "No definida"}
                 </span>
               </div>
             </div>
@@ -87,7 +100,7 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-lg font-bold text-stone-800">{part.label}</h3>
                     <div className="bg-stone-50 border border-stone-200 rounded px-3 py-1 text-[10px] font-bold text-stone-600 uppercase">
-                      {part.garmentType.replace(/_/g, ' ')}
+                      {formatWorkshopGarmentType(part.garmentType)}
                     </div>
                   </div>
 
@@ -105,7 +118,7 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
                           <p className="text-xs text-stone-500 font-mono mt-1">CÓDIGO: {part.fabricCodeSnapshot}</p>
                         )}
                         <p className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">
-                          {part.workMode === 'A_TODO_COSTO' ? 'A TODO COSTO' : 'HECHURA'}
+                          {formatWorkshopWorkModeLabel(part.workMode)}
                         </p>
                       </div>
 
@@ -119,7 +132,7 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
                               <div key={s.id} className="flex justify-between text-xs py-1 border-b border-stone-50">
                                 <span className="text-stone-500">{s.definitionLabelSnapshot}</span>
                                 <span className="font-bold">
-                                  {s.optionLabelSnapshot || s.valueText || s.valueNumber || (s.valueBoolean ? "Sí" : "No")}
+                                  {getWorkshopSelectionValue(s)}
                                 </span>
                               </div>
                             ))}
@@ -174,7 +187,7 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
         {/* Footer */}
         <div className="p-8 border-t-2 border-stone-200 flex justify-between items-center bg-white">
           <div className="text-[10px] text-stone-400 font-mono">
-            Generado por Sistema de Gestión - La Elegancia | {new Date().toLocaleString()}
+            Generado por Sistema de Gestión - La Elegancia | {formatWorkshopDateTime(new Date())}
           </div>
         </div>
       </div>
@@ -182,50 +195,9 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
       {/* Print Controls (Hidden on Print) */}
       <AdminWorkshopSheetPrintButton />
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          /* Restore pure white background */
-          html, body { 
-            background: white !important; 
-            color: black !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          /* Hide ALL layout elements from AdminShell */
-          aside, header, nav, .print\\:hidden { 
-            display: none !important; 
-          }
-
-          /* Reset main container spacing */
-          main {
-            padding: 0 !important;
-            margin: 0 !important;
-            display: block !important;
-          }
-
-          /* Reset page container */
-          .min-h-screen {
-            background: white !important;
-            padding: 0 !important;
-            display: block !important;
-          }
-
-          /* Make the ficha take full width */
-          .max-w-4xl {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-
-          /* Scale adjustments if needed */
-          .ficha-container {
-            width: 100%;
-          }
-        }
-      ` }} />
+      <style dangerouslySetInnerHTML={{ __html: workshopSheetPrintStyles }} />
     </div>
   );
 }
+
+

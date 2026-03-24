@@ -1,24 +1,28 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
-
-type Customer = { id: number; nombres: string; apellidos: string; dni: string | null };
-type Fabric = { id: number; code: string; nombre: string; color: string | null };
-
-const GARMENT_TYPES = [
-  "SACO_CABALLERO",
-  "PANTALON_CABALLERO",
-  "SACO_DAMA",
-  "PANTALON_DAMA",
-  "CAMISA",
-  "BLUSA",
-  "CHALECO",
-  "FALDA",
-  "SMOKING",
-];
+import {
+  addItemDraft,
+  addPartDraft,
+  buildUpdateCustomOrderPayload,
+  calculateCustomOrderTotal,
+  createEditCustomOrderFormState,
+  GARMENT_TYPES,
+  mapItemsFromExistingOrder,
+  removeItemDraft,
+  removePartDraft,
+  type Customer,
+  type Fabric,
+  updateItemDraft,
+  updatePartDraft,
+} from "@/components/admin/orders/custom-order-form";
 
 export default function AdminEditCustomOrderForm({
   initialOrder,
@@ -39,90 +43,36 @@ export default function AdminEditCustomOrderForm({
     partIdx?: number; 
   } | null>(null);
 
-  // Initialize form with initialOrder data
-  const [form, setForm] = useState({
-    customerId: initialOrder.customerId.toString(),
-    requestedDeliveryAt: initialOrder.requestedDeliveryAt ? new Date(initialOrder.requestedDeliveryAt).toISOString().split('T')[0] : "",
-    promisedDeliveryAt: initialOrder.promisedDeliveryAt ? new Date(initialOrder.promisedDeliveryAt).toISOString().split('T')[0] : "",
-    notes: initialOrder.notes || "",
-    internalNotes: initialOrder.internalNotes || "",
-  });
+  const [form, setForm] = useState(() => createEditCustomOrderFormState(initialOrder));
 
-  const [items, setItems] = useState(
-    initialOrder.items.map((item: any) => ({
-      id: item.id || crypto.randomUUID(),
-      itemNameSnapshot: item.itemNameSnapshot,
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-      discountAmount: Number(item.discountAmount),
-      notes: item.notes || "",
-      parts: item.parts.map((p: any) => ({
-        id: p.id || crypto.randomUUID(),
-        garmentType: p.garmentType,
-        label: p.label,
-        workMode: p.workMode,
-        fabricId: p.fabricId?.toString() || "",
-        unitPrice: p.unitPrice ? Number(p.unitPrice) : 0,
-        notes: p.notes || "",
-      })),
-    }))
-  );
+  const [items, setItems] = useState(() => mapItemsFromExistingOrder(initialOrder));
 
   const updateForm = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const updateItem = (index: number, key: string, value: any) => {
-    const newItems = [...items];
-    (newItems[index] as any)[key] = value;
-    setItems(newItems);
+    setItems((prev) => updateItemDraft(prev, index, key, value));
   };
 
   const updatePart = (itemIndex: number, partIndex: number, key: string, value: any) => {
-    const newItems = [...items];
-    (newItems[itemIndex].parts[partIndex] as any)[key] = value;
-    setItems(newItems);
+    setItems((prev) => updatePartDraft(prev, itemIndex, partIndex, key, value));
   };
 
   const addPart = (itemIndex: number) => {
-    const newItems = [...items];
-    newItems[itemIndex].parts.push({
-      id: crypto.randomUUID(),
-      garmentType: "PANTALON_CABALLERO",
-      label: "Pantalón",
-      workMode: "A_TODO_COSTO",
-      fabricId: "",
-      unitPrice: 0,
-      notes: "",
-    });
-    setItems(newItems);
+    setItems((prev) => addPartDraft(prev, itemIndex));
   };
 
   const removePart = (itemIndex: number, partIndex: number) => {
-    const newItems = [...items];
-    newItems[itemIndex].parts.splice(partIndex, 1);
-    setItems(newItems);
+    setItems((prev) => removePartDraft(prev, itemIndex, partIndex));
   };
 
   const addItem = () => {
-    setItems([
-      ...items,
-      {
-        id: crypto.randomUUID(),
-        itemNameSnapshot: "Prenda Adicional",
-        quantity: 1,
-        unitPrice: 0,
-        discountAmount: 0,
-        notes: "",
-        parts: [],
-      },
-    ]);
+    setItems((prev) => addItemDraft(prev));
   };
 
   const removeItem = (index: number) => {
-    const newItems = [...items];
-    newItems.splice(index, 1);
-    setItems(newItems);
+    setItems((prev) => removeItemDraft(prev, index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,28 +86,7 @@ export default function AdminEditCustomOrderForm({
 
     startTransition(async () => {
       try {
-        const payload = {
-          requestedDeliveryAt: form.requestedDeliveryAt ? new Date(form.requestedDeliveryAt).toISOString() : undefined,
-          promisedDeliveryAt: form.promisedDeliveryAt ? new Date(form.promisedDeliveryAt).toISOString() : undefined,
-          notes: form.notes.trim() || undefined,
-          internalNotes: form.internalNotes.trim() || undefined,
-          items: items.map((item: any) => ({
-            itemNameSnapshot: item.itemNameSnapshot,
-            quantity: Number(item.quantity) || 1,
-            unitPrice: Number(item.unitPrice) || 0,
-            discountAmount: Number(item.discountAmount) || 0,
-            notes: item.notes.trim() || undefined,
-            parts: item.parts.map((p: any) => ({
-              garmentType: p.garmentType,
-              label: p.label,
-              workMode: p.workMode,
-              fabricId: p.fabricId ? Number(p.fabricId) : undefined,
-              unitPrice: p.unitPrice ? Number(p.unitPrice) : undefined,
-              notes: p.notes.trim() || undefined,
-              selections: [], // Selections maintenance NOT in MVP
-            })),
-          })),
-        };
+        const payload = buildUpdateCustomOrderPayload(form, items);
 
         const res = await fetch(`/api/custom-orders/${initialOrder.id}`, {
           method: "PUT",
@@ -180,10 +109,7 @@ export default function AdminEditCustomOrderForm({
     });
   };
 
-  const totalOrder = items.reduce(
-    (acc: number, item: any) => acc + (Number(item.unitPrice) * Number(item.quantity) - Number(item.discountAmount)),
-    0
-  );
+  const totalOrder = calculateCustomOrderTotal(items);
 
   const inputClasses =
     "w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder-stone-500 outline-none transition focus:border-emerald-500/50";
@@ -461,3 +387,4 @@ export default function AdminEditCustomOrderForm({
     </div>
   );
 }
+

@@ -2,11 +2,8 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, X, Check, AlertTriangle, Power } from "lucide-react";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+import { AlertTriangle, Check, Pencil, Power, X } from "lucide-react";
+import { toDateInputValue } from "@/components/admin/customers/measurement-profile-action-helpers";
 
 export type MeasurementProfileActionData = {
   id: number;
@@ -15,10 +12,6 @@ export type MeasurementProfileActionData = {
   isActive: boolean;
   validUntil: Date | string;
 };
-
-/* ------------------------------------------------------------------ */
-/*  Shared UI                                                          */
-/* ------------------------------------------------------------------ */
 
 function Overlay({
   children,
@@ -30,7 +23,7 @@ function Overlay({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-md mx-4">{children}</div>
+      <div className="relative z-10 mx-4 w-full max-w-md">{children}</div>
     </div>
   );
 }
@@ -72,10 +65,6 @@ const inputClasses =
 
 const labelClasses = "text-xs uppercase tracking-[0.18em] text-stone-500";
 
-/* ------------------------------------------------------------------ */
-/*  Edit Modal                                                         */
-/* ------------------------------------------------------------------ */
-
 function EditModal({
   profile,
   onClose,
@@ -86,13 +75,7 @@ function EditModal({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [notes, setNotes] = useState(profile.notes ?? "");
-  const [validUntil, setValidUntil] = useState(() => {
-    const d =
-      profile.validUntil instanceof Date
-        ? profile.validUntil
-        : new Date(profile.validUntil);
-    return d.toISOString().split("T")[0];
-  });
+  const [validUntil, setValidUntil] = useState(toDateInputValue(profile.validUntil));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -101,28 +84,21 @@ function EditModal({
 
     startTransition(async () => {
       try {
-        const body: Record<string, unknown> = {
-          notes: notes.trim() || null,
-          validUntil: new Date(validUntil).toISOString(),
-        };
-
-        const response = await fetch(
-          `/api/measurement-profiles/${profile.id}`,
-          {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(body),
-          }
-        );
+        const response = await fetch(`/api/measurement-profiles/${profile.id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            notes: notes.trim() || null,
+            validUntil: new Date(validUntil).toISOString(),
+          }),
+        });
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as {
-            error?: string;
-          } | null;
-          setErrorMessage(
-            payload?.error ?? "No se pudo actualizar el perfil."
-          );
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          setErrorMessage(payload?.error ?? "No se pudo actualizar el perfil.");
           return;
         }
 
@@ -136,16 +112,9 @@ function EditModal({
 
   return (
     <Overlay onClose={onClose}>
-      <ModalCard
-        onClose={onClose}
-        eyebrow="Edición"
-        title="Editar perfil de medidas"
-      >
+      <ModalCard onClose={onClose} eyebrow="Edición" title="Editar perfil de medidas">
         <p className="text-sm text-stone-400">
-          Perfil de{" "}
-          <span className="font-medium text-white">
-            {profile.customerName}
-          </span>
+          Perfil de <span className="font-medium text-white">{profile.customerName}</span>
         </p>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -153,7 +122,7 @@ function EditModal({
             <span className={labelClasses}>Notas</span>
             <input
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(event) => setNotes(event.target.value)}
               placeholder="Observaciones del perfil..."
               className={inputClasses}
             />
@@ -164,15 +133,13 @@ function EditModal({
             <input
               type="date"
               value={validUntil}
-              onChange={(e) => setValidUntil(e.target.value)}
+              onChange={(event) => setValidUntil(event.target.value)}
               className={inputClasses}
               required
             />
           </label>
 
-          {errorMessage ? (
-            <p className="text-sm text-rose-300">{errorMessage}</p>
-          ) : null}
+          {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
 
           <div className="flex items-center gap-3">
             <button
@@ -198,10 +165,6 @@ function EditModal({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Deactivate Modal                                                   */
-/* ------------------------------------------------------------------ */
-
 function DeactivateModal({
   profile,
   onClose,
@@ -218,23 +181,18 @@ function DeactivateModal({
 
     startTransition(async () => {
       try {
-        const response = await fetch(
-          `/api/measurement-profiles/${profile.id}`,
-          {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ isActive: false }),
-          }
-        );
+        const response = await fetch(`/api/measurement-profiles/${profile.id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ isActive: false }),
+        });
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as {
-            error?: string;
-          } | null;
-          setErrorMessage(
-            payload?.error ?? "No se pudo desactivar el perfil."
-          );
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          setErrorMessage(payload?.error ?? "No se pudo desactivar el perfil.");
           return;
         }
 
@@ -248,27 +206,19 @@ function DeactivateModal({
 
   return (
     <Overlay onClose={onClose}>
-      <ModalCard
-        onClose={onClose}
-        eyebrow="Desactivación"
-        title="Desactivar perfil"
-      >
+      <ModalCard onClose={onClose} eyebrow="Desactivación" title="Desactivar perfil">
         <div className="rounded-xl border border-amber-400/15 bg-amber-400/5 px-4 py-3">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" />
             <p className="text-sm leading-6 text-amber-200">
               ¿Desactivar el perfil de medidas de{" "}
-              <span className="font-semibold text-white">
-                {profile.customerName}
-              </span>
-              ? El perfil dejará de estar disponible para producción.
+              <span className="font-semibold text-white">{profile.customerName}</span>?
+              El perfil dejará de estar disponible para producción.
             </p>
           </div>
         </div>
 
-        {errorMessage ? (
-          <p className="mt-4 text-sm text-rose-300">{errorMessage}</p>
-        ) : null}
+        {errorMessage ? <p className="mt-4 text-sm text-rose-300">{errorMessage}</p> : null}
 
         <div className="mt-5 flex items-center gap-3">
           <button
@@ -291,10 +241,6 @@ function DeactivateModal({
     </Overlay>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Main export                                                        */
-/* ------------------------------------------------------------------ */
 
 type ModalState = "closed" | "edit" | "deactivate";
 
@@ -332,10 +278,7 @@ export default function AdminMeasurementProfileActions({
       ) : null}
 
       {modal === "deactivate" ? (
-        <DeactivateModal
-          profile={profile}
-          onClose={() => setModal("closed")}
-        />
+        <DeactivateModal profile={profile} onClose={() => setModal("closed")} />
       ) : null}
     </>
   );

@@ -50,6 +50,56 @@ function toNumber(value: unknown) {
   return Number(value ?? 0);
 }
 
+function buildCustomerName(input: { nombres: string; apellidos: string | null }) {
+  return `${input.nombres} ${input.apellidos ?? ""}`.trim();
+}
+
+type RecentAppointmentSummary = {
+  id: number;
+  code: string;
+  type: string;
+  status: string;
+  scheduledAt: Date;
+  customer: {
+    nombres: string;
+    apellidos: string | null;
+  };
+};
+
+type RecentPaymentSummary = {
+  id: number;
+  amount: unknown;
+  status: string;
+  method: string;
+  paidAt: Date;
+  customer: {
+    nombres: string;
+    apellidos: string | null;
+  };
+};
+
+function mapRecentAppointments(appointments: RecentAppointmentSummary[]) {
+  return appointments.map((appointment) => ({
+    id: appointment.id,
+    code: appointment.code,
+    type: appointment.type,
+    status: appointment.status,
+    scheduledAt: appointment.scheduledAt,
+    customerName: buildCustomerName(appointment.customer),
+  }));
+}
+
+function mapRecentPayments(payments: RecentPaymentSummary[]) {
+  return payments.map((payment) => ({
+    id: payment.id,
+    amount: toNumber(payment.amount),
+    status: payment.status,
+    method: payment.method,
+    paidAt: payment.paidAt,
+    customerName: buildCustomerName(payment.customer),
+  }));
+}
+
 const saleOpenStatuses = [
   SaleOrderStatus.PENDIENTE_PAGO,
   SaleOrderStatus.PAGADO,
@@ -333,22 +383,8 @@ export async function getAdminDashboardMetrics() {
       failuresThirtyDays: notificationFailuresThirtyDays,
       pendingNotifications,
     },
-    recentAppointments: recentAppointments.map((appointment) => ({
-      id: appointment.id,
-      code: appointment.code,
-      type: appointment.type,
-      status: appointment.status,
-      scheduledAt: appointment.scheduledAt,
-      customerName: `${appointment.customer.nombres} ${appointment.customer.apellidos}`.trim(),
-    })),
-    recentPayments: recentPayments.map((payment) => ({
-      id: payment.id,
-      amount: toNumber(payment.amount),
-      status: payment.status,
-      method: payment.method,
-      paidAt: payment.paidAt,
-      customerName: `${payment.customer.nombres} ${payment.customer.apellidos}`.trim(),
-    })),
+    recentAppointments: mapRecentAppointments(recentAppointments),
+    recentPayments: mapRecentPayments(recentPayments),
     generatedAt: now,
   };
 }

@@ -1,45 +1,20 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState } from "react";
 import { Plus, ScissorsLineDashed } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AdminCustomOrderActions from "@/components/admin/AdminCustomOrderActions";
-
-const dateFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "medium",
-});
-
-function parseDateValue(value: Date | string | null | undefined): Date | null {
-  if (!value) return null;
-  const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value: Date | string | null | undefined): string {
-  const parsed = parseDateValue(value);
-  return parsed ? dateFormatter.format(parsed) : "--";
-}
-
-function statusChipClasses(status: string) {
-  switch (status) {
-    case "PENDIENTE_RESERVA":
-      return "border-stone-500/20 bg-stone-500/10 text-stone-300";
-    case "MEDIDAS_TOMADAS":
-      return "border-blue-400/20 bg-blue-400/10 text-blue-300";
-    case "EN_CONFECCION":
-    case "EN_PRUEBA":
-      return "border-amber-400/20 bg-amber-400/10 text-amber-300";
-    case "LISTO":
-      return "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
-    case "ENTREGADO":
-      return "border-purple-400/20 bg-purple-400/10 text-purple-300";
-    case "CANCELADO":
-      return "border-rose-400/20 bg-rose-400/10 text-rose-300";
-    default:
-      return "border-white/10 bg-white/5 text-stone-300";
-  }
-}
+import { formatMediumDate, formatStatusLabel } from "@/components/admin/orders/custom-order-shared";
+import {
+  customOrderStatusChipClasses,
+  getCustomOrderItemCount,
+  getCustomOrderPartsCount,
+} from "@/components/admin/orders/custom-order-list";
 
 export default function AdminCustomOrderListLayout({
   orders,
@@ -99,11 +74,8 @@ export default function AdminCustomOrderListLayout({
                     </tr>
                   ) : (
                     orders.map((order) => {
-                      const itemCount = order.items.length;
-                      const partsCount = order.items.reduce(
-                        (acc: number, item: any) => acc + item.parts.length,
-                        0
-                      );
+                      const itemCount = getCustomOrderItemCount(order);
+                      const partsCount = getCustomOrderPartsCount(order);
 
                       return (
                         <tr
@@ -115,10 +87,10 @@ export default function AdminCustomOrderListLayout({
                               {order.code}
                             </p>
                             <div className="mt-1 flex flex-col gap-1 text-[11px] text-stone-400">
-                              <p>Creado: {formatDate(order.createdAt)}</p>
+                              <p>Creado: {formatMediumDate(order.createdAt)}</p>
                               {order.promisedDeliveryAt && (
                                 <p className="text-amber-200/70">
-                                  Entrega: {formatDate(order.promisedDeliveryAt)}
+                                  Entrega: {formatMediumDate(order.promisedDeliveryAt)}
                                 </p>
                               )}
                             </div>
@@ -143,11 +115,11 @@ export default function AdminCustomOrderListLayout({
                           </td>
                           <td className="px-4 py-4">
                             <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-medium ${statusChipClasses(
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-medium ${customOrderStatusChipClasses(
                                 order.status
                               )}`}
                             >
-                              {order.status.replace(/_/g, " ")}
+                              {formatStatusLabel(order.status)}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-right">

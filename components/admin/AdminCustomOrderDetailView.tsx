@@ -1,25 +1,30 @@
 "use client";
 
-import { ArrowLeft, Calendar, User, Package, Ruler, Info, Clock, CheckCircle2, CreditCard, Receipt, PlusCircle, AlertTriangle, X, ChevronDown, Scissors, XCircle, MoreVertical, Printer, Edit3 } from "lucide-react";
+/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
+
+import { ArrowLeft, Calendar, User, Package, Ruler, Info, Clock, CheckCircle2, CreditCard, Receipt, PlusCircle, AlertTriangle, X, ChevronDown, XCircle, MoreVertical, Printer, Edit3 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-
-const dateFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "long",
-});
-
-const statusColors: Record<string, string> = {
-  PENDIENTE_RESERVA: "bg-stone-500/20 text-stone-400 border-stone-500/20",
-  RESERVA_CONFIRMADA: "bg-blue-500/20 text-blue-400 border-blue-500/20",
-  MEDIDAS_TOMADAS: "bg-indigo-500/20 text-indigo-400 border-indigo-500/20",
-  EN_CONFECCION: "bg-amber-500/20 text-amber-400 border-amber-500/20",
-  EN_PRUEBA: "bg-orange-500/20 text-orange-400 border-orange-500/20",
-  LISTO: "bg-emerald-500/20 text-emerald-400 border-emerald-500/20",
-  ENTREGADO: "bg-purple-500/20 text-purple-400 border-purple-500/20",
-  CANCELADO: "bg-rose-500/20 text-rose-400 border-rose-500/20",
-};
+import { formatLongDate, formatStatusLabel } from "@/components/admin/orders/custom-order-shared";
+import {
+  calculateCustomOrderPendingBalance,
+  calculateCustomOrderTotalPaid,
+  customOrderDetailStatusActions,
+  customOrderDetailStatusColors,
+  fetchCustomerMeasurementProfiles,
+  getCustomOrderRequiredAdvance,
+  initialComprobanteFormState,
+  initialPaymentFormState,
+  patchCustomOrderMeasurementLink,
+  patchCustomOrderStatusAction,
+  shouldShowAdvanceWarning,
+  submitCustomOrderComprobante,
+  submitCustomOrderPayment,
+  validateComprobanteTotal,
+  validatePaymentAmount,
+} from "@/components/admin/orders/custom-order-detail";
 
 export default function AdminCustomOrderDetailView({ order }: { order: any }) {
   const router = useRouter();
@@ -27,77 +32,39 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [paymentForm, setPaymentForm] = useState({
-    amount: "",
-    method: "EFECTIVO",
-    concept: "ADELANTO",
-    notes: "",
-    operationCode: "",
-  });
+  const [paymentForm, setPaymentForm] = useState(initialPaymentFormState);
 
   const [showComprobanteModal, setShowComprobanteModal] = useState(false);
   const [showLinkMeasurementModal, setShowLinkMeasurementModal] = useState(false);
   const [selectedPartForMeasurement, setSelectedPartForMeasurement] = useState<any>(null);
   const [customerProfiles, setCustomerProfiles] = useState<any[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
-  const [comprobanteForm, setComprobanteForm] = useState({
-    type: "BOLETA",
-    serie: "",
-    numero: "",
-    total: "",
-    notes: "",
-  });
+  const [comprobanteForm, setComprobanteForm] = useState(
+    initialComprobanteFormState
+  );
 
-  const totalPaid = order.payments?.reduce((acc: number, p: any) => acc + (p.status === 'APROBADO' ? p.amount : 0), 0) || 0;
-  const pendingBalance = order.total - totalPaid;
-
+  const totalPaid = calculateCustomOrderTotalPaid(order.payments);
+  const pendingBalance = calculateCustomOrderPendingBalance(order.total, totalPaid);
   const handleRegisterPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    const amountNum = parseFloat(paymentForm.amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      setErrorMsg("El monto debe ser un número positivo");
-      return;
-    }
-
-    if (amountNum > pendingBalance + 0.01) {
-      setErrorMsg("El monto no puede exceder el saldo pendiente");
+    const validationError = validatePaymentAmount(paymentForm.amount, pendingBalance);
+    if (validationError) {
+      setErrorMsg(validationError);
       return;
     }
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/custom-orders/${order.id}/payments`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: amountNum,
-            method: paymentForm.method,
-            concept: paymentForm.concept,
-            notes: paymentForm.notes.trim() || undefined,
-            operationCode: paymentForm.operationCode.trim() || undefined,
-            status: "APROBADO",
-          }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Error al registrar pago");
-        }
-
-        setShowPaymentModal(false);
-        setPaymentForm({
-          amount: "",
-          method: "EFECTIVO",
-          concept: "ADELANTO",
-          notes: "",
-          operationCode: "",
-        });
-        router.refresh();
-      } catch (err: any) {
-        setErrorMsg(err.message);
+      const result = await submitCustomOrderPayment(order.id, paymentForm);
+      if (!result.ok) {
+        setErrorMsg(result.message);
+        return;
       }
+
+      setShowPaymentModal(false);
+      setPaymentForm(initialPaymentFormState);
+      router.refresh();
     });
   };
 
@@ -105,80 +72,48 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
     e.preventDefault();
     setErrorMsg("");
 
-    const totalNum = parseFloat(comprobanteForm.total);
-    if (isNaN(totalNum) || totalNum <= 0) {
-      setErrorMsg("El total debe ser un número positivo");
+    const validationError = validateComprobanteTotal(comprobanteForm.total);
+    if (validationError) {
+      setErrorMsg(validationError);
       return;
     }
 
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/custom-orders/${order.id}/comprobantes`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: comprobanteForm.type,
-            serie: comprobanteForm.serie.trim() || undefined,
-            numero: comprobanteForm.numero.trim() || undefined,
-            total: totalNum,
-            notes: comprobanteForm.notes.trim() || undefined,
-            status: "EMITIDO",
-          }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Error al registrar comprobante");
-        }
-
-        setComprobanteForm({
-          type: "BOLETA",
-          serie: "",
-          numero: "",
-          total: "",
-          notes: "",
-        });
-        router.refresh();
-      } catch (err: any) {
-        setErrorMsg(err.message);
+      const result = await submitCustomOrderComprobante(order.id, comprobanteForm);
+      if (!result.ok) {
+        setErrorMsg(result.message);
+        return;
       }
+
+      setComprobanteForm(initialComprobanteFormState);
+      router.refresh();
     });
   };
 
   const handleStatusAction = async (action: string, note?: string) => {
     setErrorMsg("");
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/custom-orders/${order.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action, note }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Error al actualizar estado");
-        }
-
-        router.refresh();
-      } catch (err: any) {
-        setErrorMsg(err.message);
+      const result = await patchCustomOrderStatusAction(order.id, action, note);
+      if (!result.ok) {
+        setErrorMsg(result.message);
+        return;
       }
+
+      router.refresh();
     });
   };
 
   const fetchCustomerProfiles = async () => {
     setLoadingProfiles(true);
-    try {
-      const res = await fetch(`/api/customers/${order.customer.id}/measurement-profiles`);
-      if (!res.ok) throw new Error("Error al cargar perfiles de medidas");
-      const data = await res.json();
-      setCustomerProfiles(data);
-    } catch (err: any) {
-      setErrorMsg(err.message);
-    } finally {
+    const result = await fetchCustomerMeasurementProfiles(order.customer.id);
+    if (!result.ok) {
+      setErrorMsg(result.message);
       setLoadingProfiles(false);
+      return;
     }
+
+    setCustomerProfiles(result.profiles);
+    setLoadingProfiles(false);
   };
 
   const handleLinkMeasurement = async (profileId: number, profileGarmentId: number) => {
@@ -186,42 +121,27 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
 
     setErrorMsg("");
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/custom-orders/${order.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "LINK_MEASUREMENT",
-            partId: selectedPartForMeasurement.id,
-            profileId,
-            profileGarmentId,
-          }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Error al vincular medidas");
-        }
-
-        setShowLinkMeasurementModal(false);
-        setSelectedPartForMeasurement(null);
-        router.refresh();
-      } catch (err: any) {
-        setErrorMsg(err.message);
+      const result = await patchCustomOrderMeasurementLink({
+        orderId: order.id,
+        partId: selectedPartForMeasurement.id,
+        profileId,
+        profileGarmentId,
+      });
+      if (!result.ok) {
+        setErrorMsg(result.message);
+        return;
       }
+
+      setShowLinkMeasurementModal(false);
+      setSelectedPartForMeasurement(null);
+      router.refresh();
     });
   };
 
-  const statusActions: Record<string, { label: string; icon: any; action: string; variant: string }> = {
-    PENDIENTE_RESERVA: { label: "Confirmar Reserva", icon: CheckCircle2, action: "CONFIRM_RESERVATION", variant: "bg-emerald-500 text-emerald-950" },
-    RESERVA_CONFIRMADA: { label: "Medidas Tomadas", icon: Ruler, action: "MARK_MEASUREMENTS_TAKEN", variant: "bg-indigo-500 text-white" },
-    MEDIDAS_TOMADAS: { label: "Iniciar Confección", icon: Scissors, action: "START_CONFECTION", variant: "bg-amber-500 text-amber-950" },
-    EN_CONFECCION: { label: "Iniciar Prueba", icon: User, action: "START_FITTING", variant: "bg-orange-500 text-white" },
-    EN_PRUEBA: { label: "Marcar como Listo", icon: CheckCircle2, action: "MARK_READY", variant: "bg-emerald-500 text-emerald-950" },
-    LISTO: { label: "Entregar Pedido", icon: Package, action: "MARK_DELIVERED", variant: "bg-purple-500 text-white" },
-  };
-
-  const currentAction = (statusActions as any)[order.status];
+  const currentAction =
+    customOrderDetailStatusActions[
+      order.status as keyof typeof customOrderDetailStatusActions
+    ];
 
   return (
     <div className="mx-auto max-w-6xl pb-20">
@@ -246,8 +166,8 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
           </Link>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusColors[order.status] || "bg-stone-500/20 text-stone-400"}`}>
-                {order.status.replace(/_/g, " ")}
+              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${customOrderDetailStatusColors[order.status] || "bg-stone-500/20 text-stone-400"}`}>
+                {formatStatusLabel(order.status)}
               </span>
               <span className="text-stone-500 text-xs">•</span>
               <span className="text-stone-500 text-xs">ID de Pedido #{order.id}</span>
@@ -454,7 +374,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                     <p className={`font-medium ${idx === 0 ? 'text-white' : 'text-stone-400'}`}>
                       {h.status.replace(/_/g, " ")}
                     </p>
-                    <p className="text-xs text-stone-500">{dateFormatter.format(new Date(h.changedAt))}</p>
+                    <p className="text-xs text-stone-500">{formatLongDate(h.changedAt)}</p>
                     {h.note && <p className="mt-1 text-xs text-stone-400 bg-white/5 p-2 rounded-lg italic">"{h.note}"</p>}
                   </div>
                 </div>
@@ -499,18 +419,20 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               </div>
 
               {/* Advance Payment Warning */}
-              {(() => {
-                const requiredAdvance = order.total * 0.5;
-                if (totalPaid < requiredAdvance && order.status === "PENDIENTE_RESERVA") {
-                  return (
-                    <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
-                      <AlertTriangle className="size-5 text-amber-500 flex-shrink-0" />
-                      <p>Para iniciar la confección se requiere un abono del 50% (S/ {requiredAdvance.toFixed(2)}). Falta abonar S/ {(requiredAdvance - totalPaid).toFixed(2)}.</p>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
+              {shouldShowAdvanceWarning(order.status, totalPaid, order.total) && (
+                <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+                  <AlertTriangle className="size-5 text-amber-500 flex-shrink-0" />
+                  <p>
+                    Para iniciar la confección se requiere un abono del 50% (S/{" "}
+                    {getCustomOrderRequiredAdvance(order.total).toFixed(2)}). Falta
+                    abonar S/{" "}
+                    {(
+                      getCustomOrderRequiredAdvance(order.total) - totalPaid
+                    ).toFixed(2)}
+                    .
+                  </p>
+                </div>
+              )}
 
               {/* Payment History List */}
               <div className="space-y-4">
@@ -527,7 +449,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-white">Abono {payment.metodoPago || ""}</p>
-                            <p className="text-[10px] text-stone-500 italic">{dateFormatter.format(new Date(payment.createdAt))}</p>
+                            <p className="text-[10px] text-stone-500 italic">{formatLongDate(payment.createdAt)}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -607,20 +529,20 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
             <div className="space-y-5">
               <div className="relative pl-6 before:absolute before:left-0 before:top-1.5 before:size-2 before:rounded-full before:bg-stone-600">
                 <p className="text-[10px] uppercase text-stone-500 tracking-wider">Creado el</p>
-                <p className="text-sm font-medium text-stone-300">{dateFormatter.format(new Date(order.createdAt))}</p>
+                <p className="text-sm font-medium text-stone-300">{formatLongDate(order.createdAt)}</p>
               </div>
 
               <div className="rounded-sm relative pl-6 before:absolute before:left-0 before:top-1.5 before:size-2 before:rounded-full before:bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                 <p className="text-[10px] uppercase text-emerald-500 tracking-wider font-bold">Entrega Prometida</p>
                 <p className="text-sm font-bold text-white">
-                  {order.promisedDeliveryAt ? dateFormatter.format(new Date(order.promisedDeliveryAt)) : "No definida"}
+                  {order.promisedDeliveryAt ? formatLongDate(order.promisedDeliveryAt) : "No definida"}
                 </p>
               </div>
 
               {order.deliveredAt && (
                 <div className="relative pl-6 before:absolute before:left-0 before:top-1.5 before:size-2 before:rounded-full before:bg-purple-500">
                   <p className="text-[10px] uppercase text-purple-500 tracking-wider">Entregado el</p>
-                  <p className="text-sm font-medium text-stone-300">{dateFormatter.format(new Date(order.deliveredAt))}</p>
+                  <p className="text-sm font-medium text-stone-300">{formatLongDate(order.deliveredAt)}</p>
                 </div>
               )}
             </div>
@@ -826,7 +748,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                             </div>
                             <p className="text-sm font-bold text-emerald-400">S/ {c.total.toFixed(2)}</p>
                           </div>
-                          <p className="text-[10px] text-stone-600">{dateFormatter.format(new Date(c.createdAt))}</p>
+                          <p className="text-[10px] text-stone-600">{formatLongDate(c.createdAt)}</p>
                         </div>
                       ))}
                     </div>
@@ -993,10 +915,10 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                               <div>
                                 <p className="text-sm font-bold text-white flex items-center gap-2">
                                   <Calendar className="size-3.5 text-stone-500" />
-                                  Perfil del {dateFormatter.format(new Date(profile.takenAt))}
+                                  Perfil del {formatLongDate(profile.takenAt)}
                                 </p>
                                 <p className="text-[10px] text-stone-500 uppercase tracking-widest mt-0.5">
-                                  Vence: {dateFormatter.format(new Date(profile.validUntil))}
+                                  Vence: {formatLongDate(profile.validUntil)}
                                 </p>
                               </div>
                               {matchingGarment && (
@@ -1054,3 +976,5 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
     </div>
   );
 }
+
+

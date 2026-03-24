@@ -2,11 +2,16 @@ import { notFound } from "next/navigation";
 import { getAdminCustomerMeasurements } from "@/lib/admin-customers";
 import AdminCustomerMeasurementsView from "@/components/admin/AdminCustomerMeasurementsView";
 
+function parseCustomerId(rawId: string) {
+  const parsedId = Number.parseInt(rawId, 10);
+  return Number.isNaN(parsedId) ? null : parsedId;
+}
+
 export default async function CustomerMeasurementsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const id = parseInt(resolvedParams.id);
+  const id = parseCustomerId(resolvedParams.id);
   
-  if (isNaN(id)) {
+  if (id === null) {
     notFound();
   }
 

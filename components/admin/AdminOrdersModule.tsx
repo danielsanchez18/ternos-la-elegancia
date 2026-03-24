@@ -1,9 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import {
   ScissorsLineDashed,
   ShoppingBag,
-  Shirt,
-  MapPin,
   Clock,
   CheckCircle2,
 } from "lucide-react";
@@ -13,23 +12,13 @@ import {
 } from "@/lib/admin-orders";
 import { getAdminSection } from "@/lib/admin-dashboard";
 import AdminCustomOrderListLayout from "@/components/admin/AdminCustomOrderListLayout";
-
-const dateFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "medium",
-});
-
-function parseDateValue(value: Date | string | null | undefined): Date | null {
-  if (!value) return null;
-  const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value: Date | string | null | undefined): string {
-  const parsed = parseDateValue(value);
-  return parsed ? dateFormatter.format(parsed) : "--";
-}
-
-const numberFormatter = new Intl.NumberFormat("en-US");
+import { formatMediumDate, formatStatusLabel, numberFormatter } from "@/components/admin/orders/custom-order-shared";
+import {
+  getOrdersInWorkshopTotal,
+  getOrdersRevenueTotal,
+  getOtherOrdersTotal,
+  orderSectionIconsBySlug,
+} from "@/components/admin/orders/admin-orders-overview";
 
 function statCard({
   title,
@@ -125,10 +114,10 @@ function sectionLinks() {
         >
           <div className="flex items-center gap-3">
             <div className="rounded-xl border border-stone-800 bg-stone-900/50 p-2 text-stone-400 group-hover:text-emerald-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-500/10 transition">
-              {sub.slug === "venta" && <ShoppingBag className="size-4" />}
-              {sub.slug === "personalizadas" && <ScissorsLineDashed className="size-4" />}
-              {sub.slug === "rentas" && <Shirt className="size-4" />}
-              {sub.slug === "alteraciones" && <MapPin className="size-4" />}
+              {(() => {
+                const Icon = orderSectionIconsBySlug[sub.slug];
+                return Icon ? <Icon className="size-4" /> : null;
+              })()}
             </div>
             <div>
               <p className="font-medium text-white group-hover:text-emerald-300">
@@ -170,11 +159,7 @@ export async function AdminOrdersSection() {
         })}
         {statCard({
           title: "Otras operaciones",
-          value: numberFormatter.format(
-            data.otherOrders.sales +
-              data.otherOrders.rentals +
-              data.otherOrders.alterations
-          ),
+          value: numberFormatter.format(getOtherOrdersTotal(data.otherOrders)),
           detail: `${data.otherOrders.sales} ventas, ${data.otherOrders.rentals} alquileres.`,
         })}
       </div>
@@ -231,10 +216,10 @@ export async function AdminOrdersSection() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-medium text-stone-400 border border-white/10 rounded-md px-2 py-0.5 bg-black/50">
-                        {order.status.replace(/_/g, " ")}
+                        {formatStatusLabel(order.status)}
                       </p>
                       <p className="mt-2 text-[10px] text-stone-500">
-                        {formatDate(order.createdAt)}
+                        {formatMediumDate(order.createdAt)}
                       </p>
                     </div>
                   </article>
@@ -266,16 +251,12 @@ export async function AdminOrdersSubroute({ subroute }: { subroute: string }) {
           })}
           {statCard({
             title: "En taller",
-            value: orders.filter((o: any) =>
-              ["EN_CONFECCION", "EN_PRUEBA"].includes(o.status)
-            ).length,
+            value: getOrdersInWorkshopTotal(orders),
             detail: "Prendas actualmente en desarrollo.",
           })}
           {statCard({
             title: "Ingresos",
-            value: `S/ ${orders
-              .reduce((acc: number, o: any) => acc + Number(o.total), 0)
-              .toFixed(2)}`,
+            value: `S/ ${getOrdersRevenueTotal(orders).toFixed(2)}`,
             detail: "Monto total transaccionado.",
           })}
         </div>

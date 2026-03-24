@@ -1,4 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/prisma";
+
+function parseId(value: string): number | null {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+export function parseAdminCustomOrderId(value: string): number | null {
+  return parseId(value);
+}
 
 function serializeOrder(order: any) {
   return {
@@ -27,6 +37,30 @@ function serializeOrder(order: any) {
       total: Number(c.total),
     })),
   };
+}
+
+async function getAdminOrderFormData(input: { onlyActiveFabrics: boolean }) {
+  const [customers, fabrics] = await Promise.all([
+    prisma.customer.findMany({
+      select: { id: true, nombres: true, apellidos: true, dni: true },
+      orderBy: { nombres: "asc" },
+    }),
+    prisma.fabric.findMany({
+      where: input.onlyActiveFabrics ? { active: true } : undefined,
+      select: { id: true, code: true, nombre: true, color: true },
+      orderBy: { code: "asc" },
+    }),
+  ]);
+
+  return { customers, fabrics };
+}
+
+export async function getAdminCreateCustomOrderFormData() {
+  return getAdminOrderFormData({ onlyActiveFabrics: true });
+}
+
+export async function getAdminEditCustomOrderFormData() {
+  return getAdminOrderFormData({ onlyActiveFabrics: false });
 }
 
 export async function getAdminCustomOrdersListData() {
@@ -137,6 +171,44 @@ export async function getAdminCustomOrderDetail(id: number) {
 
   return serializeOrder(order);
 }
+
+function buildWorkshopMeasurementsMap(order: any): number[] {
+  const profileIds = Array.from(
+    new Set<number>(
+      order.items
+        .flatMap((item: any) => item.parts)
+        .map((part: any) => part.measurementProfileId as number | null)
+        .filter(
+          (profileId: number | null): profileId is number =>
+            typeof profileId === "number"
+        )
+    )
+  );
+
+  return profileIds;
+}
+
+function attachWorkshopMeasurementsToOrder(order: any, profiles: any[]) {
+  order.items.forEach((item: any) => {
+    item.parts.forEach((part: any) => {
+      if (part.measurementProfileId && part.measurementProfileGarmentId) {
+        const profile = profiles.find((profileItem) => profileItem.id === part.measurementProfileId);
+        const garment = profile?.garments.find(
+          (garmentItem: any) => garmentItem.id === part.measurementProfileGarmentId
+        );
+
+        if (garment) {
+          part.measurements = garment.values.map((value: any) => ({
+            label: value.field.label,
+            value: value.valueNumber ? Number(value.valueNumber) : value.valueText,
+            unit: value.field.unit,
+          }));
+        }
+      }
+    });
+  });
+}
+
 export async function getAdminWorkshopSheetData(id: number) {
   const order = await prisma.customOrder.findUnique({
     where: { id },
@@ -158,15 +230,7 @@ export async function getAdminWorkshopSheetData(id: number) {
 
   if (!order) return null;
 
-  // Fetch unique measurement profiles involved
-  const profileIds = Array.from(
-    new Set(
-      order.items
-        .flatMap((item) => item.parts)
-        .map((part) => part.measurementProfileId)
-        .filter((id): id is number => id !== null)
-    )
-  );
+  const profileIds = buildWorkshopMeasurementsMap(order);
 
   const profiles = await prisma.measurementProfile.findMany({
     where: { id: { in: profileIds } },
@@ -183,24 +247,8 @@ export async function getAdminWorkshopSheetData(id: number) {
     },
   });
 
-  // Attach measurements to each part for easier rendering
   const serializedOrder = serializeOrder(order);
-  
-  serializedOrder.items.forEach((item: any) => {
-    item.parts.forEach((part: any) => {
-      if (part.measurementProfileId && part.measurementProfileGarmentId) {
-        const profile = profiles.find((p) => p.id === part.measurementProfileId);
-        const garment = profile?.garments.find((g) => g.id === part.measurementProfileGarmentId);
-        if (garment) {
-          part.measurements = garment.values.map((v) => ({
-            label: v.field.label,
-            value: v.valueNumber ? Number(v.valueNumber) : v.valueText,
-            unit: v.field.unit,
-          }));
-        }
-      }
-    });
-  });
+  attachWorkshopMeasurementsToOrder(serializedOrder, profiles);
 
   return serializedOrder;
 }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import {
   FileStack,
@@ -14,6 +16,15 @@ import { MeasurementValuesModal } from "@/components/admin/AdminMeasurementValue
 import type { MeasurementGarmentType } from "@/components/admin/AdminMeasurementValuesForm";
 import AdminMeasurementGarmentChips from "@/components/admin/AdminMeasurementGarmentChips";
 import AdminCustomerListLayout from "@/components/admin/AdminCustomerListLayout";
+import {
+  formatDate,
+  formatDateTime,
+  statusChipClasses,
+} from "@/components/admin/customers/formatters";
+import {
+  AdminSectionPanel,
+  AdminStatCard,
+} from "@/components/admin/customers/section-ui";
 
 import {
   getAdminCustomersCommunicationsData,
@@ -27,95 +38,22 @@ import {
 } from "@/lib/admin-api";
 import { getAdminSection } from "@/lib/admin-dashboard";
 
-const dateFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "medium",
-});
-
-const dateTimeFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "short",
-  timeStyle: "short",
-});
-
-function parseDateValue(value: Date | string | null | undefined): Date | null {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value: Date | string | null | undefined): string {
-  const parsed = parseDateValue(value);
-  return parsed ? dateFormatter.format(parsed) : "--";
-}
-
-function formatDateTime(value: Date | string | null | undefined): string {
-  const parsed = parseDateValue(value);
-  return parsed ? dateTimeFormatter.format(parsed) : "--";
-}
-
-function statusChipClasses(isPositive: boolean) {
-  return isPositive
-    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-    : "border-white/8 bg-white/[0.03] text-stone-300";
-}
-
-function statCard({
-  title,
-  value,
-  detail,
-  href,
-}: {
+function statCard(props: {
   title: string;
   value: string | number;
   detail: string;
   href?: string;
 }) {
-  const content = (
-    <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
-      <p className="text-sm font-medium text-stone-200">{title}</p>
-      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-stone-400">{detail}</p>
-    </div>
-  );
-
-  if (!href) {
-    return content;
-  }
-
-  return (
-    <Link href={href} className="transition hover:translate-y-[-1px] hover:bg-white/[0.02]">
-      {content}
-    </Link>
-  );
+  return <AdminStatCard {...props} />;
 }
 
-function panel({
-  eyebrow,
-  title,
-  action,
-  children,
-}: {
+function panel(props: {
   eyebrow: string;
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  return (
-    <section className="rounded-[2rem] border border-white/8 bg-black/30 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-            {eyebrow}
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">{title}</h2>
-        </div>
-        {action}
-      </div>
-      <div className="mt-6">{children}</div>
-    </section>
-  );
+  return <AdminSectionPanel {...props} />;
 }
 
 function sectionLinks() {

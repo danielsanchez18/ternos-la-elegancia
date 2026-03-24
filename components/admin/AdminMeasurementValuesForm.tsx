@@ -1,69 +1,22 @@
 "use client";
 
-import { useState, useEffect, useTransition, FormEvent } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Ruler, Plus } from "lucide-react";
+import { Check, X } from "lucide-react";
+import {
+  GARMENT_LABELS,
+  type MeasurementGarmentType,
+} from "@/components/admin/customers/measurement-garments";
+import {
+  type FieldData,
+  type ValuesResponse,
+  buildInitialMeasurementValues,
+  buildMeasurementPayloadValues,
+} from "@/components/admin/customers/measurement-values-helpers";
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-export type MeasurementGarmentType =
-  | "SACO_CABALLERO"
-  | "PANTALON_CABALLERO"
-  | "SACO_DAMA"
-  | "PANTALON_DAMA"
-  | "CAMISA"
-  | "BLUSA"
-  | "CHALECO"
-  | "FALDA"
-  | "SMOKING";
-
-const GARMENT_LABELS: Record<MeasurementGarmentType, string> = {
-  SACO_CABALLERO: "Saco caballero",
-  PANTALON_CABALLERO: "Pantalón caballero",
-  SACO_DAMA: "Saco dama",
-  PANTALON_DAMA: "Pantalón dama",
-  CAMISA: "Camisa",
-  BLUSA: "Blusa",
-  CHALECO: "Chaleco",
-  FALDA: "Falda",
-  SMOKING: "Smoking",
-};
-
-type FieldData = {
-  id: number;
-  garmentType: MeasurementGarmentType;
-  code: string;
-  label: string;
-  unit: string | null;
-  sortOrder: number;
-};
-
-type ValueData = {
-  fieldId: number;
-  valueNumber: number | null;
-  valueText: string | null;
-};
-
-type ValuesResponse = {
-  profileId: number;
-  garmentId: number;
-  garmentType: MeasurementGarmentType;
-  values: Array<{
-    id: number;
-    fieldId: number;
-    fieldCode: string;
-    fieldLabel: string;
-    unit: string | null;
-    valueNumber: string | number | null;
-    valueText: string | null;
-  }>;
-};
-
-/* ------------------------------------------------------------------ */
-/*  Shared UI                                                          */
-/* ------------------------------------------------------------------ */
+export type { MeasurementGarmentType };
 
 function Overlay({
   children,
@@ -73,9 +26,9 @@ function Overlay({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-3xl my-auto">{children}</div>
+      <div className="relative z-10 my-auto w-full max-w-3xl">{children}</div>
     </div>
   );
 }
@@ -115,12 +68,6 @@ function ModalCard({
 const inputClasses =
   "w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-300/40";
 
-const inputErrorClasses = "border-rose-400/50 bg-rose-400/5 focus:border-rose-400";
-
-/* ------------------------------------------------------------------ */
-/*  Form Component                                                     */
-/* ------------------------------------------------------------------ */
-
 export function MeasurementValuesFormContent({
   profileId,
   customerName,
@@ -135,7 +82,9 @@ export function MeasurementValuesFormContent({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [fields, setFields] = useState<FieldData[]>([]);
-  const [values, setValues] = useState<Record<number, { num: string; txt: string }>>({});
+  const [values, setValues] = useState<Record<number, { num: string; txt: string }>>(
+    {}
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -146,37 +95,38 @@ export function MeasurementValuesFormContent({
       try {
         const [fieldsRes, valuesRes] = await Promise.all([
           fetch(`/api/measurement-fields?garmentType=${garmentType}`),
-          fetch(`/api/measurement-profiles/${profileId}/values?garmentType=${garmentType}`)
+          fetch(
+            `/api/measurement-profiles/${profileId}/values?garmentType=${garmentType}`
+          ),
         ]);
 
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
-        if (!fieldsRes.ok) throw new Error("Could not fetch fields");
+        if (!fieldsRes.ok) {
+          throw new Error("Could not fetch fields");
+        }
 
         const fieldsData = (await fieldsRes.json()) as FieldData[];
         setFields(fieldsData);
 
-        const initialValues: Record<number, { num: string; txt: string }> = {};
-
         if (valuesRes.ok) {
           const valuesData = (await valuesRes.json()) as ValuesResponse;
-          for (const val of valuesData.values) {
-            initialValues[val.fieldId] = {
-              num: val.valueNumber?.toString() ?? "",
-              txt: val.valueText ?? "",
-            };
-          }
+          setValues(buildInitialMeasurementValues(valuesData));
         } else if (valuesRes.status !== 404) {
           throw new Error("Could not fetch values");
+        } else {
+          setValues({});
         }
-
-        setValues(initialValues);
-      } catch (err) {
+      } catch {
         if (active) {
           setErrorMessage("Error al cargar los datos de la prenda.");
         }
       } finally {
-        if (active) setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -187,12 +137,12 @@ export function MeasurementValuesFormContent({
     };
   }, [profileId, garmentType]);
 
-  function handleValueChange(fieldId: number, type: "num" | "txt", val: string) {
-    setValues((prev) => ({
-      ...prev,
+  function handleValueChange(fieldId: number, type: "num" | "txt", value: string) {
+    setValues((previous) => ({
+      ...previous,
       [fieldId]: {
-        ...(prev[fieldId] || { num: "", txt: "" }),
-        [type]: val,
+        ...(previous[fieldId] || { num: "", txt: "" }),
+        [type]: value,
       },
     }));
   }
@@ -201,40 +151,14 @@ export function MeasurementValuesFormContent({
     event.preventDefault();
     setErrorMessage(null);
 
-    const payloadValues: ValueData[] = [];
-    let hasError = false;
+    const buildResult = buildMeasurementPayloadValues(fields, values);
 
-    for (const field of fields) {
-      const v = values[field.id];
-      if (!v) continue;
-
-      const numStr = v.num.trim();
-      const txtStr = v.txt.trim();
-
-      if (numStr === "" && txtStr === "") continue;
-
-      let valueNum: number | null = null;
-      if (numStr) {
-        valueNum = parseFloat(numStr);
-        if (isNaN(valueNum)) {
-          hasError = true;
-          break;
-        }
-      }
-
-      payloadValues.push({
-        fieldId: field.id,
-        valueNumber: valueNum,
-        valueText: txtStr || null,
-      });
-    }
-
-    if (hasError) {
+    if (buildResult.hasInvalidNumber) {
       setErrorMessage("Algunos valores numéricos son inválidos.");
       return;
     }
 
-    if (payloadValues.length === 0) {
+    if (buildResult.payload.length === 0) {
       setErrorMessage("Debes ingresar al menos una medida.");
       return;
     }
@@ -247,12 +171,14 @@ export function MeasurementValuesFormContent({
           credentials: "include",
           body: JSON.stringify({
             garmentType,
-            values: payloadValues,
+            values: buildResult.payload,
           }),
         });
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
           setErrorMessage(payload?.error ?? "No se pudieron guardar las medidas.");
           return;
         }
@@ -278,10 +204,14 @@ export function MeasurementValuesFormContent({
       <div className="max-h-[60vh] overflow-y-auto pr-2">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {fields.map((field) => {
-            const v = values[field.id] || { num: "", txt: "" };
+            const value = values[field.id] || { num: "", txt: "" };
+
             return (
-              <div key={field.id} className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-                <p className="text-xs uppercase tracking-[0.15em] text-stone-400 mb-3">
+              <div
+                key={field.id}
+                className="rounded-2xl border border-white/8 bg-white/[0.02] p-4"
+              >
+                <p className="mb-3 text-xs uppercase tracking-[0.15em] text-stone-400">
                   {field.label}
                 </p>
                 <div className="space-y-3">
@@ -290,21 +220,25 @@ export function MeasurementValuesFormContent({
                       type="number"
                       step="0.1"
                       placeholder="Valor ej: 42.5"
-                      value={v.num}
-                      onChange={(e) => handleValueChange(field.id, "num", e.target.value)}
+                      value={value.num}
+                      onChange={(event) =>
+                        handleValueChange(field.id, "num", event.target.value)
+                      }
                       className={`${inputClasses} pr-8`}
                     />
-                    {field.unit && (
-                      <span className="absolute right-3 top-2.5 text-xs text-stone-500 font-medium select-none pointer-events-none">
+                    {field.unit ? (
+                      <span className="pointer-events-none absolute right-3 top-2.5 select-none text-xs font-medium text-stone-500">
                         {field.unit}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <input
                     type="text"
                     placeholder="Nota / Texto..."
-                    value={v.txt}
-                    onChange={(e) => handleValueChange(field.id, "txt", e.target.value)}
+                    value={value.txt}
+                    onChange={(event) =>
+                      handleValueChange(field.id, "txt", event.target.value)
+                    }
                     className={inputClasses}
                   />
                 </div>
@@ -314,9 +248,9 @@ export function MeasurementValuesFormContent({
         </div>
       </div>
 
-      {errorMessage && <p className="text-sm text-rose-300">{errorMessage}</p>}
+      {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
 
-      <div className="flex items-center gap-3 pt-4 border-t border-white/8">
+      <div className="flex items-center gap-3 border-t border-white/8 pt-4">
         <button
           type="button"
           onClick={onClose}
@@ -338,10 +272,6 @@ export function MeasurementValuesFormContent({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Modal Wrapper                                                      */
-/* ------------------------------------------------------------------ */
-
 export function MeasurementValuesModal({
   profileId,
   customerName,
@@ -360,8 +290,9 @@ export function MeasurementValuesModal({
         eyebrow="Toma de medidas"
         title={GARMENT_LABELS[garmentType]}
       >
-        <p className="text-sm text-stone-400 mb-6">
-          Ingresando medidas para <span className="font-medium text-white">{customerName}</span>
+        <p className="mb-6 text-sm text-stone-400">
+          Ingresando medidas para{" "}
+          <span className="font-medium text-white">{customerName}</span>
         </p>
         <MeasurementValuesFormContent
           profileId={profileId}

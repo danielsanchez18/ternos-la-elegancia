@@ -444,3 +444,20 @@ export function getAdminSubroute(sectionSlug: string, subrouteSlug: string) {
     (subroute) => subroute.slug === subrouteSlug
   );
 }
+
+export function getAdminSectionByPath(pathname: string) {
+  return adminDashboardSections.find((section) =>
+    pathname.startsWith(section.href)
+  );
+}
+
+export function getAdminSubrouteByPath(pathname: string) {
+  const currentSection = getAdminSectionByPath(pathname);
+  if (!currentSection) {
+    return undefined;
+  }
+
+  return currentSection.subroutes.find((subroute) =>
+    pathname.startsWith(subroute.href)
+  );
+}
