@@ -43,6 +43,31 @@ export type ListAppointmentsFilters = {
   to?: Date;
 };
 
+export type ListAvailableAppointmentSlotsInput = {
+  date: Date;
+  excludeAppointmentId?: number;
+};
+
+export type PublicAppointmentSlot = {
+  time: string;
+  scheduledAt: Date;
+  occupied: number;
+  capacity: number;
+  available: boolean;
+};
+
+export type PublicAvailableAppointmentSlots = {
+  date: Date;
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean;
+  note: string | null;
+  source: "special" | "regular";
+  slotMinutes: number;
+  capacity: number;
+  slots: PublicAppointmentSlot[];
+};
+
 export type PublicBusinessHour = {
   id: number | null;
   dayOfWeek: number;

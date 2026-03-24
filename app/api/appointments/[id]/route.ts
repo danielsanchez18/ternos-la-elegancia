@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { requireApiAuth } from "@/lib/api-auth";
 import { appointmentService } from "@/src/modules/appointments/application/appointment.service";
@@ -44,6 +45,15 @@ export async function GET(request: Request, { params }: RouteContext) {
 
     return NextResponse.json(appointment);
   } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002" || error.code === "P2034") {
+        return NextResponse.json(
+          { error: "Appointment conflict" },
+          { status: 409 }
+        );
+      }
+    }
+
     if (error instanceof AppointmentNotFoundError) {
       return NextResponse.json(
         { error: "Appointment not found" },
@@ -97,6 +107,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     return NextResponse.json(appointment);
   } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002" || error.code === "P2034") {
+        return NextResponse.json(
+          { error: "Appointment conflict" },
+          { status: 409 }
+        );
+      }
+    }
+
     if (error instanceof AppointmentNotFoundError) {
       return NextResponse.json(
         { error: "Appointment not found" },

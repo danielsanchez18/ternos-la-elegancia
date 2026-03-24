@@ -16,6 +16,11 @@ export const listAppointmentsQuerySchema = z.object({
   to: z.coerce.date().optional(),
 });
 
+export const listAvailableSlotsQuerySchema = z.object({
+  date: z.coerce.date(),
+  excludeAppointmentId: z.coerce.number().int().positive().optional(),
+});
+
 export const createAppointmentSchema = z.object({
   customerId: z.coerce.number().int().positive(),
   type: z.nativeEnum(AppointmentType),

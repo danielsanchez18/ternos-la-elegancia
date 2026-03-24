@@ -14,8 +14,10 @@ import {
   AppointmentActionInput,
   CreateSpecialScheduleInput,
   CreateAppointmentInput,
+  ListAvailableAppointmentSlotsInput,
   ListSpecialSchedulesFilters,
   ListAppointmentsFilters,
+  PublicAvailableAppointmentSlots,
   PublicBusinessHour,
   PublicAppointment,
   PublicSpecialSchedule,
@@ -25,6 +27,7 @@ import {
 import { AppointmentRepository } from "@/src/modules/appointments/infrastructure/appointment.repository";
 
 const DEFAULT_SLOT_CAPACITY = 2;
+const APPOINTMENT_SLOT_MINUTES = 30;
 
 const defaultBusinessHours: Record<number, { open: string; close: string; isClosed: boolean }> = {
   0: { open: "09:00", close: "12:00", isClosed: false },
@@ -58,6 +61,24 @@ function normalizedDayDate(input: Date): Date {
   date.setHours(0, 0, 0, 0);
   return date;
 }
+
+function pad2(value: number): string {
+  return value.toString().padStart(2, "0");
+}
+
+function timeLabelFromMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return `${pad2(hours)}:${pad2(remainder)}`;
+}
+
+type ResolvedDaySchedule = {
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean;
+  note: string | null;
+  source: "special" | "regular";
+};
 
 function appointmentStatusAllowsTransition(
   current: AppointmentStatus,
@@ -133,157 +154,214 @@ export class AppointmentService {
   }
 
   async createAppointment(input: CreateAppointmentInput): Promise<PublicAppointment> {
-    const customerExists = await this.appointmentRepository.customerExists(
-      input.customerId
-    );
+    return this.appointmentRepository.transaction(async (tx) => {
+      const customerExists = await this.appointmentRepository.customerExists(
+        input.customerId,
+        tx
+      );
 
-    if (!customerExists) {
-      throw new AppointmentCustomerNotFoundError();
-    }
+      if (!customerExists) {
+        throw new AppointmentCustomerNotFoundError();
+      }
 
-    await this.assertSlotIsAvailable(input.scheduledAt);
+      await this.appointmentRepository.lockAppointmentDate(input.scheduledAt, tx);
+      await this.assertSlotIsAvailable(input.scheduledAt, undefined, tx);
 
-    const code = await this.appointmentRepository.nextCodeForDate(input.scheduledAt);
+      const code = await this.appointmentRepository.nextCodeForDate(
+        input.scheduledAt,
+        tx
+      );
 
-    const appointment = await this.appointmentRepository.create({
-      customerId: input.customerId,
-      type: input.type,
-      scheduledAt: input.scheduledAt,
-      estimatedEndAt: datePlusMinutes(input.scheduledAt, 30),
-      code,
-      rescheduleDeadlineAt: dateMinusHours(input.scheduledAt, 24),
-      cancelDeadlineAt: dateMinusHours(input.scheduledAt, 24),
-      notes: input.notes,
-      internalNotes: input.internalNotes,
+      const appointment = await this.appointmentRepository.create(
+        {
+          customerId: input.customerId,
+          type: input.type,
+          scheduledAt: input.scheduledAt,
+          estimatedEndAt: datePlusMinutes(input.scheduledAt, APPOINTMENT_SLOT_MINUTES),
+          code,
+          rescheduleDeadlineAt: dateMinusHours(input.scheduledAt, 24),
+          cancelDeadlineAt: dateMinusHours(input.scheduledAt, 24),
+          notes: input.notes,
+          internalNotes: input.internalNotes,
+        },
+        tx
+      );
+
+      await this.appointmentRepository.createStatusHistory(
+        {
+          appointmentId: appointment.id,
+          status: AppointmentStatus.PENDIENTE,
+          note: "Cita creada",
+        },
+        tx
+      );
+
+      return appointment;
     });
-
-    await this.appointmentRepository.createStatusHistory({
-      appointmentId: appointment.id,
-      status: AppointmentStatus.PENDIENTE,
-      note: "Cita creada",
-    });
-
-    return appointment;
   }
 
   async actOnAppointment(
     id: number,
     input: AppointmentActionInput
   ): Promise<PublicAppointment> {
-    const appointment = await this.appointmentRepository.findById(id);
+    return this.appointmentRepository.transaction(async (tx) => {
+      const rowLocked = await this.appointmentRepository.lockAppointmentRow(id, tx);
+      if (!rowLocked) {
+        throw new AppointmentNotFoundError();
+      }
 
-    if (!appointment) {
-      throw new AppointmentNotFoundError();
-    }
+      const appointment = await this.appointmentRepository.findById(id, tx);
 
-    if (!appointmentStatusAllowsTransition(appointment.status, input.action)) {
-      throw new AppointmentTransitionNotAllowedError();
-    }
+      if (!appointment) {
+        throw new AppointmentNotFoundError();
+      }
 
-    const now = new Date();
+      if (!appointmentStatusAllowsTransition(appointment.status, input.action)) {
+        throw new AppointmentTransitionNotAllowedError();
+      }
 
-    if (input.action === "CONFIRM") {
-      const updated = await this.appointmentRepository.updateById(id, {
-        status: AppointmentStatus.CONFIRMADA,
-        confirmedAt: now,
-      });
+      const now = new Date();
 
-      await this.appointmentRepository.createStatusHistory({
-        appointmentId: id,
-        status: AppointmentStatus.CONFIRMADA,
-        note: input.note,
-      });
+      if (input.action === "CONFIRM") {
+        const updated = await this.appointmentRepository.updateById(
+          id,
+          {
+            status: AppointmentStatus.CONFIRMADA,
+            confirmedAt: now,
+          },
+          tx
+        );
 
-      return updated;
-    }
+        await this.appointmentRepository.createStatusHistory(
+          {
+            appointmentId: id,
+            status: AppointmentStatus.CONFIRMADA,
+            note: input.note,
+          },
+          tx
+        );
 
-    if (input.action === "COMPLETE") {
-      const updated = await this.appointmentRepository.updateById(id, {
-        status: AppointmentStatus.REALIZADA,
-        attendedAt: now,
-      });
+        return updated;
+      }
 
-      await this.appointmentRepository.createStatusHistory({
-        appointmentId: id,
-        status: AppointmentStatus.REALIZADA,
-        note: input.note,
-      });
+      if (input.action === "COMPLETE") {
+        const updated = await this.appointmentRepository.updateById(
+          id,
+          {
+            status: AppointmentStatus.REALIZADA,
+            attendedAt: now,
+          },
+          tx
+        );
 
-      return updated;
-    }
+        await this.appointmentRepository.createStatusHistory(
+          {
+            appointmentId: id,
+            status: AppointmentStatus.REALIZADA,
+            note: input.note,
+          },
+          tx
+        );
 
-    if (input.action === "NO_SHOW") {
-      const updated = await this.appointmentRepository.updateById(id, {
-        status: AppointmentStatus.NO_ASISTIO,
-        noShowAt: now,
-      });
+        return updated;
+      }
 
-      await this.appointmentRepository.createStatusHistory({
-        appointmentId: id,
-        status: AppointmentStatus.NO_ASISTIO,
-        note: input.note,
-      });
+      if (input.action === "NO_SHOW") {
+        const updated = await this.appointmentRepository.updateById(
+          id,
+          {
+            status: AppointmentStatus.NO_ASISTIO,
+            noShowAt: now,
+          },
+          tx
+        );
 
-      return updated;
-    }
+        await this.appointmentRepository.createStatusHistory(
+          {
+            appointmentId: id,
+            status: AppointmentStatus.NO_ASISTIO,
+            note: input.note,
+          },
+          tx
+        );
 
-    if (input.action === "CANCEL") {
+        return updated;
+      }
+
+      if (input.action === "CANCEL") {
+        const deadline =
+          appointment.cancelDeadlineAt ?? dateMinusHours(appointment.scheduledAt, 24);
+
+        if (now > deadline) {
+          throw new AppointmentDeadlineExceededError(
+            "Cancellation deadline has been exceeded"
+          );
+        }
+
+        const updated = await this.appointmentRepository.updateById(
+          id,
+          {
+            status: AppointmentStatus.CANCELADA,
+            cancelledAt: now,
+          },
+          tx
+        );
+
+        await this.appointmentRepository.createStatusHistory(
+          {
+            appointmentId: id,
+            status: AppointmentStatus.CANCELADA,
+            note: input.note,
+          },
+          tx
+        );
+
+        return updated;
+      }
+
+      await this.appointmentRepository.lockAppointmentDate(input.scheduledAt, tx);
+
       const deadline =
-        appointment.cancelDeadlineAt ?? dateMinusHours(appointment.scheduledAt, 24);
+        appointment.rescheduleDeadlineAt ?? dateMinusHours(appointment.scheduledAt, 24);
 
-      if (now > deadline) {
+      if (appointment.status === AppointmentStatus.NO_ASISTIO) {
+        const noShowAt = appointment.noShowAt ?? now;
+        if (now > datePlusHours(noShowAt, 6)) {
+          throw new AppointmentDeadlineExceededError(
+            "No-show reschedule window (6 hours) has been exceeded"
+          );
+        }
+      } else if (now > deadline) {
         throw new AppointmentDeadlineExceededError(
-          "Cancellation deadline has been exceeded"
+          "Reschedule deadline has been exceeded"
         );
       }
 
-      const updated = await this.appointmentRepository.updateById(id, {
-        status: AppointmentStatus.CANCELADA,
-        cancelledAt: now,
-      });
+      await this.assertSlotIsAvailable(input.scheduledAt, id, tx);
 
-      await this.appointmentRepository.createStatusHistory({
-        appointmentId: id,
-        status: AppointmentStatus.CANCELADA,
-        note: input.note,
-      });
+      const updated = await this.appointmentRepository.updateById(
+        id,
+        {
+          status: AppointmentStatus.REPROGRAMADA,
+          scheduledAt: input.scheduledAt,
+          estimatedEndAt: datePlusMinutes(input.scheduledAt, APPOINTMENT_SLOT_MINUTES),
+          rescheduleDeadlineAt: dateMinusHours(input.scheduledAt, 24),
+          cancelDeadlineAt: dateMinusHours(input.scheduledAt, 24),
+        },
+        tx
+      );
+
+      await this.appointmentRepository.createStatusHistory(
+        {
+          appointmentId: id,
+          status: AppointmentStatus.REPROGRAMADA,
+          note: input.note,
+        },
+        tx
+      );
 
       return updated;
-    }
-
-    const deadline =
-      appointment.rescheduleDeadlineAt ?? dateMinusHours(appointment.scheduledAt, 24);
-
-    if (appointment.status === AppointmentStatus.NO_ASISTIO) {
-      const noShowAt = appointment.noShowAt ?? now;
-      if (now > datePlusHours(noShowAt, 6)) {
-        throw new AppointmentDeadlineExceededError(
-          "No-show reschedule window (6 hours) has been exceeded"
-        );
-      }
-    } else if (now > deadline) {
-      throw new AppointmentDeadlineExceededError(
-        "Reschedule deadline has been exceeded"
-      );
-    }
-
-    await this.assertSlotIsAvailable(input.scheduledAt, id);
-
-    const updated = await this.appointmentRepository.updateById(id, {
-      status: AppointmentStatus.REPROGRAMADA,
-      scheduledAt: input.scheduledAt,
-      estimatedEndAt: datePlusMinutes(input.scheduledAt, 30),
-      rescheduleDeadlineAt: dateMinusHours(input.scheduledAt, 24),
-      cancelDeadlineAt: dateMinusHours(input.scheduledAt, 24),
     });
-
-    await this.appointmentRepository.createStatusHistory({
-      appointmentId: id,
-      status: AppointmentStatus.REPROGRAMADA,
-      note: input.note,
-    });
-
-    return updated;
   }
 
   async listBusinessHours(): Promise<PublicBusinessHour[]> {
@@ -302,6 +380,68 @@ export class AppointmentService {
         note: row?.note ?? null,
       };
     });
+  }
+
+  async listAvailableSlots(
+    input: ListAvailableAppointmentSlotsInput
+  ): Promise<PublicAvailableAppointmentSlots> {
+    const date = normalizedDayDate(input.date);
+    const schedule = await this.resolveDayScheduleForDate(date);
+
+    const response: PublicAvailableAppointmentSlots = {
+      date,
+      openTime: schedule.openTime,
+      closeTime: schedule.closeTime,
+      isClosed: schedule.isClosed,
+      note: schedule.note,
+      source: schedule.source,
+      slotMinutes: APPOINTMENT_SLOT_MINUTES,
+      capacity: DEFAULT_SLOT_CAPACITY,
+      slots: [],
+    };
+
+    if (schedule.isClosed || !schedule.openTime || !schedule.closeTime) {
+      return response;
+    }
+
+    const openMinutes = timeToMinutes(schedule.openTime);
+    const closeMinutes = timeToMinutes(schedule.closeTime);
+
+    if (openMinutes >= closeMinutes) {
+      return response;
+    }
+
+    const slotStarts: Date[] = [];
+    for (let cursor = openMinutes; cursor < closeMinutes; cursor += APPOINTMENT_SLOT_MINUTES) {
+      const slotStart = new Date(date);
+      slotStart.setHours(Math.floor(cursor / 60), cursor % 60, 0, 0);
+      slotStarts.push(slotStart);
+    }
+
+    const occupancies = await Promise.all(
+      slotStarts.map((slotStart) =>
+        this.appointmentRepository.countOverlappingAppointments({
+          startsAt: slotStart,
+          endsAt: datePlusMinutes(slotStart, APPOINTMENT_SLOT_MINUTES),
+          excludeAppointmentId: input.excludeAppointmentId,
+        })
+      )
+    );
+
+    response.slots = slotStarts.map((slotStart, index) => {
+      const occupied = occupancies[index];
+      const minutes = slotStart.getHours() * 60 + slotStart.getMinutes();
+
+      return {
+        time: timeLabelFromMinutes(minutes),
+        scheduledAt: slotStart,
+        occupied,
+        capacity: DEFAULT_SLOT_CAPACITY,
+        available: occupied < DEFAULT_SLOT_CAPACITY,
+      };
+    });
+
+    return response;
   }
 
   async upsertBusinessHour(input: UpsertBusinessHourInput): Promise<PublicBusinessHour> {
@@ -410,47 +550,35 @@ export class AppointmentService {
 
   private async assertSlotIsAvailable(
     scheduledAt: Date,
-    excludeAppointmentId?: number
+    excludeAppointmentId?: number,
+    tx?: Parameters<AppointmentRepository["countOverlappingAppointments"]>[1]
   ): Promise<void> {
-    await this.assertInsideBusinessHours(scheduledAt);
+    await this.assertInsideBusinessHours(scheduledAt, tx);
 
     const occupiedSlots = await this.appointmentRepository.countOverlappingAppointments({
       startsAt: scheduledAt,
-      endsAt: datePlusMinutes(scheduledAt, 30),
+      endsAt: datePlusMinutes(scheduledAt, APPOINTMENT_SLOT_MINUTES),
       excludeAppointmentId,
-    });
+    }, tx);
 
     if (occupiedSlots >= DEFAULT_SLOT_CAPACITY) {
       throw new AppointmentSlotUnavailableError();
     }
   }
 
-  private async assertInsideBusinessHours(scheduledAt: Date): Promise<void> {
+  private async assertInsideBusinessHours(
+    scheduledAt: Date,
+    tx?: Parameters<AppointmentRepository["findBusinessHour"]>[1]
+  ): Promise<void> {
     const minutes = scheduledAt.getMinutes();
     if (minutes !== 0 && minutes !== 30) {
       throw new AppointmentOutsideBusinessHoursError();
     }
 
-    const specialSchedule =
-      await this.appointmentRepository.findSpecialScheduleForDate(scheduledAt);
-
-    let openTime: string | null = null;
-    let closeTime: string | null = null;
-    let isClosed = false;
-
-    if (specialSchedule) {
-      openTime = specialSchedule.openTime;
-      closeTime = specialSchedule.closeTime;
-      isClosed = specialSchedule.isClosed;
-    } else {
-      const dayOfWeek = scheduledAt.getDay();
-      const configured = await this.appointmentRepository.findBusinessHour(dayOfWeek);
-      const fallback = defaultBusinessHours[dayOfWeek];
-
-      openTime = configured?.openTime ?? fallback?.open ?? null;
-      closeTime = configured?.closeTime ?? fallback?.close ?? null;
-      isClosed = configured?.isClosed ?? fallback?.isClosed ?? true;
-    }
+    const schedule = await this.resolveDayScheduleForDate(scheduledAt, tx);
+    const openTime = schedule.openTime;
+    const closeTime = schedule.closeTime;
+    const isClosed = schedule.isClosed;
 
     if (isClosed || !openTime || !closeTime) {
       throw new AppointmentOutsideBusinessHoursError();
@@ -463,6 +591,35 @@ export class AppointmentService {
     if (selectedMinutes < openMinutes || selectedMinutes >= closeMinutes) {
       throw new AppointmentOutsideBusinessHoursError();
     }
+  }
+
+  private async resolveDayScheduleForDate(
+    date: Date,
+    tx?: Parameters<AppointmentRepository["findBusinessHour"]>[1]
+  ): Promise<ResolvedDaySchedule> {
+    const specialSchedule = await this.appointmentRepository.findSpecialScheduleForDate(date, tx);
+
+    if (specialSchedule) {
+      return {
+        openTime: specialSchedule.openTime,
+        closeTime: specialSchedule.closeTime,
+        isClosed: specialSchedule.isClosed,
+        note: specialSchedule.note ?? null,
+        source: "special",
+      };
+    }
+
+    const dayOfWeek = date.getDay();
+    const configured = await this.appointmentRepository.findBusinessHour(dayOfWeek, tx);
+    const fallback = defaultBusinessHours[dayOfWeek];
+
+    return {
+      openTime: configured?.openTime ?? fallback?.open ?? null,
+      closeTime: configured?.closeTime ?? fallback?.close ?? null,
+      isClosed: configured?.isClosed ?? fallback?.isClosed ?? true,
+      note: configured?.note ?? null,
+      source: "regular",
+    };
   }
 }
 

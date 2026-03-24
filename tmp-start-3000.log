@@ -1,0 +1,29 @@
+
+> ternos-la-elegancia@0.1.0 start
+> next start --port 3000
+
+▲ Next.js 16.1.6
+- Local:         http://localhost:3000
+- Network:       http://192.168.18.54:3000
+
+✓ Starting...
+✓ Ready in 669ms
+2026-03-24T19:07:24.977Z ERROR [Better Auth]: INTERNAL_SERVER_ERROR Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.session.findFirst()` invocation:
+
+
+
+    at async Object.findOne (C:\Users\ander\Documents\Proyecto NEXT - La Elegancia\ternos-la-elegancia\.next\server\chunks\_0e110063._.js:398:11307)
+    at async Object.findSession (C:\Users\ander\Documents\Proyecto NEXT - La Elegancia\ternos-la-elegancia\.next\server\chunks\_0e110063._.js:33:13649)
+    at async (C:\Users\ander\Documents\Proyecto NEXT - La Elegancia\ternos-la-elegancia\.next\server\chunks\_0e110063._.js:33:32796)
+    at async d (C:\Users\ander\Documents\Proyecto NEXT - La Elegancia\ternos-la-elegancia\.next\server\chunks\_0e110063._.js:1:114959) {
+  code: 'EACCES',
+  meta: [Object],
+  clientVersion: '7.5.0'
+}
+⨯ [Error [APIError]: Failed to get session] {
+  status: 'INTERNAL_SERVER_ERROR',
+  body: [Object],
+  headers: {},
+  statusCode: 500
+}

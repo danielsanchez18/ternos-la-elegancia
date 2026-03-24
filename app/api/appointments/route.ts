@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { requireApiAuth } from "@/lib/api-auth";
 import { appointmentService } from "@/src/modules/appointments/application/appointment.service";
@@ -65,6 +66,15 @@ export async function POST(request: Request) {
     const appointment = await appointmentService.createAppointment(parsedBody.data);
     return NextResponse.json(appointment, { status: 201 });
   } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002" || error.code === "P2034") {
+        return NextResponse.json(
+          { error: "Appointment conflict" },
+          { status: 409 }
+        );
+      }
+    }
+
     if (error instanceof AppointmentCustomerNotFoundError) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
@@ -80,6 +90,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Appointment slot unavailable" },
         { status: 409 }
+      );
+    }
+
+    if (process.env.NODE_ENV !== "production" && error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: "Could not create appointment",
+          detail: error.message,
+          name: error.name,
+        },
+        { status: 500 }
       );
     }
 

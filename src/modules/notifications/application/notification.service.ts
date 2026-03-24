@@ -20,6 +20,11 @@ function buildCustomerName(input: { nombres: string; apellidos: string | null })
   return `${input.nombres} ${input.apellidos ?? ""}`.trim();
 }
 
+const allowedReminderChannels: ReadonlySet<NotificationChannel> = new Set([
+  NotificationChannel.EMAIL,
+  NotificationChannel.WHATSAPP,
+]);
+
 export class NotificationService {
   constructor(private readonly notificationRepository: NotificationRepository) {}
 
@@ -30,7 +35,7 @@ export class NotificationService {
   async dispatchAppointmentReminder24h(
     input: DispatchAppointmentReminder24hInput
   ): Promise<DispatchAppointmentReminder24hResult> {
-    if (input.channel === NotificationChannel.INTERNO) {
+    if (!allowedReminderChannels.has(input.channel)) {
       throw new NotificationValidationError(
         "Reminder 24h should be sent via EMAIL or WHATSAPP"
       );
@@ -40,24 +45,30 @@ export class NotificationService {
     const windowFrom = new Date(now.getTime() + 23 * 60 * 60 * 1000);
     const windowTo = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
+    const checked =
+      await this.notificationRepository.countReminderCandidatesFor24hReminder({
+        from: windowFrom,
+        to: windowTo,
+      });
+
     const eligibleAppointments =
       await this.notificationRepository.findEligibleAppointmentsFor24hReminder({
         from: windowFrom,
         to: windowTo,
       });
+    const eligible = eligibleAppointments.length;
 
     if (input.dryRun) {
       return {
-        checked: eligibleAppointments.length,
-        eligible: eligibleAppointments.length,
+        checked,
+        eligible,
         sent: 0,
-        skippedAlreadySent: 0,
+        skippedAlreadySent: Math.max(checked - eligible, 0),
         dryRun: true,
       };
     }
 
     let sent = 0;
-    let skippedAlreadySent = 0;
 
     for (const appointment of eligibleAppointments) {
       const customerName = buildCustomerName({
@@ -82,14 +93,14 @@ export class NotificationService {
 
       if (marked) {
         sent += 1;
-      } else {
-        skippedAlreadySent += 1;
       }
     }
 
+    const skippedAlreadySent = Math.max(checked - sent, 0);
+
     return {
-      checked: eligibleAppointments.length,
-      eligible: eligibleAppointments.length,
+      checked,
+      eligible,
       sent,
       skippedAlreadySent,
       dryRun: false,

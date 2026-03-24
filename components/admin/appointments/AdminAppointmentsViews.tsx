@@ -275,6 +275,8 @@ export function AgendaSubrouteView({
         <p className="mt-4 max-w-3xl text-sm leading-7 text-stone-400 sm:text-base">
           Todas las citas del sistema ordenadas por fecha. Usa las acciones de cada fila
           para confirmar, completar, registrar inasistencia, cancelar o reprogramar.
+          Las citas marcadas como no asistió también pueden reprogramarse dentro de la ventana
+          permitida por el backend.
         </p>
       </article>
 
@@ -301,7 +303,14 @@ export function AgendaSubrouteView({
                     key={a.id}
                     className="border-b border-white/5 transition hover:bg-white/[0.02]"
                   >
-                    <td className="px-4 py-4 font-mono text-xs text-stone-300">{a.code}</td>
+                    <td className="px-4 py-4 font-mono text-xs text-stone-300">
+                      <Link
+                        href={`/admin/citas/agenda/${a.id}`}
+                        className="underline-offset-4 transition hover:text-emerald-300 hover:underline"
+                      >
+                        {a.code}
+                      </Link>
+                    </td>
                     <td className="px-4 py-4">
                       <p className="text-white">{a.customerName}</p>
                       {a.customerCelular ? (

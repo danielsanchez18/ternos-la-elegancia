@@ -43,6 +43,27 @@ export class NotificationRepository {
     });
   }
 
+  async countReminderCandidatesFor24hReminder(input: {
+    from: Date;
+    to: Date;
+  }): Promise<number> {
+    return prisma.appointment.count({
+      where: {
+        status: {
+          in: [
+            AppointmentStatus.PENDIENTE,
+            AppointmentStatus.CONFIRMADA,
+            AppointmentStatus.REPROGRAMADA,
+          ],
+        },
+        scheduledAt: {
+          gte: input.from,
+          lte: input.to,
+        },
+      },
+    });
+  }
+
   async findEligibleAppointmentsFor24hReminder(input: {
     from: Date;
     to: Date;

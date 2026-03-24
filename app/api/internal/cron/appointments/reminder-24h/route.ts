@@ -21,12 +21,25 @@ function getBearerToken(authorizationHeader: string | null): string | null {
 }
 
 function isAuthorized(request: Request, expectedSecret: string): boolean {
-
   const bearer = getBearerToken(request.headers.get("authorization"));
   const fallbackHeader = request.headers.get("x-cron-secret");
   const receivedSecret = bearer ?? fallbackHeader;
 
   return receivedSecret === expectedSecret;
+}
+
+async function readJsonBody(request: Request): Promise<unknown> {
+  const rawBody = await request.text();
+
+  if (!rawBody.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawBody) as unknown;
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
 export async function POST(request: Request) {
@@ -44,14 +57,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    let body: unknown = {};
-
-    try {
-      body = await request.json();
-    } catch {
-      body = {};
-    }
-
+    const body = await readJsonBody(request).catch(() => {
+      throw new Error("Invalid JSON body");
+    });
     const parsedBody = dispatchAppointmentReminder24hSchema.safeParse(body);
 
     if (!parsedBody.success) {
@@ -70,6 +78,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Invalid JSON body") {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     if (error instanceof NotificationValidationError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }

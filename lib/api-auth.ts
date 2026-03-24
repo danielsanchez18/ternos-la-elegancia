@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getRouteAccessPolicy } from "@/src/security/api-access-map";
 
 export type ApiAuthLevel = "authenticated" | "admin" | "customer";
 
@@ -23,10 +24,35 @@ type ApiAuthFailure = {
 
 export type ApiAuthResult = ApiAuthSuccess | ApiAuthFailure;
 
+type ApiAccessLevel = ApiAuthLevel | "public";
+
+function mergeAccessLevels(
+  requestedLevel: ApiAuthLevel,
+  policyLevel: ApiAccessLevel | null
+): ApiAuthLevel {
+  if (!policyLevel || policyLevel === "public") {
+    return requestedLevel;
+  }
+
+  if (requestedLevel === "admin" || policyLevel === "admin") {
+    return "admin";
+  }
+
+  if (requestedLevel === "customer" || policyLevel === "customer") {
+    return "customer";
+  }
+
+  return "authenticated";
+}
+
 export async function requireApiAuth(
   request: Request,
   level: ApiAuthLevel = "authenticated"
 ): Promise<ApiAuthResult> {
+  const pathname = new URL(request.url).pathname;
+  const policyLevel = getRouteAccessPolicy(pathname)?.level ?? null;
+  const effectiveLevel = mergeAccessLevels(level, policyLevel);
+
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session) {
@@ -60,11 +86,11 @@ export async function requireApiAuth(
     customerId: memberships?.customer?.id ?? null,
   };
 
-  if (level === "authenticated") {
+  if (effectiveLevel === "authenticated") {
     return { ok: true, context };
   }
 
-  if (level === "admin") {
+  if (effectiveLevel === "admin") {
     if (!memberships?.adminProfile || !memberships.adminProfile.isActive) {
       return {
         ok: false,

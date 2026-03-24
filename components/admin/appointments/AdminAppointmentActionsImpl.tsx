@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -11,6 +11,13 @@ import {
   UserX,
   AlertTriangle,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -25,6 +32,42 @@ export type AppointmentActionData = {
 };
 
 type ActionType = "CONFIRM" | "COMPLETE" | "NO_SHOW" | "CANCEL" | "RESCHEDULE";
+
+type AppointmentStatusLike =
+  | "PENDIENTE"
+  | "CONFIRMADA"
+  | "REPROGRAMADA"
+  | "CANCELADA"
+  | "NO_ASISTIO"
+  | "REALIZADA";
+
+type ApiErrorResponse = {
+  error?: string;
+  issues?: Array<{
+    path: string;
+    message: string;
+  }>;
+};
+
+type AvailableSlotApiRow = {
+  time: string;
+  scheduledAt: string;
+  occupied: number;
+  capacity: number;
+  available: boolean;
+};
+
+type AvailableSlotsApiResponse = {
+  date: string;
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean;
+  note: string | null;
+  source: "special" | "regular";
+  slotMinutes: number;
+  capacity: number;
+  slots: AvailableSlotApiRow[];
+};
 
 /* ------------------------------------------------------------------ */
 /*  Shared UI                                                          */
@@ -94,8 +137,8 @@ const ACTION_META: Record<
 > = {
   CONFIRM: {
     label: "Confirmar",
-    eyebrow: "Confirmación",
-    description: "¿Confirmar esta cita?",
+    eyebrow: "Confirmacion",
+    description: "Confirmar esta cita?",
     buttonLabel: "Confirmar cita",
     pendingLabel: "Confirmando...",
     variant: "emerald",
@@ -103,17 +146,17 @@ const ACTION_META: Record<
   },
   COMPLETE: {
     label: "Completar",
-    eyebrow: "Finalización",
-    description: "¿Marcar esta cita como realizada?",
+    eyebrow: "Finalizacion",
+    description: "Marcar esta cita como realizada?",
     buttonLabel: "Marcar realizada",
     pendingLabel: "Completando...",
     variant: "emerald",
     needsSchedule: false,
   },
   NO_SHOW: {
-    label: "No asistió",
+    label: "No asistio",
     eyebrow: "Inasistencia",
-    description: "¿Registrar que el cliente no asistió?",
+    description: "Registrar que el cliente no asistio?",
     buttonLabel: "Registrar no show",
     pendingLabel: "Registrando...",
     variant: "amber",
@@ -121,8 +164,8 @@ const ACTION_META: Record<
   },
   CANCEL: {
     label: "Cancelar",
-    eyebrow: "Cancelación",
-    description: "¿Cancelar esta cita? Esta acción no se puede deshacer.",
+    eyebrow: "Cancelacion",
+    description: "Cancelar esta cita? Esta accion no se puede deshacer.",
     buttonLabel: "Cancelar cita",
     pendingLabel: "Cancelando...",
     variant: "rose",
@@ -130,13 +173,20 @@ const ACTION_META: Record<
   },
   RESCHEDULE: {
     label: "Reprogramar",
-    eyebrow: "Reprogramación",
+    eyebrow: "Reprogramacion",
     description: "Selecciona la nueva fecha y hora para la cita.",
     buttonLabel: "Reprogramar",
     pendingLabel: "Reprogramando...",
     variant: "blue",
     needsSchedule: true,
   },
+};
+
+const AVAILABLE_ACTIONS_BY_STATUS: Partial<Record<AppointmentStatusLike, ActionType[]>> = {
+  PENDIENTE: ["CONFIRM", "CANCEL", "RESCHEDULE"],
+  CONFIRMADA: ["COMPLETE", "NO_SHOW", "CANCEL", "RESCHEDULE"],
+  REPROGRAMADA: ["CONFIRM", "COMPLETE", "NO_SHOW", "CANCEL", "RESCHEDULE"],
+  NO_ASISTIO: ["RESCHEDULE"],
 };
 
 function variantButtonClasses(variant: string) {
@@ -165,6 +215,55 @@ function variantBorderClasses(variant: string) {
   }
 }
 
+function getApiErrorMessage(payload: ApiErrorResponse | null, fallback: string): string {
+  if (!payload) {
+    return fallback;
+  }
+
+  if (Array.isArray(payload.issues) && payload.issues.length > 0) {
+    return payload.issues
+      .map((issue) => (issue.path ? `${issue.path}: ${issue.message}` : issue.message))
+      .join(" - ");
+  }
+
+  return payload.error ?? fallback;
+}
+
+function pad2(value: number): string {
+  return value.toString().padStart(2, "0");
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+function toDateParts(date: Date) {
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  };
+}
+
+const MONTH_LABELS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+function toIsoDateFromParts(year: number, month: number, day: number): string {
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Action Modal                                                       */
 /* ------------------------------------------------------------------ */
@@ -181,10 +280,117 @@ function ActionModal({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [note, setNote] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [rescheduleYear, setRescheduleYear] = useState<number>(() =>
+    new Date(appointment.scheduledAt).getFullYear()
+  );
+  const [rescheduleMonth, setRescheduleMonth] = useState<number>(() =>
+    new Date(appointment.scheduledAt).getMonth() + 1
+  );
+  const [rescheduleDay, setRescheduleDay] = useState<number>(() =>
+    new Date(appointment.scheduledAt).getDate()
+  );
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [availability, setAvailability] = useState<AvailableSlotsApiResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const meta = ACTION_META[action];
+  const isRescheduleAction = action === "RESCHEDULE";
+  const nowYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, idx) => nowYear - 1 + idx);
+  const maxDayInSelectedMonth = daysInMonth(rescheduleYear, rescheduleMonth);
+  const rescheduleDate = useMemo(
+    () =>
+      toIsoDateFromParts(
+        rescheduleYear,
+        rescheduleMonth,
+        Math.min(rescheduleDay, maxDayInSelectedMonth)
+      ),
+    [rescheduleYear, rescheduleMonth, rescheduleDay, maxDayInSelectedMonth]
+  );
+
+  useEffect(() => {
+    if (!isRescheduleAction) {
+      return;
+    }
+
+    const appointmentDate = new Date(appointment.scheduledAt);
+    const parts = toDateParts(appointmentDate);
+    setRescheduleYear(parts.year);
+    setRescheduleMonth(parts.month);
+    setRescheduleDay(parts.day);
+    setRescheduleTime("");
+  }, [isRescheduleAction, appointment.scheduledAt]);
+
+  useEffect(() => {
+    if (rescheduleDay <= maxDayInSelectedMonth) {
+      return;
+    }
+
+    setRescheduleDay(maxDayInSelectedMonth);
+  }, [rescheduleDay, maxDayInSelectedMonth]);
+
+  useEffect(() => {
+    if (!isRescheduleAction) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadAvailability() {
+      setIsLoadingAvailability(true);
+      setErrorMessage(null);
+
+      try {
+        const response = await fetch(
+          `/api/appointments/available-slots?date=${rescheduleDate}&excludeAppointmentId=${appointment.id}`,
+          {
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as ApiErrorResponse | null;
+          if (isMounted) {
+            setErrorMessage(
+            getApiErrorMessage(payload, "No se pudo ejecutar la accion.")
+            );
+          }
+          return;
+        }
+
+        const availabilityJson = (await response.json()) as AvailableSlotsApiResponse;
+        if (isMounted) {
+          setAvailability(availabilityJson);
+        }
+      } catch {
+        if (isMounted) {
+          setErrorMessage("No se pudo cargar disponibilidad de horarios.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingAvailability(false);
+        }
+      }
+    }
+
+    void loadAvailability();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isRescheduleAction, rescheduleDate, appointment.id]);
+
+  const availableTimeSlots = useMemo(
+    () => availability?.slots.filter((slot) => slot.available).map((slot) => slot.time) ?? [],
+    [availability]
+  );
+
+  useEffect(() => {
+    if (rescheduleTime && !availableTimeSlots.includes(rescheduleTime)) {
+      setRescheduleTime("");
+    }
+  }, [rescheduleTime, availableTimeSlots]);
 
   function handleSubmit() {
     setErrorMessage(null);
@@ -194,11 +400,36 @@ function ActionModal({
         const body: Record<string, unknown> = { action, note: note.trim() || undefined };
 
         if (meta.needsSchedule) {
-          if (!scheduledAt) {
-            setErrorMessage("Selecciona una fecha y hora.");
+          if (isLoadingAvailability) {
+            setErrorMessage("Espera a que se cargue la disponibilidad.");
             return;
           }
-          body.scheduledAt = new Date(scheduledAt).toISOString();
+
+          if (!rescheduleTime) {
+            setErrorMessage("Selecciona una hora disponible.");
+            return;
+          }
+
+          if (!availableTimeSlots.includes(rescheduleTime)) {
+            setErrorMessage(
+              "La hora seleccionada no esta disponible para crear o reprogramar."
+            );
+            return;
+          }
+
+          if (!availability || availability.isClosed) {
+            setErrorMessage("La fecha seleccionada esta cerrada.");
+            return;
+          }
+
+          const scheduledAtDate = new Date(`${rescheduleDate}T${rescheduleTime}`);
+
+          if (Number.isNaN(scheduledAtDate.getTime())) {
+            setErrorMessage("Fecha u hora invalida.");
+            return;
+          }
+
+          body.scheduledAt = scheduledAtDate.toISOString();
         }
 
         const response = await fetch(`/api/appointments/${appointment.id}`, {
@@ -209,17 +440,17 @@ function ActionModal({
         });
 
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as {
-            error?: string;
-          } | null;
-          setErrorMessage(payload?.error ?? "No se pudo ejecutar la acción.");
+          const payload = (await response.json().catch(() => null)) as ApiErrorResponse | null;
+          setErrorMessage(
+            getApiErrorMessage(payload, "No se pudo ejecutar la accion.")
+          );
           return;
         }
 
         router.refresh();
         onClose();
       } catch {
-        setErrorMessage("Ocurrió un problema al ejecutar la acción.");
+        setErrorMessage("Ocurrio un problema al ejecutar la accion.");
       }
     });
   }
@@ -233,25 +464,160 @@ function ActionModal({
             <div>
               <p className="text-sm leading-6">{meta.description}</p>
               <p className="mt-2 text-xs text-stone-400">
-                {appointment.customerName} · {appointment.code}
+                {appointment.customerName} - {appointment.code}
               </p>
             </div>
           </div>
         </div>
 
         {meta.needsSchedule ? (
-          <label className="mt-4 block space-y-1">
-            <span className="text-xs uppercase tracking-[0.18em] text-stone-500">
-              Nueva fecha y hora
-            </span>
-            <input
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className={inputClasses}
-              step={1800}
-            />
-          </label>
+          <div className="mt-4 space-y-3">
+            <label className="block space-y-1">
+              <span className="text-xs uppercase tracking-[0.18em] text-stone-500">
+                Nueva fecha
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                <Select
+                  value={String(rescheduleDay)}
+                  onValueChange={(value) => {
+                    setRescheduleDay(Number(value));
+                    setRescheduleTime("");
+                    setErrorMessage(null);
+                  }}
+                >
+                  <SelectTrigger className={inputClasses}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: maxDayInSelectedMonth }, (_, index) => index + 1).map(
+                      (day) => (
+                        <SelectItem key={day} value={String(day)}>
+                          {pad2(day)}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={String(rescheduleMonth)}
+                  onValueChange={(value) => {
+                    setRescheduleMonth(Number(value));
+                    setRescheduleTime("");
+                    setErrorMessage(null);
+                  }}
+                >
+                  <SelectTrigger className={inputClasses}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTH_LABELS.map((monthLabel, index) => (
+                      <SelectItem key={monthLabel} value={String(index + 1)}>
+                        {monthLabel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={String(rescheduleYear)}
+                  onValueChange={(value) => {
+                    setRescheduleYear(Number(value));
+                    setRescheduleTime("");
+                    setErrorMessage(null);
+                  }}
+                >
+                  <SelectTrigger className={inputClasses}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((year) => (
+                      <SelectItem key={year} value={String(year)}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs uppercase tracking-[0.18em] text-stone-500">
+                Hora disponible
+              </span>
+              <Select
+                value={rescheduleTime || undefined}
+                onValueChange={(value) => {
+                  setRescheduleTime(value);
+                  setErrorMessage(null);
+                }}
+                disabled={
+                  isLoadingAvailability ||
+                  !availability ||
+                  availableTimeSlots.length === 0
+                }
+              >
+                <SelectTrigger className={inputClasses}>
+                  <SelectValue
+                    placeholder={
+                      isLoadingAvailability
+                        ? "Cargando disponibilidad..."
+                        : availableTimeSlots.length
+                          ? "Selecciona una hora"
+                          : "No hay horas disponibles"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTimeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+
+            {isLoadingAvailability ? (
+              <p className="text-xs text-stone-500">
+                Cargando horario permitido y cupos por franja...
+              </p>
+            ) : null}
+
+            {!isLoadingAvailability && !availability ? (
+              <p className="text-xs text-rose-300">
+                No se pudo resolver la disponibilidad para esa fecha.
+              </p>
+            ) : null}
+
+            {!isLoadingAvailability && availability?.isClosed ? (
+              <p className="text-xs text-rose-300">
+                La fecha seleccionada esta cerrada por{" "}
+                {availability.source === "special"
+                  ? "excepcion especial"
+                  : "horario regular"}
+                .
+              </p>
+            ) : null}
+
+            {!isLoadingAvailability &&
+            availability &&
+            !availability.isClosed &&
+            availability.openTime &&
+            availability.closeTime ? (
+              <p className="text-xs text-emerald-200">
+                Horario habilitado: {availability.openTime} -{" "}
+                {availability.closeTime} (
+                {availability.source === "special"
+                  ? "excepcion especial"
+                  : "horario regular"}
+                )
+                {availability.note
+                  ? ` - ${availability.note}`
+                  : ""}
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         <label className="mt-4 block space-y-1">
@@ -280,7 +646,11 @@ function ActionModal({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isPending}
+            disabled={
+              isPending ||
+              (meta.needsSchedule &&
+                (isLoadingAvailability || !rescheduleDate || !rescheduleTime))
+            }
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${variantButtonClasses(meta.variant)}`}
           >
             <Check className="size-4" />
@@ -297,16 +667,7 @@ function ActionModal({
 /* ------------------------------------------------------------------ */
 
 function getAvailableActions(status: string): ActionType[] {
-  switch (status) {
-    case "PENDIENTE":
-      return ["CONFIRM", "CANCEL", "RESCHEDULE"];
-    case "CONFIRMADA":
-      return ["COMPLETE", "NO_SHOW", "CANCEL", "RESCHEDULE"];
-    case "REPROGRAMADA":
-      return ["CONFIRM", "COMPLETE", "NO_SHOW", "CANCEL"];
-    default:
-      return [];
-  }
+  return AVAILABLE_ACTIONS_BY_STATUS[status as AppointmentStatusLike] ?? [];
 }
 
 function actionIcon(action: ActionType) {
@@ -381,3 +742,4 @@ export default function AdminAppointmentActions({
     </>
   );
 }
+

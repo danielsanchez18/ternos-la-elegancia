@@ -40,6 +40,7 @@ Integrar la API construida en `feature/backend` con la experiencia actual de `ma
 
 - Validar `lint`.
 - Validar `build`.
+- Validar citas con `npm run test:appointments-phase4`.
 - Documentar riesgos y pendientes posteriores al MVP.
 
 ## Riesgos controlados en esta integracion

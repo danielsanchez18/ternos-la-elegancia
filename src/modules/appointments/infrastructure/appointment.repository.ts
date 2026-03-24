@@ -12,6 +12,8 @@ import {
   UpsertBusinessHourInput,
 } from "@/src/modules/appointments/domain/appointment.types";
 
+type AppointmentDbClient = typeof prisma | Prisma.TransactionClient;
+
 const publicAppointmentSelect = {
   id: true,
   customerId: true,
@@ -33,9 +35,23 @@ const publicAppointmentSelect = {
   updatedAt: true,
 } satisfies Prisma.AppointmentSelect;
 
+function appointmentDateLockParts(date: Date): { keyPart1: number; keyPart2: number } {
+  return {
+    keyPart1: date.getFullYear() * 100 + (date.getMonth() + 1),
+    keyPart2: date.getDate(),
+  };
+}
+
 export class AppointmentRepository {
-  async customerExists(customerId: number): Promise<boolean> {
-    const customer = await prisma.customer.findUnique({
+  async transaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return prisma.$transaction(callback);
+  }
+
+  async customerExists(
+    customerId: number,
+    db: AppointmentDbClient = prisma
+  ): Promise<boolean> {
+    const customer = await db.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
     });
@@ -43,8 +59,11 @@ export class AppointmentRepository {
     return Boolean(customer);
   }
 
-  async list(filters: ListAppointmentsFilters): Promise<PublicAppointment[]> {
-    return prisma.appointment.findMany({
+  async list(
+    filters: ListAppointmentsFilters,
+    db: AppointmentDbClient = prisma
+  ): Promise<PublicAppointment[]> {
+    return db.appointment.findMany({
       where: {
         customerId: filters.customerId,
         status: filters.status,
@@ -61,27 +80,30 @@ export class AppointmentRepository {
     });
   }
 
-  async findById(id: number): Promise<PublicAppointment | null> {
-    return prisma.appointment.findUnique({
+  async findById(
+    id: number,
+    db: AppointmentDbClient = prisma
+  ): Promise<PublicAppointment | null> {
+    return db.appointment.findUnique({
       where: { id },
       select: publicAppointmentSelect,
     });
   }
 
-  async findBusinessHour(dayOfWeek: number) {
-    return prisma.businessHour.findUnique({
+  async findBusinessHour(dayOfWeek: number, db: AppointmentDbClient = prisma) {
+    return db.businessHour.findUnique({
       where: { dayOfWeek },
     });
   }
 
-  async findSpecialScheduleForDate(date: Date) {
+  async findSpecialScheduleForDate(date: Date, db: AppointmentDbClient = prisma) {
     const dayStart = new Date(date);
     dayStart.setHours(0, 0, 0, 0);
 
     const dayEnd = new Date(date);
     dayEnd.setHours(23, 59, 59, 999);
 
-    return prisma.specialSchedule.findFirst({
+    return db.specialSchedule.findFirst({
       where: {
         date: {
           gte: dayStart,
@@ -95,8 +117,8 @@ export class AppointmentRepository {
     startsAt: Date;
     endsAt: Date;
     excludeAppointmentId?: number;
-  }): Promise<number> {
-    return prisma.appointment.count({
+  }, db: AppointmentDbClient = prisma): Promise<number> {
+    return db.appointment.count({
       where: {
         id: input.excludeAppointmentId
           ? {
@@ -136,13 +158,16 @@ export class AppointmentRepository {
     });
   }
 
-  async nextCodeForDate(scheduledAt: Date): Promise<string> {
+  async nextCodeForDate(
+    scheduledAt: Date,
+    db: AppointmentDbClient = prisma
+  ): Promise<string> {
     const y = scheduledAt.getFullYear();
     const m = String(scheduledAt.getMonth() + 1).padStart(2, "0");
     const d = String(scheduledAt.getDate()).padStart(2, "0");
     const prefix = `RES-${y}${m}${d}-`;
 
-    const existing = await prisma.appointment.findMany({
+    const existing = await db.appointment.findMany({
       where: {
         code: {
           startsWith: prefix,
@@ -161,6 +186,25 @@ export class AppointmentRepository {
     return `${prefix}${maxCounter + 1}`;
   }
 
+  async lockAppointmentDate(date: Date, db: Prisma.TransactionClient): Promise<void> {
+    const { keyPart1, keyPart2 } = appointmentDateLockParts(date);
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(${keyPart1}, ${keyPart2})`;
+  }
+
+  async lockAppointmentRow(
+    id: number,
+    db: Prisma.TransactionClient
+  ): Promise<boolean> {
+    const rows = await db.$queryRaw<Array<{ id: number }>>`
+      SELECT id
+      FROM "Appointment"
+      WHERE id = ${id}
+      FOR UPDATE
+    `;
+
+    return rows.length > 0;
+  }
+
   async create(input: {
     customerId: number;
     type: AppointmentType;
@@ -171,8 +215,8 @@ export class AppointmentRepository {
     cancelDeadlineAt: Date;
     notes?: string;
     internalNotes?: string;
-  }): Promise<PublicAppointment> {
-    return prisma.appointment.create({
+  }, db: AppointmentDbClient = prisma): Promise<PublicAppointment> {
+    return db.appointment.create({
       data: {
         customerId: input.customerId,
         type: input.type,
@@ -190,9 +234,10 @@ export class AppointmentRepository {
 
   async updateById(
     id: number,
-    input: Prisma.AppointmentUpdateInput
+    input: Prisma.AppointmentUpdateInput,
+    db: AppointmentDbClient = prisma
   ): Promise<PublicAppointment> {
-    return prisma.appointment.update({
+    return db.appointment.update({
       where: { id },
       data: input,
       select: publicAppointmentSelect,
@@ -203,8 +248,8 @@ export class AppointmentRepository {
     appointmentId: number;
     status: AppointmentStatus;
     note?: string;
-  }): Promise<void> {
-    await prisma.appointmentStatusHistory.create({
+  }, db: AppointmentDbClient = prisma): Promise<void> {
+    await db.appointmentStatusHistory.create({
       data: {
         appointmentId: input.appointmentId,
         status: input.status,
@@ -213,14 +258,17 @@ export class AppointmentRepository {
     });
   }
 
-  async listBusinessHours() {
-    return prisma.businessHour.findMany({
+  async listBusinessHours(db: AppointmentDbClient = prisma) {
+    return db.businessHour.findMany({
       orderBy: { dayOfWeek: "asc" },
     });
   }
 
-  async upsertBusinessHour(input: UpsertBusinessHourInput): Promise<PublicBusinessHour> {
-    const row = await prisma.businessHour.upsert({
+  async upsertBusinessHour(
+    input: UpsertBusinessHourInput,
+    db: AppointmentDbClient = prisma
+  ): Promise<PublicBusinessHour> {
+    const row = await db.businessHour.upsert({
       where: {
         dayOfWeek: input.dayOfWeek,
       },
@@ -250,9 +298,10 @@ export class AppointmentRepository {
   }
 
   async listSpecialSchedules(
-    filters: ListSpecialSchedulesFilters
+    filters: ListSpecialSchedulesFilters,
+    db: AppointmentDbClient = prisma
   ): Promise<PublicSpecialSchedule[]> {
-    return prisma.specialSchedule.findMany({
+    return db.specialSchedule.findMany({
       where: {
         date:
           filters.from || filters.to
@@ -266,16 +315,20 @@ export class AppointmentRepository {
     });
   }
 
-  async findSpecialScheduleById(id: number): Promise<PublicSpecialSchedule | null> {
-    return prisma.specialSchedule.findUnique({
+  async findSpecialScheduleById(
+    id: number,
+    db: AppointmentDbClient = prisma
+  ): Promise<PublicSpecialSchedule | null> {
+    return db.specialSchedule.findUnique({
       where: { id },
     });
   }
 
   async upsertSpecialScheduleByDate(
-    input: CreateSpecialScheduleInput
+    input: CreateSpecialScheduleInput,
+    db: AppointmentDbClient = prisma
   ): Promise<PublicSpecialSchedule> {
-    return prisma.specialSchedule.upsert({
+    return db.specialSchedule.upsert({
       where: { date: input.date },
       create: {
         date: input.date,
@@ -295,9 +348,10 @@ export class AppointmentRepository {
 
   async updateSpecialScheduleById(
     id: number,
-    input: UpdateSpecialScheduleInput
+    input: UpdateSpecialScheduleInput,
+    db: AppointmentDbClient = prisma
   ): Promise<PublicSpecialSchedule> {
-    return prisma.specialSchedule.update({
+    return db.specialSchedule.update({
       where: { id },
       data: {
         openTime: input.openTime,
@@ -308,8 +362,11 @@ export class AppointmentRepository {
     });
   }
 
-  async deleteSpecialScheduleById(id: number): Promise<void> {
-    await prisma.specialSchedule.delete({
+  async deleteSpecialScheduleById(
+    id: number,
+    db: AppointmentDbClient = prisma
+  ): Promise<void> {
+    await db.specialSchedule.delete({
       where: { id },
     });
   }

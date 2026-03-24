@@ -7,6 +7,8 @@
   },
   "scripts": {
     "admin:create": "tsx scripts/create-admin.ts",
+    "test:access-matrix": "node scripts/access-matrix.mjs",
+    "test:appointments-phase4": "node scripts/appointments-phase4-check.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
