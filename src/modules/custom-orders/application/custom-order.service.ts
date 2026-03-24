@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  InventoryMovementType,
   CustomOrderStatus,
   FabricPriceMode,
-  InputFieldType,
+  InventoryMovementType,
   MeasurementGarmentType,
   Prisma,
 } from "@prisma/client";
-import { FabricRepository } from "@/src/modules/fabrics/infrastructure/fabric.repository";
-import { GARMENT_FABRIC_CONSUMPTION, DEFAULT_FABRIC_CONSUMPTION } from "../domain/custom-order.constants";
 
+import { FabricRepository } from "@/src/modules/fabrics/infrastructure/fabric.repository";
+import {
+  DEFAULT_FABRIC_CONSUMPTION,
+  GARMENT_FABRIC_CONSUMPTION,
+} from "@/src/modules/custom-orders/domain/custom-order.constants";
 import {
   CustomOrderActionInput,
   CustomOrderListResult,
@@ -28,7 +28,11 @@ import {
   CustomOrderNotFoundError,
   CustomOrderStatusTransitionError,
 } from "@/src/modules/custom-orders/domain/custom-order.errors";
-import { CustomOrderRepository } from "@/src/modules/custom-orders/infrastructure/custom-order.repository";
+import {
+  CustomOrderRepository,
+  PreparedCustomOrderItem,
+  PreparedCustomOrderSelection,
+} from "@/src/modules/custom-orders/infrastructure/custom-order.repository";
 
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
@@ -98,28 +102,79 @@ function actionToStatus(action: CustomOrderActionInput["action"]): CustomOrderSt
   }
 
   if (action === "LINK_MEASUREMENT") {
-    // This action doesn't change status
-    return CustomOrderStatus.PENDIENTE_RESERVA; // Won't be used
+    return CustomOrderStatus.PENDIENTE_RESERVA;
   }
 
   return CustomOrderStatus.CANCELADO;
 }
 
+function mapSelectionToPrepared(
+  selection: PublicCustomOrder["items"][number]["parts"][number]["selections"][number]
+): PreparedCustomOrderSelection {
+  return {
+    definitionId: selection.definitionId,
+    optionId: selection.optionId ?? undefined,
+    definitionCodeSnapshot: selection.definitionCodeSnapshot,
+    definitionLabelSnapshot: selection.definitionLabelSnapshot,
+    inputTypeSnapshot: selection.inputTypeSnapshot,
+    optionCodeSnapshot: selection.optionCodeSnapshot ?? undefined,
+    optionLabelSnapshot: selection.optionLabelSnapshot ?? undefined,
+    extraPriceSnapshot: selection.extraPriceSnapshot ?? undefined,
+    valueText: selection.valueText ?? undefined,
+    valueNumber: selection.valueNumber ?? undefined,
+    valueBoolean: selection.valueBoolean ?? undefined,
+  };
+}
+
+function mapExistingItemsToPrepared(
+  items: PublicCustomOrder["items"]
+): PreparedCustomOrderItem[] {
+  return items.map((item) => ({
+    productId: item.productId ?? undefined,
+    itemNameSnapshot: item.itemNameSnapshot,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    discountAmount: item.discountAmount,
+    subtotal: item.subtotal,
+    notes: item.notes ?? undefined,
+    parts: item.parts.map((part) => ({
+      productId: part.productId ?? undefined,
+      garmentType: part.garmentType,
+      label: part.label,
+      workMode: part.workMode,
+      measurementProfileId: part.measurementProfileId ?? undefined,
+      measurementProfileGarmentId: part.measurementProfileGarmentId ?? undefined,
+      fabricId: part.fabricId ?? undefined,
+      fabricNameSnapshot: part.fabricNameSnapshot ?? undefined,
+      fabricCodeSnapshot: part.fabricCodeSnapshot ?? undefined,
+      fabricColorSnapshot: part.fabricColorSnapshot ?? undefined,
+      unitPrice: part.unitPrice ?? undefined,
+      notes: part.notes ?? undefined,
+      selections: part.selections.map(mapSelectionToPrepared),
+    })),
+  }));
+}
+
 export class CustomOrderService {
   private readonly fabricRepository = new FabricRepository();
+
   constructor(private readonly customOrderRepository: CustomOrderRepository) {}
 
   async listCustomOrders(filters: ListCustomOrdersFilters): Promise<CustomOrderListResult> {
     return this.customOrderRepository.list(filters);
   }
 
-  async getCustomOrderById(id: number): Promise<PublicCustomOrder> {
+  async getCustomOrderById(id: string): Promise<PublicCustomOrder> {
     const order = await this.customOrderRepository.findById(id);
     if (!order) {
       throw new CustomOrderNotFoundError();
     }
 
     return order;
+  }
+
+  async getCustomOrderByIdentifier(id: string): Promise<PublicCustomOrder> {
+    return this.getCustomOrderById(id);
   }
 
   async createCustomOrder(input: CreateCustomOrderInput): Promise<PublicCustomOrder> {
@@ -155,16 +210,14 @@ export class CustomOrderService {
   }
 
   async updateCustomOrder(
-    id: number,
+    id: string,
     input: UpdateCustomOrderInput
   ): Promise<PublicCustomOrder> {
-    const now = new Date();
     const existing = await this.customOrderRepository.findById(id);
     if (!existing) {
       throw new CustomOrderNotFoundError();
     }
 
-    // Optional: restrict editing based on status
     if (
       ([CustomOrderStatus.ENTREGADO, CustomOrderStatus.CANCELADO] as string[]).includes(
         existing.status as string
@@ -179,12 +232,14 @@ export class CustomOrderService {
       existing.firstPurchaseFlow
     );
 
-    // Recalculate totals
-    const subtotal = preparedItems.reduce(
+    const nextPreparedItems =
+      input.items !== undefined ? preparedItems : mapExistingItemsToPrepared(existing.items);
+
+    const subtotal = nextPreparedItems.reduce(
       (acc, item) => acc.add(item.unitPrice.mul(item.quantity)),
       new Prisma.Decimal(0)
     );
-    const discountTotal = preparedItems.reduce(
+    const discountTotal = nextPreparedItems.reduce(
       (acc, item) => acc.add(item.discountAmount),
       new Prisma.Decimal(0)
     );
@@ -194,9 +249,7 @@ export class CustomOrderService {
       id,
       notes: input.notes !== undefined ? input.notes : existing.notes,
       internalNotes:
-        input.internalNotes !== undefined
-          ? input.internalNotes
-          : existing.internalNotes,
+        input.internalNotes !== undefined ? input.internalNotes : existing.internalNotes,
       requestedDeliveryAt:
         input.requestedDeliveryAt !== undefined
           ? input.requestedDeliveryAt
@@ -208,22 +261,28 @@ export class CustomOrderService {
       subtotal,
       discountTotal,
       total,
-      preparedItems:
-        input.items !== undefined ? preparedItems : (existing.items as any),
+      preparedItems: nextPreparedItems,
     });
   }
 
+  async updateCustomOrderByIdentifier(
+    id: string,
+    input: UpdateCustomOrderInput
+  ): Promise<PublicCustomOrder> {
+    return this.updateCustomOrder(id, input);
+  }
+
   private async prepareItems(
-    customerId: number,
+    customerId: string,
     items: CreateCustomOrderInput["items"],
     firstPurchaseFlow: boolean
   ): Promise<{
-    preparedItems: any[];
+    preparedItems: PreparedCustomOrderItem[];
     requiresMeasurement: boolean;
   }> {
     const now = new Date();
     let requiresMeasurement = firstPurchaseFlow;
-    const preparedItems = [] as any[];
+    const preparedItems: PreparedCustomOrderItem[] = [];
 
     for (const item of items) {
       const unitPrice = new Prisma.Decimal(item.unitPrice);
@@ -248,7 +307,7 @@ export class CustomOrderService {
         );
       }
 
-      const preparedParts = [] as any[];
+      const preparedParts: PreparedCustomOrderItem["parts"] = [];
 
       for (const part of item.parts) {
         let measurementProfileId = part.measurementProfileId;
@@ -316,7 +375,9 @@ export class CustomOrderService {
           }
         }
 
-        let fabricSnapshot: any;
+        let fabricSnapshot: Awaited<
+          ReturnType<CustomOrderRepository["getFabricById"]>
+        > = null;
 
         if (part.fabricId) {
           const fabric = await this.customOrderRepository.getFabricById(part.fabricId);
@@ -327,7 +388,7 @@ export class CustomOrderService {
           fabricSnapshot = fabric;
         }
 
-        const preparedSelections = [] as any[];
+        const preparedSelections: PreparedCustomOrderSelection[] = [];
 
         for (const selection of part.selections ?? []) {
           const definition = await this.customOrderRepository.getCustomizationDefinition(
@@ -340,7 +401,11 @@ export class CustomOrderService {
             );
           }
 
-          let optionSnapshot: any;
+          let optionSnapshot: {
+            code: string;
+            label: string;
+            extraPrice: Prisma.Decimal | null;
+          } | null = null;
 
           if (selection.optionId) {
             const option = await this.customOrderRepository.getCustomizationOption(
@@ -414,7 +479,7 @@ export class CustomOrderService {
   }
 
   async actOnCustomOrder(
-    id: number,
+    id: string,
     input: CustomOrderActionInput
   ): Promise<PublicCustomOrder> {
     const order = await this.customOrderRepository.findById(id);
@@ -431,9 +496,10 @@ export class CustomOrderService {
         throw new Error("Faltan datos para vincular las medidas");
       }
 
-      // Validar que el tipo de prenda coincida
-      const profileGarment = await this.customOrderRepository.getMeasurementProfileGarment(input.profileGarmentId);
-      const part = order.items.flatMap(i => i.parts).find(p => p.id === input.partId);
+      const profileGarment = await this.customOrderRepository.getMeasurementProfileGarment(
+        input.profileGarmentId
+      );
+      const part = order.items.flatMap((item) => item.parts).find((value) => value.id === input.partId);
 
       if (!profileGarment || !part || profileGarment.garmentType !== part.garmentType) {
         throw new Error("El tipo de prenda de las medidas no coincide con la prenda del pedido");
@@ -455,7 +521,6 @@ export class CustomOrderService {
         throw new CustomOrderAdvancePaymentRequiredError();
       }
 
-      // Reservar telas automáticamente
       await this.reserveFabricForOrder(order);
     }
 
@@ -474,22 +539,38 @@ export class CustomOrderService {
     });
   }
 
+  async actOnCustomOrderByIdentifier(
+    id: string,
+    input: CustomOrderActionInput
+  ): Promise<PublicCustomOrder> {
+    return this.actOnCustomOrder(id, input);
+  }
+
   private async reserveFabricForOrder(order: PublicCustomOrder) {
+    type FabricMovementId = Parameters<FabricRepository["createMovement"]>[0];
+
     for (const item of order.items) {
       for (const part of item.parts) {
         if (part.fabricId && part.workMode === FabricPriceMode.A_TODO_COSTO) {
-          const consumption = GARMENT_FABRIC_CONSUMPTION[part.garmentType] || DEFAULT_FABRIC_CONSUMPTION;
+          const consumption =
+            GARMENT_FABRIC_CONSUMPTION[part.garmentType] ?? DEFAULT_FABRIC_CONSUMPTION;
           const note = `Consumo para orden ${order.code} - ${item.itemNameSnapshot} (${part.label})`;
-          
+
           try {
-            await this.fabricRepository.createMovement(part.fabricId, {
-              type: InventoryMovementType.VENTA,
-              quantity: consumption,
-              note,
-            }, new Prisma.Decimal(consumption).neg());
-          } catch (err: any) {
-            console.error(`Error al reservar tela ${part.fabricId} para orden ${order.id}:`, err);
-            // Si no hay stock, quizás deberíamos fallar o avisar. Por ahora avisamos por consola.
+            await this.fabricRepository.createMovement(
+              part.fabricId as FabricMovementId,
+              {
+                type: InventoryMovementType.VENTA,
+                quantity: consumption,
+                note,
+              },
+              new Prisma.Decimal(consumption).neg()
+            );
+          } catch (error) {
+            console.error(
+              `Error al reservar tela ${part.fabricId} para orden ${order.id}:`,
+              error
+            );
           }
         }
       }
@@ -497,6 +578,4 @@ export class CustomOrderService {
   }
 }
 
-export const customOrderService = new CustomOrderService(
-  new CustomOrderRepository()
-);
+export const customOrderService = new CustomOrderService(new CustomOrderRepository());

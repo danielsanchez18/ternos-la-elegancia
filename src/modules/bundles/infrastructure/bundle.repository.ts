@@ -91,7 +91,7 @@ export class BundleRepository {
     });
   }
 
-  async findBundleById(id: number): Promise<PublicBundle | null> {
+  async findBundleById(id: string): Promise<PublicBundle | null> {
     return prisma.bundle.findUnique({ where: { id }, select: publicBundleSelect });
   }
 
@@ -108,7 +108,7 @@ export class BundleRepository {
     });
   }
 
-  async updateBundleById(id: number, input: UpdateBundleInput): Promise<PublicBundle> {
+  async updateBundleById(id: string, input: UpdateBundleInput): Promise<PublicBundle> {
     return prisma.bundle.update({
       where: { id },
       data: {
@@ -122,7 +122,7 @@ export class BundleRepository {
     });
   }
 
-  async listBundleItems(bundleId: number): Promise<PublicBundleItem[]> {
+  async listBundleItems(bundleId: string): Promise<PublicBundleItem[]> {
     return prisma.bundleItem.findMany({
       where: { bundleId },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
@@ -130,7 +130,7 @@ export class BundleRepository {
     });
   }
 
-  async createBundleItem(bundleId: number, input: CreateBundleItemInput): Promise<PublicBundleItem> {
+  async createBundleItem(bundleId: string, input: CreateBundleItemInput): Promise<PublicBundleItem> {
     return prisma.bundleItem.create({
       data: {
         bundleId,
@@ -142,7 +142,7 @@ export class BundleRepository {
     });
   }
 
-  async updateBundleItemById(itemId: number, input: UpdateBundleItemInput): Promise<PublicBundleItem> {
+  async updateBundleItemById(itemId: string, input: UpdateBundleItemInput): Promise<PublicBundleItem> {
     return prisma.bundleItem.update({
       where: { id: itemId },
       data: {
@@ -154,11 +154,11 @@ export class BundleRepository {
     });
   }
 
-  async deleteBundleItemById(itemId: number): Promise<void> {
+  async deleteBundleItemById(itemId: string): Promise<void> {
     await prisma.bundleItem.delete({ where: { id: itemId } });
   }
 
-  async getBundleItemById(itemId: number) {
+  async getBundleItemById(itemId: string) {
     return prisma.bundleItem.findUnique({
       where: { id: itemId },
       select: {
@@ -168,7 +168,7 @@ export class BundleRepository {
     });
   }
 
-  async listBundleVariantItems(bundleId: number): Promise<PublicBundleVariantItem[]> {
+  async listBundleVariantItems(bundleId: string): Promise<PublicBundleVariantItem[]> {
     return prisma.bundleVariantItem.findMany({
       where: { bundleId },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
@@ -177,7 +177,7 @@ export class BundleRepository {
   }
 
   async createBundleVariantItem(
-    bundleId: number,
+    bundleId: string,
     input: CreateBundleVariantItemInput
   ): Promise<PublicBundleVariantItem> {
     return prisma.bundleVariantItem.create({
@@ -192,7 +192,7 @@ export class BundleRepository {
   }
 
   async updateBundleVariantItemById(
-    itemId: number,
+    itemId: string,
     input: UpdateBundleVariantItemInput
   ): Promise<PublicBundleVariantItem> {
     return prisma.bundleVariantItem.update({
@@ -206,11 +206,11 @@ export class BundleRepository {
     });
   }
 
-  async deleteBundleVariantItemById(itemId: number): Promise<void> {
+  async deleteBundleVariantItemById(itemId: string): Promise<void> {
     await prisma.bundleVariantItem.delete({ where: { id: itemId } });
   }
 
-  async getBundleVariantItemById(itemId: number) {
+  async getBundleVariantItemById(itemId: string) {
     return prisma.bundleVariantItem.findUnique({
       where: { id: itemId },
       select: {
@@ -220,12 +220,12 @@ export class BundleRepository {
     });
   }
 
-  async productExists(productId: number): Promise<boolean> {
+  async productExists(productId: string): Promise<boolean> {
     const row = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
     return Boolean(row);
   }
 
-  async variantExists(variantId: number): Promise<boolean> {
+  async variantExists(variantId: string): Promise<boolean> {
     const row = await prisma.productVariant.findUnique({
       where: { id: variantId },
       select: { id: true },

@@ -2,7 +2,7 @@ import { NotificationChannel, NotificationStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const listNotificationsQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
+  customerId: z.string().uuid().optional(),
   channel: z.nativeEnum(NotificationChannel).optional(),
   status: z.nativeEnum(NotificationStatus).optional(),
   from: z.coerce.date().optional(),

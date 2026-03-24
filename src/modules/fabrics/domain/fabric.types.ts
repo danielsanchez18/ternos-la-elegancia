@@ -1,7 +1,7 @@
 import { InventoryMovementType, Prisma } from "@prisma/client";
 
 export type PublicFabric = {
-  id: number;
+  id: string;
   code: string;
   nombre: string;
   color: string | null;
@@ -18,8 +18,8 @@ export type PublicFabric = {
 };
 
 export type FabricMovementItem = {
-  id: number;
-  fabricId: number;
+  id: string;
+  fabricId: string;
   type: InventoryMovementType;
   quantity: Prisma.Decimal;
   note: string | null;

@@ -131,7 +131,7 @@ export class ProductRepository {
     });
   }
 
-  async findProductById(id: number): Promise<PublicProduct | null> {
+  async findProductById(id: string): Promise<PublicProduct | null> {
     return prisma.product.findUnique({
       where: { id },
       select: publicProductSelect,
@@ -168,7 +168,7 @@ export class ProductRepository {
     });
   }
 
-  async updateProductById(id: number, input: UpdateProductInput): Promise<PublicProduct> {
+  async updateProductById(id: string, input: UpdateProductInput): Promise<PublicProduct> {
     return prisma.product.update({
       where: { id },
       data: {
@@ -192,7 +192,7 @@ export class ProductRepository {
     });
   }
 
-  async deactivateProductById(id: number): Promise<PublicProduct> {
+  async deactivateProductById(id: string): Promise<PublicProduct> {
     return this.updateProductById(id, {
       active: false,
       status: ProductStatus.INACTIVO,
@@ -206,7 +206,7 @@ export class ProductRepository {
     });
   }
 
-  async findBrandById(id: number): Promise<PublicBrand | null> {
+  async findBrandById(id: string): Promise<PublicBrand | null> {
     return prisma.brand.findUnique({
       where: { id },
       select: publicBrandSelect,
@@ -223,7 +223,7 @@ export class ProductRepository {
     });
   }
 
-  async updateBrandById(id: number, input: UpdateBrandInput): Promise<PublicBrand> {
+  async updateBrandById(id: string, input: UpdateBrandInput): Promise<PublicBrand> {
     return prisma.brand.update({
       where: { id },
       data: {
@@ -234,11 +234,11 @@ export class ProductRepository {
     });
   }
 
-  async deactivateBrandById(id: number): Promise<PublicBrand> {
+  async deactivateBrandById(id: string): Promise<PublicBrand> {
     return this.updateBrandById(id, { activo: false });
   }
 
-  async listProductImages(productId: number): Promise<PublicProductImage[]> {
+  async listProductImages(productId: string): Promise<PublicProductImage[]> {
     return prisma.productImage.findMany({
       where: { productId },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
@@ -247,7 +247,7 @@ export class ProductRepository {
   }
 
   async createProductImage(
-    productId: number,
+    productId: string,
     input: CreateProductImageInput
   ): Promise<PublicProductImage> {
     return prisma.productImage.create({
@@ -262,7 +262,7 @@ export class ProductRepository {
   }
 
   async updateProductImageById(
-    imageId: number,
+    imageId: string,
     input: UpdateProductImageInput
   ): Promise<PublicProductImage> {
     return prisma.productImage.update({
@@ -276,11 +276,11 @@ export class ProductRepository {
     });
   }
 
-  async deleteProductImageById(imageId: number): Promise<void> {
+  async deleteProductImageById(imageId: string): Promise<void> {
     await prisma.productImage.delete({ where: { id: imageId } });
   }
 
-  async listProductVariants(productId: number): Promise<PublicProductVariant[]> {
+  async listProductVariants(productId: string): Promise<PublicProductVariant[]> {
     return prisma.productVariant.findMany({
       where: { productId },
       orderBy: { createdAt: "desc" },
@@ -289,7 +289,7 @@ export class ProductRepository {
   }
 
   async createProductVariant(
-    productId: number,
+    productId: string,
     input: CreateProductVariantInput
   ): Promise<PublicProductVariant> {
     return prisma.productVariant.create({
@@ -314,7 +314,7 @@ export class ProductRepository {
   }
 
   async updateProductVariantById(
-    variantId: number,
+    variantId: string,
     input: UpdateProductVariantInput
   ): Promise<PublicProductVariant> {
     return prisma.productVariant.update({
@@ -340,7 +340,7 @@ export class ProductRepository {
     });
   }
 
-  async deactivateProductVariantById(variantId: number): Promise<PublicProductVariant> {
+  async deactivateProductVariantById(variantId: string): Promise<PublicProductVariant> {
     return this.updateProductVariantById(variantId, { active: false });
   }
 }

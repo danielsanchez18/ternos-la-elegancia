@@ -55,7 +55,7 @@ function buildCustomerName(input: { nombres: string; apellidos: string | null })
 }
 
 type RecentAppointmentSummary = {
-  id: number;
+  id: string;
   code: string;
   type: string;
   status: string;
@@ -67,7 +67,7 @@ type RecentAppointmentSummary = {
 };
 
 type RecentPaymentSummary = {
-  id: number;
+  id: string;
   amount: unknown;
   status: string;
   method: string;

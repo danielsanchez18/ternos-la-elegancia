@@ -16,18 +16,18 @@ import { CustomerRecordsRepository } from "@/src/modules/customers/infrastructur
 export class CustomerRecordsService {
   constructor(private readonly repository: CustomerRecordsRepository = new CustomerRecordsRepository()) {}
 
-  async listNotesByCustomerId(customerId: number): Promise<PublicCustomerNote[]> {
+  async listNotesByCustomerId(customerId: string): Promise<PublicCustomerNote[]> {
     await this.ensureCustomerExists(customerId);
     return this.repository.listNotesByCustomerId(customerId);
   }
 
   async createNote(
-    customerId: number,
+    customerId: string,
     input: CreateCustomerNoteInput
   ): Promise<PublicCustomerNote> {
     await this.ensureCustomerExists(customerId);
 
-    if (typeof input.adminUserId === "number") {
+    if (typeof input.adminUserId === "string") {
       const exists = await this.repository.adminUserExists(input.adminUserId);
       if (!exists) {
         throw new CustomerRecordRelatedEntityNotFoundError("adminUser");
@@ -37,7 +37,7 @@ export class CustomerRecordsService {
     return this.repository.createNote(customerId, input);
   }
 
-  async deleteNote(noteId: number): Promise<void> {
+  async deleteNote(noteId: string): Promise<void> {
     const note = await this.repository.getNoteById(noteId);
     if (!note) {
       throw new CustomerNoteNotFoundError();
@@ -46,13 +46,13 @@ export class CustomerRecordsService {
     await this.repository.deleteNoteById(noteId);
   }
 
-  async updateNote(noteId: number, input: UpdateCustomerNoteInput): Promise<PublicCustomerNote> {
+  async updateNote(noteId: string, input: UpdateCustomerNoteInput): Promise<PublicCustomerNote> {
     const note = await this.repository.getNoteById(noteId);
     if (!note) {
       throw new CustomerNoteNotFoundError();
     }
 
-    if (typeof input.adminUserId === "number") {
+    if (typeof input.adminUserId === "string") {
       const exists = await this.repository.adminUserExists(input.adminUserId);
       if (!exists) {
         throw new CustomerRecordRelatedEntityNotFoundError("adminUser");
@@ -62,20 +62,20 @@ export class CustomerRecordsService {
     return this.repository.updateNoteById(noteId, input);
   }
 
-  async listFilesByCustomerId(customerId: number): Promise<PublicCustomerFile[]> {
+  async listFilesByCustomerId(customerId: string): Promise<PublicCustomerFile[]> {
     await this.ensureCustomerExists(customerId);
     return this.repository.listFilesByCustomerId(customerId);
   }
 
   async createFile(
-    customerId: number,
+    customerId: string,
     input: CreateCustomerFileInput
   ): Promise<PublicCustomerFile> {
     await this.ensureCustomerExists(customerId);
     return this.repository.createFile(customerId, input);
   }
 
-  async updateFile(fileId: number, input: UpdateCustomerFileInput): Promise<PublicCustomerFile> {
+  async updateFile(fileId: string, input: UpdateCustomerFileInput): Promise<PublicCustomerFile> {
     const file = await this.repository.getFileById(fileId);
     if (!file) {
       throw new CustomerFileNotFoundError();
@@ -84,7 +84,7 @@ export class CustomerRecordsService {
     return this.repository.updateFileById(fileId, input);
   }
 
-  async deleteFile(fileId: number): Promise<void> {
+  async deleteFile(fileId: string): Promise<void> {
     const file = await this.repository.getFileById(fileId);
     if (!file) {
       throw new CustomerFileNotFoundError();
@@ -93,7 +93,7 @@ export class CustomerRecordsService {
     await this.repository.deleteFileById(fileId);
   }
 
-  private async ensureCustomerExists(customerId: number): Promise<void> {
+  private async ensureCustomerExists(customerId: string): Promise<void> {
     const exists = await this.repository.customerExists(customerId);
 
     if (!exists) {

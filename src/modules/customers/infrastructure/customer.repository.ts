@@ -46,14 +46,14 @@ export class CustomerRepository {
     });
   }
 
-  async findById(id: number): Promise<PublicCustomer | null> {
+  async findById(id: string): Promise<PublicCustomer | null> {
     return prisma.customer.findUnique({
       where: { id },
       select: publicCustomerSelect,
     });
   }
 
-  async updateById(id: number, data: UpdateCustomerInput & { passwordHash?: string }): Promise<PublicCustomer> {
+  async updateById(id: string, data: UpdateCustomerInput & { passwordHash?: string }): Promise<PublicCustomer> {
     return prisma.customer.update({
       where: { id },
       data: {

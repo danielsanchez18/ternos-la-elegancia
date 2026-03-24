@@ -38,7 +38,7 @@ export class PaymentService {
   constructor(private readonly paymentRepository: PaymentRepository) {}
 
   async listCustomOrderPayments(
-    customOrderId: number,
+    customOrderId: string,
     filters: ListCustomOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     const order = await this.paymentRepository.findCustomOrderById(customOrderId);
@@ -50,7 +50,7 @@ export class PaymentService {
   }
 
   async createCustomOrderPayment(
-    customOrderId: number,
+    customOrderId: string,
     payload: CreateCustomOrderPaymentInput
   ): Promise<{ payment: PublicPayment; summary: CustomOrderPaymentSummary }> {
     const order = await this.paymentRepository.findCustomOrderById(customOrderId);
@@ -90,7 +90,7 @@ export class PaymentService {
   }
 
   async getCustomOrderPaymentSummary(
-    customOrderId: number
+    customOrderId: string
   ): Promise<CustomOrderPaymentSummary> {
     const order = await this.paymentRepository.findCustomOrderById(customOrderId);
     if (!order) {
@@ -111,7 +111,7 @@ export class PaymentService {
   }
 
   async listCustomOrderComprobantes(
-    customOrderId: number,
+    customOrderId: string,
     filters: ListCustomOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     const order = await this.paymentRepository.findCustomOrderById(customOrderId);
@@ -123,7 +123,7 @@ export class PaymentService {
   }
 
   async createCustomOrderComprobante(
-    customOrderId: number,
+    customOrderId: string,
     payload: CreateCustomOrderComprobanteInput
   ): Promise<PublicComprobante> {
     const order = await this.paymentRepository.findCustomOrderById(customOrderId);
@@ -143,7 +143,7 @@ export class PaymentService {
   }
 
   async listSaleOrderPayments(
-    saleOrderId: number,
+    saleOrderId: string,
     filters: ListSaleOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     const order = await this.paymentRepository.findSaleOrderById(saleOrderId);
@@ -155,7 +155,7 @@ export class PaymentService {
   }
 
   async createSaleOrderPayment(
-    saleOrderId: number,
+    saleOrderId: string,
     payload: CreateSaleOrderPaymentInput
   ): Promise<{ payment: PublicPayment; summary: SaleOrderPaymentSummary }> {
     const order = await this.paymentRepository.findSaleOrderById(saleOrderId);
@@ -193,7 +193,7 @@ export class PaymentService {
   }
 
   async getSaleOrderPaymentSummary(
-    saleOrderId: number
+    saleOrderId: string
   ): Promise<SaleOrderPaymentSummary> {
     const order = await this.paymentRepository.findSaleOrderById(saleOrderId);
     if (!order) {
@@ -213,7 +213,7 @@ export class PaymentService {
   }
 
   async listSaleOrderComprobantes(
-    saleOrderId: number,
+    saleOrderId: string,
     filters: ListSaleOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     const order = await this.paymentRepository.findSaleOrderById(saleOrderId);
@@ -225,7 +225,7 @@ export class PaymentService {
   }
 
   async createSaleOrderComprobante(
-    saleOrderId: number,
+    saleOrderId: string,
     payload: CreateSaleOrderComprobanteInput
   ): Promise<PublicComprobante> {
     const order = await this.paymentRepository.findSaleOrderById(saleOrderId);
@@ -245,7 +245,7 @@ export class PaymentService {
   }
 
   async listRentalOrderPayments(
-    rentalOrderId: number,
+    rentalOrderId: string,
     filters: ListRentalOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
@@ -257,7 +257,7 @@ export class PaymentService {
   }
 
   async createRentalOrderPayment(
-    rentalOrderId: number,
+    rentalOrderId: string,
     payload: CreateRentalOrderPaymentInput
   ): Promise<{ payment: PublicPayment; summary: RentalOrderPaymentSummary }> {
     const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
@@ -295,7 +295,7 @@ export class PaymentService {
   }
 
   async getRentalOrderPaymentSummary(
-    rentalOrderId: number
+    rentalOrderId: string
   ): Promise<RentalOrderPaymentSummary> {
     const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
     if (!order) {
@@ -315,7 +315,7 @@ export class PaymentService {
   }
 
   async listRentalOrderComprobantes(
-    rentalOrderId: number,
+    rentalOrderId: string,
     filters: ListRentalOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
@@ -327,7 +327,7 @@ export class PaymentService {
   }
 
   async createRentalOrderComprobante(
-    rentalOrderId: number,
+    rentalOrderId: string,
     payload: CreateRentalOrderComprobanteInput
   ): Promise<PublicComprobante> {
     const order = await this.paymentRepository.findRentalOrderById(rentalOrderId);
@@ -347,7 +347,7 @@ export class PaymentService {
   }
 
   async listAlterationOrderPayments(
-    alterationOrderId: number,
+    alterationOrderId: string,
     filters: ListAlterationOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     const order = await this.paymentRepository.findAlterationOrderById(
@@ -364,7 +364,7 @@ export class PaymentService {
   }
 
   async createAlterationOrderPayment(
-    alterationOrderId: number,
+    alterationOrderId: string,
     payload: CreateAlterationOrderPaymentInput
   ): Promise<{ payment: PublicPayment; summary: AlterationOrderPaymentSummary }> {
     const order = await this.paymentRepository.findAlterationOrderById(
@@ -406,7 +406,7 @@ export class PaymentService {
   }
 
   async getAlterationOrderPaymentSummary(
-    alterationOrderId: number
+    alterationOrderId: string
   ): Promise<AlterationOrderPaymentSummary> {
     const order = await this.paymentRepository.findAlterationOrderById(
       alterationOrderId
@@ -430,7 +430,7 @@ export class PaymentService {
   }
 
   async listAlterationOrderComprobantes(
-    alterationOrderId: number,
+    alterationOrderId: string,
     filters: ListAlterationOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     const order = await this.paymentRepository.findAlterationOrderById(
@@ -447,7 +447,7 @@ export class PaymentService {
   }
 
   async createAlterationOrderComprobante(
-    alterationOrderId: number,
+    alterationOrderId: string,
     payload: CreateAlterationOrderComprobanteInput
   ): Promise<PublicComprobante> {
     const order = await this.paymentRepository.findAlterationOrderById(

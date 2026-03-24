@@ -9,19 +9,19 @@ import {
 import { z } from "zod";
 
 export const customOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const saleOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const rentalOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const alterationOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listCustomOrderPaymentsQuerySchema = z.object({

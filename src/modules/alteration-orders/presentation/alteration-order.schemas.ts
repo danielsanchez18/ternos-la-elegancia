@@ -2,12 +2,12 @@ import { AlterationOrderStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const alterationOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listAlterationOrdersQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
-  serviceId: z.coerce.number().int().positive().optional(),
+  customerId: z.string().uuid().optional(),
+  serviceId: z.string().uuid().optional(),
   status: z.nativeEnum(AlterationOrderStatus).optional(),
   code: z.string().trim().min(1).max(50).optional(),
   receivedFrom: z.coerce.date().optional(),
@@ -21,8 +21,8 @@ export const listAlterationOrdersQuerySchema = z.object({
 });
 
 export const createAlterationOrderSchema = z.object({
-  customerId: z.number().int().positive(),
-  serviceId: z.number().int().positive().optional(),
+  customerId: z.string().uuid(),
+  serviceId: z.string().uuid().optional(),
   garmentDescription: z.string().trim().min(1).max(500),
   workDescription: z.string().trim().min(1).max(2000),
   initialCondition: z.string().trim().max(1000).optional(),

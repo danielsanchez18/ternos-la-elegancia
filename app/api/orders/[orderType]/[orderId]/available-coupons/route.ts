@@ -1,22 +1,25 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { requireApiAuth } from "@/lib/api-auth";
 import { promotionService } from "@/src/modules/promotions/application/promotion.service";
 import { PromotionRelatedEntityNotFoundError } from "@/src/modules/promotions/domain/promotion.errors";
-import {
-  availableCouponsOrderParamsSchema,
-  formatZodIssues,
-} from "@/src/modules/promotions/presentation/promotion.schemas";
+import { formatZodIssues } from "@/src/modules/promotions/presentation/promotion.schemas";
 
 type RouteContext = {
   params: Promise<{ orderType: string; orderId: string }>;
 };
 
+const availableCouponsOrderParamsSchema = z.object({
+  orderType: z.enum(["sale", "custom", "rental", "alteration"]),
+  orderId: z.string().uuid().transform((value) => value.toLowerCase()),
+});
+
 async function customerOwnsOrder(
-  customerId: number,
+  customerId: string,
   orderType: "sale" | "custom" | "rental" | "alteration",
-  orderId: number
+  orderId: string
 ) {
   if (orderType === "sale") {
     const order = await prisma.saleOrder.findUnique({

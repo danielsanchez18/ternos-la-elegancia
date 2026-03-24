@@ -1,13 +1,13 @@
 import { Prisma } from "@prisma/client";
 
 export type PublicBundleItem = {
-  id: number;
-  bundleId: number;
-  productId: number;
+  id: string;
+  bundleId: string;
+  productId: string;
   quantity: number;
   sortOrder: number;
   product: {
-    id: number;
+    id: string;
     nombre: string;
     slug: string;
     active: boolean;
@@ -15,17 +15,17 @@ export type PublicBundleItem = {
 };
 
 export type PublicBundleVariantItem = {
-  id: number;
-  bundleId: number;
-  variantId: number;
+  id: string;
+  bundleId: string;
+  variantId: string;
   quantity: number;
   sortOrder: number;
   variant: {
-    id: number;
+    id: string;
     sku: string;
     active: boolean;
     product: {
-      id: number;
+      id: string;
       nombre: string;
       slug: string;
       active: boolean;
@@ -34,7 +34,7 @@ export type PublicBundleVariantItem = {
 };
 
 export type PublicBundle = {
-  id: number;
+  id: string;
   nombre: string;
   slug: string;
   descripcion: string | null;
@@ -68,25 +68,25 @@ export type UpdateBundleInput = {
 };
 
 export type CreateBundleItemInput = {
-  productId: number;
+  productId: string;
   quantity?: number;
   sortOrder?: number;
 };
 
 export type UpdateBundleItemInput = {
-  productId?: number;
+  productId?: string;
   quantity?: number;
   sortOrder?: number;
 };
 
 export type CreateBundleVariantItemInput = {
-  variantId: number;
+  variantId: string;
   quantity?: number;
   sortOrder?: number;
 };
 
 export type UpdateBundleVariantItemInput = {
-  variantId?: number;
+  variantId?: string;
   quantity?: number;
   sortOrder?: number;
 };

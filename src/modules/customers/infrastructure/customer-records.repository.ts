@@ -29,7 +29,7 @@ const publicCustomerFileSelect = {
 } satisfies Prisma.CustomerFileSelect;
 
 export class CustomerRecordsRepository {
-  async customerExists(customerId: number): Promise<boolean> {
+  async customerExists(customerId: string): Promise<boolean> {
     const row = await prisma.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
@@ -38,7 +38,7 @@ export class CustomerRecordsRepository {
     return Boolean(row);
   }
 
-  async adminUserExists(adminUserId: number): Promise<boolean> {
+  async adminUserExists(adminUserId: string): Promise<boolean> {
     const row = await prisma.adminUser.findUnique({
       where: { id: adminUserId },
       select: { id: true },
@@ -47,7 +47,7 @@ export class CustomerRecordsRepository {
     return Boolean(row);
   }
 
-  async listNotesByCustomerId(customerId: number): Promise<PublicCustomerNote[]> {
+  async listNotesByCustomerId(customerId: string): Promise<PublicCustomerNote[]> {
     return prisma.customerNote.findMany({
       where: { customerId },
       orderBy: { createdAt: "desc" },
@@ -56,7 +56,7 @@ export class CustomerRecordsRepository {
   }
 
   async createNote(
-    customerId: number,
+    customerId: string,
     input: CreateCustomerNoteInput
   ): Promise<PublicCustomerNote> {
     return prisma.customerNote.create({
@@ -69,7 +69,7 @@ export class CustomerRecordsRepository {
     });
   }
 
-  async getNoteById(noteId: number): Promise<PublicCustomerNote | null> {
+  async getNoteById(noteId: string): Promise<PublicCustomerNote | null> {
     return prisma.customerNote.findUnique({
       where: { id: noteId },
       select: publicCustomerNoteSelect,
@@ -77,7 +77,7 @@ export class CustomerRecordsRepository {
   }
 
   async updateNoteById(
-    noteId: number,
+    noteId: string,
     input: UpdateCustomerNoteInput
   ): Promise<PublicCustomerNote> {
     return prisma.customerNote.update({
@@ -90,11 +90,11 @@ export class CustomerRecordsRepository {
     });
   }
 
-  async deleteNoteById(noteId: number): Promise<void> {
+  async deleteNoteById(noteId: string): Promise<void> {
     await prisma.customerNote.delete({ where: { id: noteId } });
   }
 
-  async listFilesByCustomerId(customerId: number): Promise<PublicCustomerFile[]> {
+  async listFilesByCustomerId(customerId: string): Promise<PublicCustomerFile[]> {
     return prisma.customerFile.findMany({
       where: { customerId },
       orderBy: { createdAt: "desc" },
@@ -103,7 +103,7 @@ export class CustomerRecordsRepository {
   }
 
   async createFile(
-    customerId: number,
+    customerId: string,
     input: CreateCustomerFileInput
   ): Promise<PublicCustomerFile> {
     return prisma.customerFile.create({
@@ -118,7 +118,7 @@ export class CustomerRecordsRepository {
     });
   }
 
-  async getFileById(fileId: number): Promise<PublicCustomerFile | null> {
+  async getFileById(fileId: string): Promise<PublicCustomerFile | null> {
     return prisma.customerFile.findUnique({
       where: { id: fileId },
       select: publicCustomerFileSelect,
@@ -126,7 +126,7 @@ export class CustomerRecordsRepository {
   }
 
   async updateFileById(
-    fileId: number,
+    fileId: string,
     input: UpdateCustomerFileInput
   ): Promise<PublicCustomerFile> {
     return prisma.customerFile.update({
@@ -141,7 +141,7 @@ export class CustomerRecordsRepository {
     });
   }
 
-  async deleteFileById(fileId: number): Promise<void> {
+  async deleteFileById(fileId: string): Promise<void> {
     await prisma.customerFile.delete({ where: { id: fileId } });
   }
 }

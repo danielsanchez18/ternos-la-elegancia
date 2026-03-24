@@ -127,7 +127,7 @@ export class CatalogRepository {
     });
   }
 
-  async findAttributeDefinitionById(id: number): Promise<PublicCatalogAttributeDefinition | null> {
+  async findAttributeDefinitionById(id: string): Promise<PublicCatalogAttributeDefinition | null> {
     return prisma.catalogAttributeDefinition.findUnique({
       where: { id },
       select: publicCatalogAttributeDefinitionSelect,
@@ -152,7 +152,7 @@ export class CatalogRepository {
   }
 
   async updateAttributeDefinitionById(
-    id: number,
+    id: string,
     input: UpdateAttributeDefinitionInput
   ): Promise<PublicCatalogAttributeDefinition> {
     return prisma.catalogAttributeDefinition.update({
@@ -168,12 +168,12 @@ export class CatalogRepository {
     });
   }
 
-  async deactivateAttributeDefinitionById(id: number): Promise<PublicCatalogAttributeDefinition> {
+  async deactivateAttributeDefinitionById(id: string): Promise<PublicCatalogAttributeDefinition> {
     return this.updateAttributeDefinitionById(id, { active: false });
   }
 
   async listAttributeOptionsByDefinitionId(
-    definitionId: number
+    definitionId: string
   ): Promise<PublicCatalogAttributeOption[]> {
     return prisma.catalogAttributeOption.findMany({
       where: { definitionId },
@@ -183,7 +183,7 @@ export class CatalogRepository {
   }
 
   async createAttributeOption(
-    definitionId: number,
+    definitionId: string,
     input: CreateAttributeOptionInput
   ): Promise<PublicCatalogAttributeOption> {
     return prisma.catalogAttributeOption.create({
@@ -199,7 +199,7 @@ export class CatalogRepository {
   }
 
   async updateAttributeOptionById(
-    optionId: number,
+    optionId: string,
     input: UpdateAttributeOptionInput
   ): Promise<PublicCatalogAttributeOption> {
     return prisma.catalogAttributeOption.update({
@@ -213,11 +213,11 @@ export class CatalogRepository {
     });
   }
 
-  async deactivateAttributeOptionById(optionId: number): Promise<PublicCatalogAttributeOption> {
+  async deactivateAttributeOptionById(optionId: string): Promise<PublicCatalogAttributeOption> {
     return this.updateAttributeOptionById(optionId, { active: false });
   }
 
-  async getAttributeOptionById(optionId: number) {
+  async getAttributeOptionById(optionId: string) {
     return prisma.catalogAttributeOption.findUnique({
       where: { id: optionId },
       select: {
@@ -227,7 +227,7 @@ export class CatalogRepository {
     });
   }
 
-  async productExists(productId: number): Promise<boolean> {
+  async productExists(productId: string): Promise<boolean> {
     const row = await prisma.product.findUnique({
       where: { id: productId },
       select: { id: true },
@@ -236,7 +236,7 @@ export class CatalogRepository {
     return Boolean(row);
   }
 
-  async variantExists(variantId: number): Promise<boolean> {
+  async variantExists(variantId: string): Promise<boolean> {
     const row = await prisma.productVariant.findUnique({
       where: { id: variantId },
       select: { id: true },
@@ -245,7 +245,7 @@ export class CatalogRepository {
     return Boolean(row);
   }
 
-  async definitionById(definitionId: number) {
+  async definitionById(definitionId: string) {
     return prisma.catalogAttributeDefinition.findUnique({
       where: { id: definitionId },
       select: {
@@ -255,7 +255,7 @@ export class CatalogRepository {
     });
   }
 
-  async listProductAttributeValues(productId: number): Promise<PublicProductAttributeValue[]> {
+  async listProductAttributeValues(productId: string): Promise<PublicProductAttributeValue[]> {
     return prisma.productAttributeValue.findMany({
       where: { productId },
       orderBy: [{ definition: { sortOrder: "asc" } }, { id: "asc" }],
@@ -264,7 +264,7 @@ export class CatalogRepository {
   }
 
   async upsertProductAttributeValue(
-    productId: number,
+    productId: string,
     input: UpsertProductAttributeValueInput
   ): Promise<PublicProductAttributeValue> {
     return prisma.productAttributeValue.upsert({
@@ -299,8 +299,8 @@ export class CatalogRepository {
   }
 
   async deleteProductAttributeValue(
-    productId: number,
-    definitionId: number
+    productId: string,
+    definitionId: string
   ): Promise<void> {
     await prisma.productAttributeValue.delete({
       where: {
@@ -312,7 +312,7 @@ export class CatalogRepository {
     });
   }
 
-  async listVariantAttributeValues(variantId: number): Promise<PublicVariantAttributeValue[]> {
+  async listVariantAttributeValues(variantId: string): Promise<PublicVariantAttributeValue[]> {
     return prisma.variantAttributeValue.findMany({
       where: { variantId },
       orderBy: [{ definition: { sortOrder: "asc" } }, { id: "asc" }],
@@ -321,7 +321,7 @@ export class CatalogRepository {
   }
 
   async upsertVariantAttributeValue(
-    variantId: number,
+    variantId: string,
     input: UpsertVariantAttributeValueInput
   ): Promise<PublicVariantAttributeValue> {
     return prisma.variantAttributeValue.upsert({
@@ -356,8 +356,8 @@ export class CatalogRepository {
   }
 
   async deleteVariantAttributeValue(
-    variantId: number,
-    definitionId: number
+    variantId: string,
+    definitionId: string
   ): Promise<void> {
     await prisma.variantAttributeValue.delete({
       where: {
@@ -369,7 +369,7 @@ export class CatalogRepository {
     });
   }
 
-  async listProductComponents(parentProductId: number): Promise<PublicProductComponent[]> {
+  async listProductComponents(parentProductId: string): Promise<PublicProductComponent[]> {
     return prisma.productComponent.findMany({
       where: { parentProductId },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
@@ -378,7 +378,7 @@ export class CatalogRepository {
   }
 
   async createProductComponent(
-    parentProductId: number,
+    parentProductId: string,
     input: CreateProductComponentInput
   ): Promise<PublicProductComponent> {
     return prisma.productComponent.create({
@@ -393,7 +393,7 @@ export class CatalogRepository {
   }
 
   async updateProductComponentById(
-    componentId: number,
+    componentId: string,
     input: UpdateProductComponentInput
   ): Promise<PublicProductComponent> {
     return prisma.productComponent.update({
@@ -407,11 +407,11 @@ export class CatalogRepository {
     });
   }
 
-  async deleteProductComponentById(componentId: number): Promise<void> {
+  async deleteProductComponentById(componentId: string): Promise<void> {
     await prisma.productComponent.delete({ where: { id: componentId } });
   }
 
-  async getProductComponentById(componentId: number) {
+  async getProductComponentById(componentId: string) {
     return prisma.productComponent.findUnique({
       where: { id: componentId },
       select: {
@@ -421,7 +421,7 @@ export class CatalogRepository {
     });
   }
 
-  async ensureDefinitionScope(definitionId: number, expectedScope: AttributeScope): Promise<boolean> {
+  async ensureDefinitionScope(definitionId: string, expectedScope: AttributeScope): Promise<boolean> {
     const definition = await this.definitionById(definitionId);
     return Boolean(definition && definition.scope === expectedScope);
   }

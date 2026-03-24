@@ -2,15 +2,17 @@ import { AppointmentStatus, AppointmentType } from "@prisma/client";
 import { z } from "zod";
 
 export const appointmentIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
+export const appointmentIdentifierParamSchema = appointmentIdParamSchema;
+
 export const scheduleIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listAppointmentsQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
+  customerId: z.string().uuid().optional(),
   status: z.nativeEnum(AppointmentStatus).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
@@ -18,11 +20,11 @@ export const listAppointmentsQuerySchema = z.object({
 
 export const listAvailableSlotsQuerySchema = z.object({
   date: z.coerce.date(),
-  excludeAppointmentId: z.coerce.number().int().positive().optional(),
+  excludeAppointmentId: z.string().uuid().optional(),
 });
 
 export const createAppointmentSchema = z.object({
-  customerId: z.coerce.number().int().positive(),
+  customerId: z.string().uuid(),
   type: z.nativeEnum(AppointmentType),
   scheduledAt: z.coerce.date(),
   notes: z.string().trim().max(500).optional(),

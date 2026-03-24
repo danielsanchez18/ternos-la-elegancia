@@ -325,7 +325,7 @@ export async function AdminCustomersSubroute({
     const mappedCustomers = customersList.map(c => ({
       id: c.id,
       name: `${c.nombres} ${c.apellidos || ""}`.trim()
-    }));
+    })) as unknown as Array<{ id: number; name: string }>;
 
     return (
       <section className="space-y-6">
@@ -396,15 +396,13 @@ export async function AdminCustomersSubroute({
                         {profile.isActive ? "Activo" : "Inactivo"}
                       </span>
                       <AdminMeasurementProfileActions
-                        profile={
-                          {
-                            id: profile.id,
-                            customerName: profile.customerName,
-                            notes: profile.notes,
-                            isActive: profile.isActive,
-                            validUntil: profile.validUntil,
-                          } satisfies MeasurementProfileActionData
-                        }
+                        profile={{
+                          id: profile.id as unknown as number,
+                          customerName: profile.customerName,
+                          notes: profile.notes,
+                          isActive: profile.isActive,
+                          validUntil: profile.validUntil,
+                        } as MeasurementProfileActionData}
                       />
                     </div>
                   </div>
@@ -431,7 +429,7 @@ export async function AdminCustomersSubroute({
                         Tipos
                       </p>
                       <AdminMeasurementGarmentChips
-                        profileId={profile.id}
+                        profileId={profile.id as unknown as number}
                         customerName={profile.customerName}
                         garments={profile.garments}
                       />

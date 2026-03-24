@@ -23,7 +23,7 @@ export class RentalUnitService {
     return this.rentalUnitRepository.list(filters);
   }
 
-  async getRentalUnitById(id: number): Promise<PublicRentalUnit> {
+  async getRentalUnitById(id: string): Promise<PublicRentalUnit> {
     const unit = await this.rentalUnitRepository.findById(id);
     if (!unit) {
       throw new RentalUnitNotFoundError();
@@ -46,7 +46,7 @@ export class RentalUnitService {
     }
   }
 
-  async updateRentalUnit(id: number, input: UpdateRentalUnitInput): Promise<PublicRentalUnit> {
+  async updateRentalUnit(id: string, input: UpdateRentalUnitInput): Promise<PublicRentalUnit> {
     const current = await this.getRentalUnitById(id);
 
     await this.assertForeignKeys(current.productId, input.variantId ?? undefined);
@@ -65,11 +65,11 @@ export class RentalUnitService {
     }
   }
 
-  async retireRentalUnit(id: number): Promise<PublicRentalUnit> {
+  async retireRentalUnit(id: string): Promise<PublicRentalUnit> {
     return this.actOnRentalUnit(id, { action: "MARK_RETIRED" });
   }
 
-  async actOnRentalUnit(id: number, input: RentalUnitActionInput): Promise<PublicRentalUnit> {
+  async actOnRentalUnit(id: string, input: RentalUnitActionInput): Promise<PublicRentalUnit> {
     const unit = await this.getRentalUnitById(id);
 
     if (input.action === "MARK_AVAILABLE") {
@@ -123,7 +123,7 @@ export class RentalUnitService {
     });
   }
 
-  private async assertForeignKeys(productId: number, variantId?: number): Promise<void> {
+  private async assertForeignKeys(productId: string, variantId?: string): Promise<void> {
     const product = await this.rentalUnitRepository.getProductById(productId);
     if (!product) {
       throw new RentalUnitProductNotFoundError();

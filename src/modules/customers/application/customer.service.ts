@@ -27,7 +27,7 @@ export class CustomerService {
     return this.customerRepository.findMany();
   }
 
-  async getCustomerById(id: number): Promise<PublicCustomer> {
+  async getCustomerById(id: string): Promise<PublicCustomer> {
     const customer = await this.customerRepository.findById(id);
     if (!customer) {
       throw new CustomerNotFoundError();
@@ -36,7 +36,11 @@ export class CustomerService {
     return customer;
   }
 
-  async updateCustomer(id: number, input: UpdateCustomerInput): Promise<PublicCustomer> {
+  async getCustomerByIdentifier(id: string): Promise<PublicCustomer> {
+    return this.getCustomerById(id);
+  }
+
+  async updateCustomer(id: string, input: UpdateCustomerInput): Promise<PublicCustomer> {
     try {
       return await this.customerRepository.updateById(id, {
         ...input,
@@ -49,8 +53,21 @@ export class CustomerService {
     }
   }
 
-  async deactivateCustomer(id: number): Promise<PublicCustomer> {
+  async deactivateCustomer(id: string): Promise<PublicCustomer> {
     return this.updateCustomer(id, { isActive: false });
+  }
+
+  async updateCustomerByIdentifier(
+    id: string,
+    input: UpdateCustomerInput
+  ): Promise<PublicCustomer> {
+    const customer = await this.getCustomerByIdentifier(id);
+    return this.updateCustomer(customer.id, input);
+  }
+
+  async deactivateCustomerByIdentifier(id: string): Promise<PublicCustomer> {
+    const customer = await this.getCustomerByIdentifier(id);
+    return this.deactivateCustomer(customer.id);
   }
 
   private handlePersistenceError(error: unknown): never {

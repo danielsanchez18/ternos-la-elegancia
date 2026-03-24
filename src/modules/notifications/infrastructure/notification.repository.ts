@@ -103,8 +103,8 @@ export class NotificationRepository {
   }
 
   async markReminderAndCreateNotification(input: {
-    appointmentId: number;
-    customerId: number;
+    appointmentId: string;
+    customerId: string;
     channel: NotificationChannel;
     subject: string;
     message: string;

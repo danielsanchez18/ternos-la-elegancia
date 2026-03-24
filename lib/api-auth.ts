@@ -8,8 +8,8 @@ export type ApiAuthLevel = "authenticated" | "admin" | "customer";
 
 export type ApiAuthContext = {
   userId: string;
-  adminUserId: number | null;
-  customerId: number | null;
+  adminUserId: string | null;
+  customerId: string | null;
 };
 
 type ApiAuthSuccess = {

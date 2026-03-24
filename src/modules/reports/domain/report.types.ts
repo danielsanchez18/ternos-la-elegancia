@@ -27,14 +27,14 @@ export type ActiveRentalsSnapshot = {
 };
 
 export type TopRentedProduct = {
-  productId: number;
+  productId: string;
   productName: string;
   productSlug: string;
   timesRented: number;
 };
 
 export type RecurrentCustomer = {
-  customerId: number;
+  customerId: string;
   nombres: string;
   apellidos: string;
   email: string;
@@ -59,20 +59,20 @@ export type MeasurementReservations = {
 };
 
 export type LowStockVariant = {
-  variantId: number;
+  variantId: string;
   sku: string;
   stock: number;
   minStock: number;
   shortage: number;
   product: {
-    id: number;
+    id: string;
     nombre: string;
     slug: string;
   };
 };
 
 export type NewCustomerMeasurementAlert = {
-  customerId: number;
+  customerId: string;
   nombres: string;
   apellidos: string;
   email: string;

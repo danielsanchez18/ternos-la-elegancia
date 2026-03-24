@@ -1,4 +1,5 @@
 import { PackageOpen } from "lucide-react";
+import type { ComponentProps } from "react";
 
 import AdminFabricListLayout from "@/components/admin/AdminFabricListLayout";
 import { statCard } from "@/components/admin/inventory/inventory-ui";
@@ -11,6 +12,7 @@ export async function AdminInventorySubroute({
 }) {
   if (subroute === "telas") {
     const fabrics = await getAdminFabricsListData();
+    type FabricListLayoutProps = ComponentProps<typeof AdminFabricListLayout>;
 
     return (
       <section className="space-y-6">
@@ -34,7 +36,9 @@ export async function AdminInventorySubroute({
           })}
         </div>
 
-        <AdminFabricListLayout fabrics={fabrics} />
+        <AdminFabricListLayout
+          fabrics={fabrics as unknown as FabricListLayoutProps["fabrics"]}
+        />
       </section>
     );
   }

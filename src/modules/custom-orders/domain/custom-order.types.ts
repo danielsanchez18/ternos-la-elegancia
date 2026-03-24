@@ -17,7 +17,7 @@ export type CustomOrderAction =
   | "LINK_MEASUREMENT";
 
 export type ListCustomOrdersFilters = {
-  customerId?: number;
+  customerId?: string;
   status?: CustomOrderStatus;
   code?: string;
   requiresMeasurement?: boolean;
@@ -41,28 +41,28 @@ export type CustomOrderListResult = {
 };
 
 export type CreateCustomOrderSelectionInput = {
-  definitionId: number;
-  optionId?: number;
+  definitionId: string;
+  optionId?: string;
   valueText?: string;
   valueNumber?: number;
   valueBoolean?: boolean;
 };
 
 export type CreateCustomOrderPartInput = {
-  productId?: number;
+  productId?: string;
   garmentType: MeasurementGarmentType;
   label: string;
   workMode?: FabricPriceMode;
-  measurementProfileId?: number;
-  measurementProfileGarmentId?: number;
-  fabricId?: number;
+  measurementProfileId?: string;
+  measurementProfileGarmentId?: string;
+  fabricId?: string;
   unitPrice?: number;
   notes?: string;
   selections?: CreateCustomOrderSelectionInput[];
 };
 
 export type CreateCustomOrderItemInput = {
-  productId?: number;
+  productId?: string;
   itemNameSnapshot?: string;
   quantity: number;
   unitPrice: number;
@@ -72,7 +72,7 @@ export type CreateCustomOrderItemInput = {
 };
 
 export type CreateCustomOrderInput = {
-  customerId: number;
+  customerId: string;
   firstPurchaseFlow?: boolean;
   requestedDeliveryAt?: Date;
   promisedDeliveryAt?: Date;
@@ -84,9 +84,9 @@ export type CreateCustomOrderInput = {
 export type CustomOrderActionInput = {
   action: CustomOrderAction;
   note?: string;
-  partId?: number;
-  profileId?: number;
-  profileGarmentId?: number;
+  partId?: string;
+  profileId?: string;
+  profileGarmentId?: string;
 };
 
 export type UpdateCustomOrderInput = Partial<Omit<CreateCustomOrderInput, "customerId">> & {
@@ -96,8 +96,8 @@ export type UpdateCustomOrderInput = Partial<Omit<CreateCustomOrderInput, "custo
 };
 
 export type PublicCustomOrder = {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   code: string;
   status: CustomOrderStatus;
   requiresMeasurement: boolean;
@@ -114,8 +114,8 @@ export type PublicCustomOrder = {
   createdAt: Date;
   updatedAt: Date;
   items: {
-    id: number;
-    productId: number | null;
+    id: string;
+    productId: string | null;
     itemNameSnapshot: string;
     quantity: number;
     unitPrice: Prisma.Decimal;
@@ -123,23 +123,23 @@ export type PublicCustomOrder = {
     subtotal: Prisma.Decimal;
     notes: string | null;
     parts: {
-      id: number;
-      productId: number | null;
+      id: string;
+      productId: string | null;
       garmentType: MeasurementGarmentType;
       label: string;
       workMode: FabricPriceMode;
-      measurementProfileId: number | null;
-      measurementProfileGarmentId: number | null;
-      fabricId: number | null;
+      measurementProfileId: string | null;
+      measurementProfileGarmentId: string | null;
+      fabricId: string | null;
       fabricNameSnapshot: string | null;
       fabricCodeSnapshot: string | null;
       fabricColorSnapshot: string | null;
       unitPrice: Prisma.Decimal | null;
       notes: string | null;
       selections: {
-        id: number;
-        definitionId: number;
-        optionId: number | null;
+        id: string;
+        definitionId: string;
+        optionId: string | null;
         definitionCodeSnapshot: string;
         definitionLabelSnapshot: string;
         inputTypeSnapshot: InputFieldType;

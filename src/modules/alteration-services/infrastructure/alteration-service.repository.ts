@@ -28,7 +28,7 @@ export class AlterationServiceRepository {
     });
   }
 
-  async findById(id: number): Promise<PublicAlterationService | null> {
+  async findById(id: string): Promise<PublicAlterationService | null> {
     return prisma.alterationService.findUnique({
       where: { id },
       select: publicAlterationServiceSelect,
@@ -48,7 +48,7 @@ export class AlterationServiceRepository {
   }
 
   async updateById(
-    id: number,
+    id: string,
     input: UpdateAlterationServiceInput
   ): Promise<PublicAlterationService> {
     return prisma.alterationService.update({
@@ -67,7 +67,7 @@ export class AlterationServiceRepository {
     });
   }
 
-  async deactivateById(id: number): Promise<PublicAlterationService> {
+  async deactivateById(id: string): Promise<PublicAlterationService> {
     return prisma.alterationService.update({
       where: { id },
       data: {

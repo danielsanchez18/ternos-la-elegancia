@@ -7,7 +7,7 @@ export type RentalOrderAction =
   | "CANCEL";
 
 export type ListRentalOrdersFilters = {
-  customerId?: number;
+  customerId?: string;
   status?: RentalOrderStatus;
   code?: string;
   hasDelay?: boolean;
@@ -31,8 +31,8 @@ export type RentalOrderListResult = {
 };
 
 export type CreateRentalOrderItemInput = {
-  rentalUnitId: number;
-  productId?: number;
+  rentalUnitId: string;
+  productId?: string;
   itemNameSnapshot?: string;
   tierAtRental?: RentalPriceTier;
   unitPrice?: number;
@@ -40,7 +40,7 @@ export type CreateRentalOrderItemInput = {
 };
 
 export type CreateRentalOrderInput = {
-  customerId: number;
+  customerId: string;
   pickupAt?: Date;
   dueBackAt: Date;
   notes?: string;
@@ -55,8 +55,8 @@ export type RentalOrderActionInput = {
 };
 
 export type PublicRentalOrder = {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   code: string;
   status: RentalOrderStatus;
   subtotal: Prisma.Decimal;
@@ -72,10 +72,10 @@ export type PublicRentalOrder = {
   createdAt: Date;
   updatedAt: Date;
   items: {
-    id: number;
-    rentalOrderId: number;
-    productId: number | null;
-    rentalUnitId: number;
+    id: string;
+    rentalOrderId: string;
+    productId: string | null;
+    rentalUnitId: string;
     itemNameSnapshot: string;
     tierAtRental: RentalPriceTier;
     unitPrice: Prisma.Decimal;

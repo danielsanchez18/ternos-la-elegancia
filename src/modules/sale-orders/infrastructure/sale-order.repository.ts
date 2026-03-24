@@ -50,6 +50,24 @@ const publicSaleOrderSelect = {
   },
 } satisfies Prisma.SaleOrderSelect;
 
+export type PreparedSaleOrderItemComponent = {
+  productId?: string;
+  variantId?: string;
+  quantity: number;
+};
+
+export type PreparedSaleOrderItem = {
+  productId?: string;
+  bundleId?: string;
+  itemNameSnapshot: string;
+  quantity: number;
+  unitPrice: Prisma.Decimal;
+  discountAmount: Prisma.Decimal;
+  subtotal: Prisma.Decimal;
+  notes?: string;
+  components: PreparedSaleOrderItemComponent[];
+};
+
 export class SaleOrderRepository {
   async list(filters: ListSaleOrdersFilters): Promise<SaleOrderListResult> {
     const where: Prisma.SaleOrderWhereInput = {
@@ -94,14 +112,14 @@ export class SaleOrderRepository {
     };
   }
 
-  async findById(id: number): Promise<PublicSaleOrder | null> {
+  async findById(id: string): Promise<PublicSaleOrder | null> {
     return prisma.saleOrder.findUnique({
       where: { id },
       select: publicSaleOrderSelect,
     });
   }
 
-  async customerExists(customerId: number): Promise<boolean> {
+  async customerExists(customerId: string): Promise<boolean> {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
@@ -110,7 +128,7 @@ export class SaleOrderRepository {
     return Boolean(customer);
   }
 
-  async getProductById(productId: number) {
+  async getProductById(productId: string) {
     return prisma.product.findUnique({
       where: { id: productId },
       select: {
@@ -121,7 +139,7 @@ export class SaleOrderRepository {
     });
   }
 
-  async getBundleById(bundleId: number) {
+  async getBundleById(bundleId: string) {
     return prisma.bundle.findUnique({
       where: { id: bundleId },
       select: {
@@ -140,7 +158,7 @@ export class SaleOrderRepository {
     });
   }
 
-  async customerHasPriorSuitOrJacketPurchase(customerId: number): Promise<boolean> {
+  async customerHasPriorSuitOrJacketPurchase(customerId: string): Promise<boolean> {
     const row = await prisma.saleOrderItem.findFirst({
       where: {
         saleOrder: {
@@ -172,7 +190,7 @@ export class SaleOrderRepository {
     return Boolean(row);
   }
 
-  async customerHasValidMeasurementProfile(customerId: number, now: Date): Promise<boolean> {
+  async customerHasValidMeasurementProfile(customerId: string, now: Date): Promise<boolean> {
     const row = await prisma.measurementProfile.findFirst({
       where: {
         customerId,
@@ -186,7 +204,7 @@ export class SaleOrderRepository {
   }
 
   async customerHasReservedMeasurementAppointment(
-    customerId: number,
+    customerId: string,
     now: Date
   ): Promise<boolean> {
     const row = await prisma.appointment.findFirst({
@@ -202,7 +220,7 @@ export class SaleOrderRepository {
     return Boolean(row);
   }
 
-  async getSaleOrderApprovedPaymentsTotal(saleOrderId: number): Promise<Prisma.Decimal> {
+  async getSaleOrderApprovedPaymentsTotal(saleOrderId: string): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
         saleOrderId,
@@ -213,7 +231,7 @@ export class SaleOrderRepository {
       },
     });
 
-    return aggregate._sum.amount ?? new Prisma.Decimal(0);
+    return aggregate._sum?.amount ?? new Prisma.Decimal(0);
   }
 
   async nextCodeForDate(date: Date): Promise<string> {
@@ -245,21 +263,7 @@ export class SaleOrderRepository {
     code: string;
     status: SaleOrderStatus;
     payload: CreateSaleOrderInput;
-    preparedItems: Array<{
-      productId?: number;
-      bundleId?: number;
-      itemNameSnapshot: string;
-      quantity: number;
-      unitPrice: Prisma.Decimal;
-      discountAmount: Prisma.Decimal;
-      subtotal: Prisma.Decimal;
-      notes?: string;
-      components: Array<{
-        productId?: number;
-        variantId?: number;
-        quantity: number;
-      }>;
-    }>;
+    preparedItems: PreparedSaleOrderItem[];
   }): Promise<PublicSaleOrder> {
     return prisma.$transaction(async (tx) => {
       const saleOrder = await tx.saleOrder.create({
@@ -320,7 +324,7 @@ export class SaleOrderRepository {
   }
 
   async updateStatus(input: {
-    id: number;
+    id: string;
     status: SaleOrderStatus;
     note?: string;
     preparedAt?: Date | null;

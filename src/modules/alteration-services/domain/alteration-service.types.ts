@@ -17,7 +17,7 @@ export type UpdateAlterationServiceInput = {
 };
 
 export type PublicAlterationService = {
-  id: number;
+  id: string;
   nombre: string;
   precioBase: Prisma.Decimal | null;
   activo: boolean;

@@ -2,7 +2,7 @@ import { InventoryMovementType } from "@prisma/client";
 import { z } from "zod";
 
 export const fabricIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const createFabricSchema = z.object({

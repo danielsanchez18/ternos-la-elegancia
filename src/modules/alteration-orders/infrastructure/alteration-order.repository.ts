@@ -88,14 +88,14 @@ export class AlterationOrderRepository {
     };
   }
 
-  async findById(id: number): Promise<PublicAlterationOrder | null> {
+  async findById(id: string): Promise<PublicAlterationOrder | null> {
     return prisma.alterationOrder.findUnique({
       where: { id },
       select: publicAlterationOrderSelect,
     });
   }
 
-  async customerExists(customerId: number): Promise<boolean> {
+  async customerExists(customerId: string): Promise<boolean> {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
@@ -104,7 +104,7 @@ export class AlterationOrderRepository {
     return Boolean(customer);
   }
 
-  async getAlterationServiceById(serviceId: number) {
+  async getAlterationServiceById(serviceId: string) {
     return prisma.alterationService.findUnique({
       where: { id: serviceId },
       select: {
@@ -187,7 +187,7 @@ export class AlterationOrderRepository {
   }
 
   async updateStatus(input: {
-    id: number;
+    id: string;
     status: AlterationOrderStatus;
     note?: string;
     deliveredAt?: Date | null;
@@ -215,7 +215,7 @@ export class AlterationOrderRepository {
   }
 
   async getAlterationOrderApprovedPaymentsTotal(
-    alterationOrderId: number
+    alterationOrderId: string
   ): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
@@ -227,6 +227,6 @@ export class AlterationOrderRepository {
       },
     });
 
-    return aggregate._sum.amount ?? new Prisma.Decimal(0);
+    return aggregate._sum?.amount ?? new Prisma.Decimal(0);
   }
 }

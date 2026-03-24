@@ -1,7 +1,7 @@
 import { DiscountType, Prisma, PromotionScope } from "@prisma/client";
 
 export type PublicPromotion = {
-  id: number;
+  id: string;
   nombre: string;
   scope: PromotionScope;
   discountType: DiscountType;
@@ -12,15 +12,15 @@ export type PublicPromotion = {
   createdAt: Date;
   updatedAt: Date;
   productTargets: Array<{
-    productId: number;
+    productId: string;
   }>;
 };
 
 export type PublicCoupon = {
-  id: number;
+  id: string;
   code: string;
-  promotionId: number | null;
-  bundleId: number | null;
+  promotionId: string | null;
+  bundleId: string | null;
   discountType: DiscountType;
   value: Prisma.Decimal;
   maxUses: number | null;
@@ -31,16 +31,16 @@ export type PublicCoupon = {
   createdAt: Date;
   updatedAt: Date;
   promotion: {
-    id: number;
+    id: string;
     nombre: string;
     scope: PromotionScope;
     active: boolean;
     productTargets: Array<{
-      productId: number;
+      productId: string;
     }>;
   } | null;
   bundle: {
-    id: number;
+    id: string;
     nombre: string;
     slug: string;
     active: boolean;
@@ -48,12 +48,12 @@ export type PublicCoupon = {
 };
 
 export type PublicCouponUse = {
-  id: number;
-  couponId: number;
-  saleOrderId: number | null;
-  customOrderId: number | null;
-  rentalOrderId: number | null;
-  alterationOrderId: number | null;
+  id: string;
+  couponId: string;
+  saleOrderId: string | null;
+  customOrderId: string | null;
+  rentalOrderId: string | null;
+  alterationOrderId: string | null;
   appliedAmount: Prisma.Decimal;
   createdAt: Date;
 };
@@ -67,8 +67,8 @@ export type ListPromotionsFilters = {
 export type ListCouponsFilters = {
   search?: string;
   active?: boolean;
-  promotionId?: number;
-  bundleId?: number;
+  promotionId?: string;
+  bundleId?: string;
 };
 
 export type CreatePromotionInput = {
@@ -79,7 +79,7 @@ export type CreatePromotionInput = {
   startsAt: Date;
   endsAt?: Date | null;
   active?: boolean;
-  productIds?: number[];
+  productIds?: string[];
 };
 
 export type UpdatePromotionInput = {
@@ -90,13 +90,13 @@ export type UpdatePromotionInput = {
   startsAt?: Date;
   endsAt?: Date | null;
   active?: boolean;
-  productIds?: number[];
+  productIds?: string[];
 };
 
 export type CreateCouponInput = {
   code: string;
-  promotionId?: number | null;
-  bundleId?: number | null;
+  promotionId?: string | null;
+  bundleId?: string | null;
   discountType: DiscountType;
   value: number;
   maxUses?: number | null;
@@ -107,8 +107,8 @@ export type CreateCouponInput = {
 
 export type UpdateCouponInput = {
   code?: string;
-  promotionId?: number | null;
-  bundleId?: number | null;
+  promotionId?: string | null;
+  bundleId?: string | null;
   discountType?: DiscountType;
   value?: number;
   maxUses?: number | null;
@@ -120,15 +120,15 @@ export type UpdateCouponInput = {
 export type CouponOrderType = "sale" | "custom" | "rental" | "alteration";
 
 export type ApplyCouponToOrderInput = {
-  couponId: number;
+  couponId: string;
   orderType: CouponOrderType;
-  orderId: number;
+  orderId: string;
 };
 
 export type AppliedCouponToOrderResult = {
   couponUse: PublicCouponUse;
   order: {
-    id: number;
+    id: string;
     code: string;
     subtotal: Prisma.Decimal;
     discountTotal: Prisma.Decimal;
@@ -139,7 +139,7 @@ export type AppliedCouponToOrderResult = {
 export type RevertedCouponUseResult = {
   couponUse: PublicCouponUse;
   order: {
-    id: number;
+    id: string;
     code: string;
     subtotal: Prisma.Decimal;
     discountTotal: Prisma.Decimal;
@@ -149,12 +149,12 @@ export type RevertedCouponUseResult = {
 
 export type ListAvailableCouponsForOrderInput = {
   orderType: CouponOrderType;
-  orderId: number;
+  orderId: string;
 };
 
 export type AvailableCouponForOrder = {
   coupon: {
-    id: number;
+    id: string;
     code: string;
     discountType: DiscountType;
     value: Prisma.Decimal;
@@ -166,13 +166,13 @@ export type AvailableCouponForOrder = {
 
 export type PreviewCouponForOrderResult = {
   coupon: {
-    id: number;
+    id: string;
     code: string;
     discountType: DiscountType;
     value: Prisma.Decimal;
   };
   order: {
-    id: number;
+    id: string;
     code: string;
     subtotal: Prisma.Decimal;
     discountTotal: Prisma.Decimal;

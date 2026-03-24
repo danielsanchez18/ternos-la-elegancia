@@ -15,7 +15,10 @@ import {
   SaleOrderPaymentRequiredError,
   SaleOrderStatusTransitionError,
 } from "@/src/modules/sale-orders/domain/sale-order.errors";
-import { SaleOrderRepository } from "@/src/modules/sale-orders/infrastructure/sale-order.repository";
+import {
+  PreparedSaleOrderItem,
+  SaleOrderRepository,
+} from "@/src/modules/sale-orders/infrastructure/sale-order.repository";
 
 function canTransitionStatus(
   current: SaleOrderStatus,
@@ -64,7 +67,7 @@ export class SaleOrderService {
     return this.saleOrderRepository.list(filters);
   }
 
-  async getSaleOrderById(id: number): Promise<PublicSaleOrder> {
+  async getSaleOrderById(id: string): Promise<PublicSaleOrder> {
     const order = await this.saleOrderRepository.findById(id);
     if (!order) {
       throw new SaleOrderNotFoundError();
@@ -82,21 +85,7 @@ export class SaleOrderService {
       throw new SaleOrderCustomerNotFoundError();
     }
 
-    const preparedItems = [] as Array<{
-      productId?: number;
-      bundleId?: number;
-      itemNameSnapshot: string;
-      quantity: number;
-      unitPrice: Prisma.Decimal;
-      discountAmount: Prisma.Decimal;
-      subtotal: Prisma.Decimal;
-      notes?: string;
-      components: Array<{
-        productId?: number;
-        variantId?: number;
-        quantity: number;
-      }>;
-    }>;
+    const preparedItems: PreparedSaleOrderItem[] = [];
     let includesSuitOrJacket = false;
 
     for (const item of input.items) {
@@ -211,7 +200,10 @@ export class SaleOrderService {
     });
   }
 
-  async actOnSaleOrder(id: number, input: SaleOrderActionInput): Promise<PublicSaleOrder> {
+  async actOnSaleOrder(
+    id: string,
+    input: SaleOrderActionInput
+  ): Promise<PublicSaleOrder> {
     const order = await this.saleOrderRepository.findById(id);
     if (!order) {
       throw new SaleOrderNotFoundError();

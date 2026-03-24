@@ -62,7 +62,7 @@ const publicComprobanteSelect = {
 } satisfies Prisma.ComprobanteSelect;
 
 export class PaymentRepository {
-  async findCustomOrderById(customOrderId: number) {
+  async findCustomOrderById(customOrderId: string) {
     return prisma.customOrder.findUnique({
       where: { id: customOrderId },
       select: {
@@ -74,7 +74,7 @@ export class PaymentRepository {
   }
 
   async listCustomOrderPayments(
-    customOrderId: number,
+    customOrderId: string,
     filters: ListCustomOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     return prisma.payment.findMany({
@@ -97,7 +97,7 @@ export class PaymentRepository {
   }
 
   async listCustomOrderComprobantes(
-    customOrderId: number,
+    customOrderId: string,
     filters: ListCustomOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     return prisma.comprobante.findMany({
@@ -118,7 +118,7 @@ export class PaymentRepository {
     });
   }
 
-  async findSaleOrderById(saleOrderId: number) {
+  async findSaleOrderById(saleOrderId: string) {
     return prisma.saleOrder.findUnique({
       where: { id: saleOrderId },
       select: {
@@ -130,7 +130,7 @@ export class PaymentRepository {
   }
 
   async listSaleOrderPayments(
-    saleOrderId: number,
+    saleOrderId: string,
     filters: ListSaleOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     return prisma.payment.findMany({
@@ -153,7 +153,7 @@ export class PaymentRepository {
   }
 
   async listSaleOrderComprobantes(
-    saleOrderId: number,
+    saleOrderId: string,
     filters: ListSaleOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     return prisma.comprobante.findMany({
@@ -174,7 +174,7 @@ export class PaymentRepository {
     });
   }
 
-  async sumApprovedPayments(customOrderId: number): Promise<Prisma.Decimal> {
+  async sumApprovedPayments(customOrderId: string): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
         customOrderId,
@@ -188,7 +188,7 @@ export class PaymentRepository {
     return aggregate._sum.amount ?? new Prisma.Decimal(0);
   }
 
-  async sumSaleOrderApprovedPayments(saleOrderId: number): Promise<Prisma.Decimal> {
+  async sumSaleOrderApprovedPayments(saleOrderId: string): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
         saleOrderId,
@@ -203,8 +203,8 @@ export class PaymentRepository {
   }
 
   async createCustomOrderPayment(input: {
-    customOrderId: number;
-    customerId: number;
+    customOrderId: string;
+    customerId: string;
     payload: CreateCustomOrderPaymentInput;
   }): Promise<PublicPayment> {
     return prisma.payment.create({
@@ -227,8 +227,8 @@ export class PaymentRepository {
   }
 
   async createCustomOrderComprobante(input: {
-    customOrderId: number;
-    customerId: number;
+    customOrderId: string;
+    customerId: string;
     payload: CreateCustomOrderComprobanteInput;
   }): Promise<PublicComprobante> {
     return prisma.comprobante.create({
@@ -258,8 +258,8 @@ export class PaymentRepository {
   }
 
   async createSaleOrderPayment(input: {
-    saleOrderId: number;
-    customerId: number;
+    saleOrderId: string;
+    customerId: string;
     payload: CreateSaleOrderPaymentInput;
   }): Promise<PublicPayment> {
     return prisma.payment.create({
@@ -282,8 +282,8 @@ export class PaymentRepository {
   }
 
   async createSaleOrderComprobante(input: {
-    saleOrderId: number;
-    customerId: number;
+    saleOrderId: string;
+    customerId: string;
     payload: CreateSaleOrderComprobanteInput;
   }): Promise<PublicComprobante> {
     return prisma.comprobante.create({
@@ -312,7 +312,7 @@ export class PaymentRepository {
     });
   }
 
-  async findRentalOrderById(rentalOrderId: number) {
+  async findRentalOrderById(rentalOrderId: string) {
     return prisma.rentalOrder.findUnique({
       where: { id: rentalOrderId },
       select: {
@@ -324,7 +324,7 @@ export class PaymentRepository {
   }
 
   async listRentalOrderPayments(
-    rentalOrderId: number,
+    rentalOrderId: string,
     filters: ListRentalOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     return prisma.payment.findMany({
@@ -347,7 +347,7 @@ export class PaymentRepository {
   }
 
   async listRentalOrderComprobantes(
-    rentalOrderId: number,
+    rentalOrderId: string,
     filters: ListRentalOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     return prisma.comprobante.findMany({
@@ -368,7 +368,7 @@ export class PaymentRepository {
     });
   }
 
-  async sumRentalOrderApprovedPayments(rentalOrderId: number): Promise<Prisma.Decimal> {
+  async sumRentalOrderApprovedPayments(rentalOrderId: string): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
         rentalOrderId,
@@ -383,8 +383,8 @@ export class PaymentRepository {
   }
 
   async createRentalOrderPayment(input: {
-    rentalOrderId: number;
-    customerId: number;
+    rentalOrderId: string;
+    customerId: string;
     payload: CreateRentalOrderPaymentInput;
   }): Promise<PublicPayment> {
     return prisma.payment.create({
@@ -407,8 +407,8 @@ export class PaymentRepository {
   }
 
   async createRentalOrderComprobante(input: {
-    rentalOrderId: number;
-    customerId: number;
+    rentalOrderId: string;
+    customerId: string;
     payload: CreateRentalOrderComprobanteInput;
   }): Promise<PublicComprobante> {
     return prisma.comprobante.create({
@@ -437,7 +437,7 @@ export class PaymentRepository {
     });
   }
 
-  async findAlterationOrderById(alterationOrderId: number) {
+  async findAlterationOrderById(alterationOrderId: string) {
     return prisma.alterationOrder.findUnique({
       where: { id: alterationOrderId },
       select: {
@@ -449,7 +449,7 @@ export class PaymentRepository {
   }
 
   async listAlterationOrderPayments(
-    alterationOrderId: number,
+    alterationOrderId: string,
     filters: ListAlterationOrderPaymentsFilters
   ): Promise<PublicPayment[]> {
     return prisma.payment.findMany({
@@ -472,7 +472,7 @@ export class PaymentRepository {
   }
 
   async listAlterationOrderComprobantes(
-    alterationOrderId: number,
+    alterationOrderId: string,
     filters: ListAlterationOrderComprobantesFilters
   ): Promise<PublicComprobante[]> {
     return prisma.comprobante.findMany({
@@ -494,7 +494,7 @@ export class PaymentRepository {
   }
 
   async sumAlterationOrderApprovedPayments(
-    alterationOrderId: number
+    alterationOrderId: string
   ): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
@@ -510,8 +510,8 @@ export class PaymentRepository {
   }
 
   async createAlterationOrderPayment(input: {
-    alterationOrderId: number;
-    customerId: number;
+    alterationOrderId: string;
+    customerId: string;
     payload: CreateAlterationOrderPaymentInput;
   }): Promise<PublicPayment> {
     return prisma.payment.create({
@@ -534,8 +534,8 @@ export class PaymentRepository {
   }
 
   async createAlterationOrderComprobante(input: {
-    alterationOrderId: number;
-    customerId: number;
+    alterationOrderId: string;
+    customerId: string;
     payload: CreateAlterationOrderComprobanteInput;
   }): Promise<PublicComprobante> {
     return prisma.comprobante.create({

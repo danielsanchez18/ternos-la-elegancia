@@ -31,7 +31,7 @@ export class AlterationServiceService {
     return this.alterationServiceRepository.list(filters);
   }
 
-  async getAlterationServiceById(id: number): Promise<PublicAlterationService> {
+  async getAlterationServiceById(id: string): Promise<PublicAlterationService> {
     const service = await this.alterationServiceRepository.findById(id);
     if (!service) {
       throw new AlterationServiceNotFoundError();
@@ -51,7 +51,7 @@ export class AlterationServiceService {
   }
 
   async updateAlterationService(
-    id: number,
+    id: string,
     input: UpdateAlterationServiceInput
   ): Promise<PublicAlterationService> {
     if (input.precioBase !== undefined && input.precioBase !== null && input.precioBase < 0) {
@@ -69,7 +69,7 @@ export class AlterationServiceService {
     }
   }
 
-  async deactivateAlterationService(id: number): Promise<PublicAlterationService> {
+  async deactivateAlterationService(id: string): Promise<PublicAlterationService> {
     try {
       return await this.alterationServiceRepository.deactivateById(id);
     } catch (error: unknown) {

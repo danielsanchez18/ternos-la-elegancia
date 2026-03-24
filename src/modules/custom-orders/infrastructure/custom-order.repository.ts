@@ -82,6 +82,47 @@ const publicCustomOrderSelect = {
   },
 } satisfies Prisma.CustomOrderSelect;
 
+export type PreparedCustomOrderSelection = {
+  definitionId: string;
+  optionId?: string;
+  definitionCodeSnapshot: string;
+  definitionLabelSnapshot: string;
+  inputTypeSnapshot: InputFieldType;
+  optionCodeSnapshot?: string;
+  optionLabelSnapshot?: string;
+  extraPriceSnapshot?: Prisma.Decimal;
+  valueText?: string;
+  valueNumber?: Prisma.Decimal;
+  valueBoolean?: boolean;
+};
+
+export type PreparedCustomOrderPart = {
+  productId?: string;
+  garmentType: MeasurementGarmentType;
+  label: string;
+  workMode: FabricPriceMode;
+  measurementProfileId?: string;
+  measurementProfileGarmentId?: string;
+  fabricId?: string;
+  fabricNameSnapshot?: string;
+  fabricCodeSnapshot?: string;
+  fabricColorSnapshot?: string;
+  unitPrice?: Prisma.Decimal;
+  notes?: string;
+  selections: PreparedCustomOrderSelection[];
+};
+
+export type PreparedCustomOrderItem = {
+  productId?: string;
+  itemNameSnapshot: string;
+  quantity: number;
+  unitPrice: Prisma.Decimal;
+  discountAmount: Prisma.Decimal;
+  subtotal: Prisma.Decimal;
+  notes?: string;
+  parts: PreparedCustomOrderPart[];
+};
+
 export class CustomOrderRepository {
   async list(filters: ListCustomOrdersFilters): Promise<CustomOrderListResult> {
     const where: Prisma.CustomOrderWhereInput = {
@@ -135,14 +176,14 @@ export class CustomOrderRepository {
     };
   }
 
-  async findById(id: number): Promise<PublicCustomOrder | null> {
+  async findById(id: string): Promise<PublicCustomOrder | null> {
     return prisma.customOrder.findUnique({
       where: { id },
       select: publicCustomOrderSelect,
     });
   }
 
-  async customerExists(customerId: number): Promise<boolean> {
+  async customerExists(customerId: string): Promise<boolean> {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
@@ -152,7 +193,7 @@ export class CustomOrderRepository {
   }
 
   async getActiveValidMeasurementProfileGarmentForCustomer(input: {
-    customerId: number;
+    customerId: string;
     garmentType: MeasurementGarmentType;
     now: Date;
   }) {
@@ -179,7 +220,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getMeasurementProfileForCustomer(profileId: number, customerId: number) {
+  async getMeasurementProfileForCustomer(profileId: string, customerId: string) {
     return prisma.measurementProfile.findFirst({
       where: {
         id: profileId,
@@ -193,7 +234,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getMeasurementProfileGarment(profileGarmentId: number) {
+  async getMeasurementProfileGarment(profileGarmentId: string) {
     return prisma.measurementProfileGarment.findUnique({
       where: { id: profileGarmentId },
       select: {
@@ -204,7 +245,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getFabricById(fabricId: number) {
+  async getFabricById(fabricId: string) {
     return prisma.fabric.findUnique({
       where: { id: fabricId },
       select: {
@@ -216,7 +257,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getProductById(productId: number) {
+  async getProductById(productId: string) {
     return prisma.product.findUnique({
       where: { id: productId },
       select: {
@@ -226,7 +267,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getCustomizationDefinition(definitionId: number) {
+  async getCustomizationDefinition(definitionId: string) {
     return prisma.customizationDefinition.findUnique({
       where: { id: definitionId },
       select: {
@@ -238,7 +279,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getCustomizationOption(optionId: number) {
+  async getCustomizationOption(optionId: string) {
     return prisma.customizationOption.findUnique({
       where: { id: optionId },
       select: {
@@ -282,42 +323,7 @@ export class CustomOrderRepository {
     requiresMeasurement: boolean;
     measurementRequiredUntil: Date | null;
     payload: CreateCustomOrderInput;
-    preparedItems: Array<{
-      productId?: number;
-      itemNameSnapshot: string;
-      quantity: number;
-      unitPrice: Prisma.Decimal;
-      discountAmount: Prisma.Decimal;
-      subtotal: Prisma.Decimal;
-      notes?: string;
-      parts: Array<{
-        productId?: number;
-        garmentType: MeasurementGarmentType;
-        label: string;
-        workMode: FabricPriceMode;
-        measurementProfileId?: number;
-        measurementProfileGarmentId?: number;
-        fabricId?: number;
-        fabricNameSnapshot?: string;
-        fabricCodeSnapshot?: string;
-        fabricColorSnapshot?: string;
-        unitPrice?: Prisma.Decimal;
-        notes?: string;
-        selections: Array<{
-          definitionId: number;
-          optionId?: number;
-          definitionCodeSnapshot: string;
-          definitionLabelSnapshot: string;
-          inputTypeSnapshot: InputFieldType;
-          optionCodeSnapshot?: string;
-          optionLabelSnapshot?: string;
-          extraPriceSnapshot?: Prisma.Decimal;
-          valueText?: string;
-          valueNumber?: Prisma.Decimal;
-          valueBoolean?: boolean;
-        }>;
-      }>;
-    }>;
+    preparedItems: PreparedCustomOrderItem[];
   }): Promise<PublicCustomOrder> {
     return prisma.$transaction(async (tx) => {
       const order = await tx.customOrder.create({
@@ -408,7 +414,7 @@ export class CustomOrderRepository {
   }
 
   async update(input: {
-    id: number;
+    id: string;
     notes?: string | null;
     internalNotes?: string | null;
     requestedDeliveryAt?: Date | null;
@@ -416,50 +422,13 @@ export class CustomOrderRepository {
     subtotal: Prisma.Decimal;
     discountTotal: Prisma.Decimal;
     total: Prisma.Decimal;
-    preparedItems: Array<{
-      productId?: number;
-      itemNameSnapshot: string;
-      quantity: number;
-      unitPrice: Prisma.Decimal;
-      discountAmount: Prisma.Decimal;
-      subtotal: Prisma.Decimal;
-      notes?: string;
-      parts: Array<{
-        productId?: number;
-        garmentType: MeasurementGarmentType;
-        label: string;
-        workMode: FabricPriceMode;
-        measurementProfileId?: number;
-        measurementProfileGarmentId?: number;
-        fabricId?: number;
-        fabricNameSnapshot?: string;
-        fabricCodeSnapshot?: string;
-        fabricColorSnapshot?: string;
-        unitPrice?: Prisma.Decimal;
-        notes?: string;
-        selections: Array<{
-          definitionId: number;
-          optionId?: number;
-          definitionCodeSnapshot: string;
-          definitionLabelSnapshot: string;
-          inputTypeSnapshot: InputFieldType;
-          optionCodeSnapshot?: string;
-          optionLabelSnapshot?: string;
-          extraPriceSnapshot?: Prisma.Decimal;
-          valueText?: string;
-          valueNumber?: Prisma.Decimal;
-          valueBoolean?: boolean;
-        }>;
-      }>;
-    }>;
+    preparedItems: PreparedCustomOrderItem[];
   }): Promise<PublicCustomOrder> {
     return prisma.$transaction(async (tx) => {
-      // 1. Clear existing items
       await tx.customOrderItem.deleteMany({
         where: { customOrderId: input.id },
       });
 
-      // 2. Update order and create new items
       const updatedOrder = await tx.customOrder.update({
         where: { id: input.id },
         data: {
@@ -529,7 +498,7 @@ export class CustomOrderRepository {
   }
 
   async updateStatus(input: {
-    id: number;
+    id: string;
     status: CustomOrderStatus;
     note?: string;
     deliveredAt?: Date | null;
@@ -558,7 +527,7 @@ export class CustomOrderRepository {
     });
   }
 
-  async getApprovedPaymentsTotal(customOrderId: number): Promise<Prisma.Decimal> {
+  async getApprovedPaymentsTotal(customOrderId: string): Promise<Prisma.Decimal> {
     const aggregated = await prisma.payment.aggregate({
       where: {
         customOrderId,
@@ -569,16 +538,16 @@ export class CustomOrderRepository {
       },
     });
 
-    return aggregated._sum.amount ?? new Prisma.Decimal(0);
+    return aggregated._sum?.amount ?? new Prisma.Decimal(0);
   }
 
   async linkMeasurementToPart(input: {
-    orderId: number;
-    partId: number;
-    profileId: number;
-    profileGarmentId: number;
+    orderId: string;
+    partId: string;
+    profileId: string;
+    profileGarmentId: string;
   }): Promise<PublicCustomOrder> {
-    await prisma.customOrderItemPart.update({
+    const updatedRows = await prisma.customOrderItemPart.updateMany({
       where: {
         id: input.partId,
         customOrderItem: {
@@ -591,8 +560,14 @@ export class CustomOrderRepository {
       },
     });
 
+    if (updatedRows.count === 0) {
+      throw new Error("Part not found for order");
+    }
+
     const updated = await this.findById(input.orderId);
-    if (!updated) throw new Error("Order not found after update");
+    if (!updated) {
+      throw new Error("Order not found after update");
+    }
     return updated;
   }
 }

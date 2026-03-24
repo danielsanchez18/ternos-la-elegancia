@@ -2,20 +2,20 @@ import { RentalPriceTier, RentalUnitStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const rentalUnitIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listRentalUnitsQuerySchema = z.object({
-  productId: z.coerce.number().int().positive().optional(),
-  variantId: z.coerce.number().int().positive().optional(),
+  productId: z.string().uuid().optional(),
+  variantId: z.string().uuid().optional(),
   status: z.nativeEnum(RentalUnitStatus).optional(),
   currentTier: z.nativeEnum(RentalPriceTier).optional(),
   search: z.string().trim().max(120).optional(),
 });
 
 export const createRentalUnitSchema = z.object({
-  productId: z.number().int().positive(),
-  variantId: z.number().int().positive().optional(),
+  productId: z.string().uuid(),
+  variantId: z.string().uuid().optional(),
   internalCode: z.string().trim().min(1).max(120),
   sizeLabel: z.string().trim().max(60).optional(),
   color: z.string().trim().max(60).optional(),
@@ -28,7 +28,7 @@ export const createRentalUnitSchema = z.object({
 
 export const updateRentalUnitSchema = z
   .object({
-    variantId: z.coerce.number().int().positive().nullable().optional(),
+    variantId: z.string().uuid().nullable().optional(),
     sizeLabel: z.union([z.string().trim().max(60), z.null()]).optional(),
     color: z.union([z.string().trim().max(60), z.null()]).optional(),
     normalPrice: z.number().min(0).optional(),

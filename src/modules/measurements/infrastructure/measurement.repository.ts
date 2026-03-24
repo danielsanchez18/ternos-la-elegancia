@@ -68,7 +68,7 @@ export class MeasurementRepository {
     });
   }
 
-  async customerExists(customerId: number): Promise<boolean> {
+  async customerExists(customerId: string): Promise<boolean> {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
@@ -96,7 +96,7 @@ export class MeasurementRepository {
     });
   }
 
-  async listProfilesByCustomer(customerId: number): Promise<PublicMeasurementProfile[]> {
+  async listProfilesByCustomer(customerId: string): Promise<PublicMeasurementProfile[]> {
     return prisma.measurementProfile.findMany({
       where: { customerId },
       orderBy: { createdAt: "desc" },
@@ -104,14 +104,14 @@ export class MeasurementRepository {
     });
   }
 
-  async findProfileById(id: number): Promise<PublicMeasurementProfile | null> {
+  async findProfileById(id: string): Promise<PublicMeasurementProfile | null> {
     return prisma.measurementProfile.findUnique({
       where: { id },
       select: measurementProfileSelect,
     });
   }
 
-  async updateProfile(id: number, input: UpdateMeasurementProfileInput): Promise<PublicMeasurementProfile> {
+  async updateProfile(id: string, input: UpdateMeasurementProfileInput): Promise<PublicMeasurementProfile> {
     return prisma.measurementProfile.update({
       where: { id },
       data: {
@@ -124,7 +124,7 @@ export class MeasurementRepository {
   }
 
   async getProfileValuesByGarmentType(
-    profileId: number,
+    profileId: string,
     garmentType: MeasurementGarmentType
   ): Promise<MeasurementValuesByGarment | null> {
     const garment = await prisma.measurementProfileGarment.findFirst({
@@ -173,7 +173,7 @@ export class MeasurementRepository {
   }
 
   async upsertProfileValues(
-    profileId: number,
+    profileId: string,
     input: UpsertMeasurementValuesInput
   ): Promise<MeasurementValuesByGarment> {
     return prisma.$transaction(async (tx) => {

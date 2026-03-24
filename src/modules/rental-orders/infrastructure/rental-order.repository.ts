@@ -102,14 +102,14 @@ export class RentalOrderRepository {
     };
   }
 
-  async findById(id: number): Promise<PublicRentalOrder | null> {
+  async findById(id: string): Promise<PublicRentalOrder | null> {
     return prisma.rentalOrder.findUnique({
       where: { id },
       select: publicRentalOrderSelect,
     });
   }
 
-  async customerExists(customerId: number): Promise<boolean> {
+  async customerExists(customerId: string): Promise<boolean> {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       select: { id: true },
@@ -118,7 +118,7 @@ export class RentalOrderRepository {
     return Boolean(customer);
   }
 
-  async getRentalUnitById(rentalUnitId: number) {
+  async getRentalUnitById(rentalUnitId: string) {
     return prisma.rentalUnit.findUnique({
       where: { id: rentalUnitId },
       select: {
@@ -134,7 +134,7 @@ export class RentalOrderRepository {
     });
   }
 
-  async getProductById(productId: number) {
+  async getProductById(productId: string) {
     return prisma.product.findUnique({
       where: { id: productId },
       select: {
@@ -173,8 +173,8 @@ export class RentalOrderRepository {
     code: string;
     payload: CreateRentalOrderInput & { pickupAt: Date };
     preparedItems: Array<{
-      rentalUnitId: number;
-      productId?: number;
+      rentalUnitId: string;
+      productId?: string;
       itemNameSnapshot: string;
       tierAtRental: "ESTRENO" | "NORMAL";
       unitPrice: Prisma.Decimal;
@@ -247,7 +247,7 @@ export class RentalOrderRepository {
   }
 
   async markReturned(input: {
-    rentalOrderId: number;
+    rentalOrderId: string;
     returnedAt: Date;
     hasDamage?: boolean;
     returnNotes?: string;
@@ -312,7 +312,7 @@ export class RentalOrderRepository {
   }
 
   async updateStatus(input: {
-    rentalOrderId: number;
+    rentalOrderId: string;
     status: RentalOrderStatus;
     note?: string;
   }): Promise<PublicRentalOrder> {
@@ -337,7 +337,7 @@ export class RentalOrderRepository {
     });
   }
 
-  async getRentalOrderApprovedPaymentsTotal(rentalOrderId: number): Promise<Prisma.Decimal> {
+  async getRentalOrderApprovedPaymentsTotal(rentalOrderId: string): Promise<Prisma.Decimal> {
     const aggregate = await prisma.payment.aggregate({
       where: {
         rentalOrderId,
@@ -348,6 +348,6 @@ export class RentalOrderRepository {
       },
     });
 
-    return aggregate._sum.amount ?? new Prisma.Decimal(0);
+    return aggregate._sum?.amount ?? new Prisma.Decimal(0);
   }
 }

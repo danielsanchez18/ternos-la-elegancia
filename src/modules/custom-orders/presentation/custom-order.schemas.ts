@@ -8,11 +8,15 @@ const queryBooleanSchema = z
 const queryDateSchema = z.string().datetime({ offset: true }).transform((value) => new Date(value));
 
 export const customOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
+});
+
+export const customOrderIdentifierParamSchema = z.object({
+  id: z.string().trim().min(1),
 });
 
 export const listCustomOrdersQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
+  customerId: z.string().uuid().optional(),
   status: z.nativeEnum(CustomOrderStatus).optional(),
   code: z.string().trim().min(1).max(50).optional(),
   requiresMeasurement: queryBooleanSchema.optional(),
@@ -29,8 +33,8 @@ export const listCustomOrdersQuerySchema = z.object({
 
 const createCustomOrderSelectionSchema = z
   .object({
-    definitionId: z.number().int().positive(),
-    optionId: z.number().int().positive().optional(),
+    definitionId: z.string().uuid(),
+    optionId: z.string().uuid().optional(),
     valueText: z.string().trim().max(500).optional(),
     valueNumber: z.number().optional(),
     valueBoolean: z.boolean().optional(),
@@ -45,20 +49,20 @@ const createCustomOrderSelectionSchema = z
   );
 
 const createCustomOrderPartSchema = z.object({
-  productId: z.number().int().positive().optional(),
+  productId: z.string().uuid().optional(),
   garmentType: z.nativeEnum(MeasurementGarmentType),
   label: z.string().trim().min(1).max(120),
   workMode: z.nativeEnum(FabricPriceMode).optional(),
-  measurementProfileId: z.number().int().positive().optional(),
-  measurementProfileGarmentId: z.number().int().positive().optional(),
-  fabricId: z.number().int().positive().optional(),
+  measurementProfileId: z.string().uuid().optional(),
+  measurementProfileGarmentId: z.string().uuid().optional(),
+  fabricId: z.string().uuid().optional(),
   unitPrice: z.number().min(0).optional(),
   notes: z.string().trim().max(1000).optional(),
   selections: z.array(createCustomOrderSelectionSchema).optional(),
 });
 
 const createCustomOrderItemSchema = z.object({
-  productId: z.number().int().positive().optional(),
+  productId: z.string().uuid().optional(),
   itemNameSnapshot: z.string().trim().min(1).max(200).optional(),
   quantity: z.number().int().positive(),
   unitPrice: z.number().min(0),
@@ -68,7 +72,7 @@ const createCustomOrderItemSchema = z.object({
 });
 
 export const createCustomOrderSchema = z.object({
-  customerId: z.number().int().positive(),
+  customerId: z.string().uuid(),
   firstPurchaseFlow: z.boolean().optional(),
   requestedDeliveryAt: z.coerce.date().optional(),
   promisedDeliveryAt: z.coerce.date().optional(),
@@ -97,9 +101,9 @@ export const customOrderActionSchema = z.object({
     "LINK_MEASUREMENT",
   ]),
   note: z.string().trim().max(1000).optional(),
-  partId: z.number().int().positive().optional(),
-  profileId: z.number().int().positive().optional(),
-  profileGarmentId: z.number().int().positive().optional(),
+  partId: z.string().uuid().optional(),
+  profileId: z.string().uuid().optional(),
+  profileGarmentId: z.string().uuid().optional(),
 });
 
 export function formatZodIssues(error: z.ZodError) {

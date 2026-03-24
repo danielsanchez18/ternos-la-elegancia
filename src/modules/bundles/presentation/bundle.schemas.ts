@@ -22,11 +22,11 @@ const booleanFromQuery = z
   });
 
 export const bundleIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const bundleItemIdParamSchema = z.object({
-  itemId: z.coerce.number().int().positive(),
+  itemId: z.string().uuid(),
 });
 
 export const listBundlesQuerySchema = z.object({
@@ -56,14 +56,14 @@ export const updateBundleSchema = z
   );
 
 export const createBundleItemSchema = z.object({
-  productId: z.coerce.number().int().positive(),
+  productId: z.string().uuid(),
   quantity: z.coerce.number().int().positive().optional(),
   sortOrder: z.coerce.number().int().min(0).optional(),
 });
 
 export const updateBundleItemSchema = z
   .object({
-    productId: z.coerce.number().int().positive().optional(),
+    productId: z.string().uuid().optional(),
     quantity: z.coerce.number().int().positive().optional(),
     sortOrder: z.coerce.number().int().min(0).optional(),
   })
@@ -73,14 +73,14 @@ export const updateBundleItemSchema = z
   );
 
 export const createBundleVariantItemSchema = z.object({
-  variantId: z.coerce.number().int().positive(),
+  variantId: z.string().uuid(),
   quantity: z.coerce.number().int().positive().optional(),
   sortOrder: z.coerce.number().int().min(0).optional(),
 });
 
 export const updateBundleVariantItemSchema = z
   .object({
-    variantId: z.coerce.number().int().positive().optional(),
+    variantId: z.string().uuid().optional(),
     quantity: z.coerce.number().int().positive().optional(),
     sortOrder: z.coerce.number().int().min(0).optional(),
   })

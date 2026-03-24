@@ -103,6 +103,16 @@ function formatDateTime(date: Date | null) {
   return dateTimeFormatter.format(new Date(date));
 }
 
+function toAppointmentActionData(input: {
+  id: string;
+  code: string;
+  status: string;
+  customerName: string;
+  scheduledAt: Date | string;
+}): AppointmentActionData {
+  return input as unknown as AppointmentActionData;
+}
+
 export default function AdminAppointmentDetailView({
   appointment,
 }: {
@@ -142,15 +152,13 @@ export default function AdminAppointmentDetailView({
 
           <div className="rounded-2xl border border-white/8 bg-black/25 p-3">
             <AdminAppointmentActions
-              appointment={
-                {
-                  id: appointment.id,
-                  code: appointment.code,
-                  status: appointment.status,
-                  customerName: appointment.customer.fullName,
-                  scheduledAt: appointment.scheduledAt,
-                } satisfies AppointmentActionData
-              }
+              appointment={toAppointmentActionData({
+                id: appointment.id,
+                code: appointment.code,
+                status: appointment.status,
+                customerName: appointment.customer.fullName,
+                scheduledAt: appointment.scheduledAt,
+              })}
             />
           </div>
         </div>

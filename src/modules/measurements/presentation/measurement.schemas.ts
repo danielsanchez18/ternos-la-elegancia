@@ -2,11 +2,11 @@ import { MeasurementGarmentType } from "@prisma/client";
 import { z } from "zod";
 
 export const customerIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const measurementProfileIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const createMeasurementProfileSchema = z.object({
@@ -36,7 +36,7 @@ export const garmentTypeQuerySchema = z.object({
 
 const measurementValueInputSchema = z
   .object({
-    fieldId: z.coerce.number().int().positive(),
+    fieldId: z.string().uuid(),
     valueNumber: z.number().optional(),
     valueText: z.union([z.string().trim().max(100), z.null()]).optional(),
   })

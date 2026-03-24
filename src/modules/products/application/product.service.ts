@@ -34,7 +34,7 @@ export class ProductService {
     return this.productRepository.listProducts(filters);
   }
 
-  async getProductById(id: number): Promise<PublicProduct> {
+  async getProductById(id: string): Promise<PublicProduct> {
     const product = await this.productRepository.findProductById(id);
     if (!product) {
       throw new ProductNotFoundError();
@@ -60,7 +60,7 @@ export class ProductService {
     }
   }
 
-  async updateProduct(id: number, input: UpdateProductInput): Promise<PublicProduct> {
+  async updateProduct(id: string, input: UpdateProductInput): Promise<PublicProduct> {
     try {
       return await this.productRepository.updateProductById(id, input);
     } catch (error: unknown) {
@@ -68,7 +68,7 @@ export class ProductService {
     }
   }
 
-  async deactivateProduct(id: number): Promise<PublicProduct> {
+  async deactivateProduct(id: string): Promise<PublicProduct> {
     return this.updateProduct(id, { active: false, status: ProductStatus.INACTIVO });
   }
 
@@ -76,7 +76,7 @@ export class ProductService {
     return this.productRepository.listBrands();
   }
 
-  async getBrandById(id: number): Promise<PublicBrand> {
+  async getBrandById(id: string): Promise<PublicBrand> {
     const brand = await this.productRepository.findBrandById(id);
     if (!brand) {
       throw new BrandNotFoundError();
@@ -93,7 +93,7 @@ export class ProductService {
     }
   }
 
-  async updateBrand(id: number, input: UpdateBrandInput): Promise<PublicBrand> {
+  async updateBrand(id: string, input: UpdateBrandInput): Promise<PublicBrand> {
     try {
       return await this.productRepository.updateBrandById(id, input);
     } catch (error: unknown) {
@@ -101,17 +101,17 @@ export class ProductService {
     }
   }
 
-  async deactivateBrand(id: number): Promise<PublicBrand> {
+  async deactivateBrand(id: string): Promise<PublicBrand> {
     return this.updateBrand(id, { activo: false });
   }
 
-  async listProductImages(productId: number): Promise<PublicProductImage[]> {
+  async listProductImages(productId: string): Promise<PublicProductImage[]> {
     await this.getProductById(productId);
     return this.productRepository.listProductImages(productId);
   }
 
   async createProductImage(
-    productId: number,
+    productId: string,
     input: CreateProductImageInput
   ): Promise<PublicProductImage> {
     await this.getProductById(productId);
@@ -119,7 +119,7 @@ export class ProductService {
   }
 
   async updateProductImage(
-    imageId: number,
+    imageId: string,
     input: UpdateProductImageInput
   ): Promise<PublicProductImage> {
     try {
@@ -136,7 +136,7 @@ export class ProductService {
     }
   }
 
-  async deleteProductImage(imageId: number): Promise<void> {
+  async deleteProductImage(imageId: string): Promise<void> {
     try {
       await this.productRepository.deleteProductImageById(imageId);
     } catch (error: unknown) {
@@ -151,13 +151,13 @@ export class ProductService {
     }
   }
 
-  async listProductVariants(productId: number): Promise<PublicProductVariant[]> {
+  async listProductVariants(productId: string): Promise<PublicProductVariant[]> {
     await this.getProductById(productId);
     return this.productRepository.listProductVariants(productId);
   }
 
   async createProductVariant(
-    productId: number,
+    productId: string,
     input: CreateProductVariantInput
   ): Promise<PublicProductVariant> {
     await this.getProductById(productId);
@@ -170,7 +170,7 @@ export class ProductService {
   }
 
   async updateProductVariant(
-    variantId: number,
+    variantId: string,
     input: UpdateProductVariantInput
   ): Promise<PublicProductVariant> {
     try {
@@ -180,7 +180,7 @@ export class ProductService {
     }
   }
 
-  async deactivateProductVariant(variantId: number): Promise<PublicProductVariant> {
+  async deactivateProductVariant(variantId: string): Promise<PublicProductVariant> {
     try {
       return await this.productRepository.deactivateProductVariantById(variantId);
     } catch (error: unknown) {

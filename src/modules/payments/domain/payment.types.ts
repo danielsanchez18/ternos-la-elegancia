@@ -51,10 +51,10 @@ export type CreateCustomOrderComprobanteInput = {
 };
 
 export type PublicPayment = {
-  id: number;
-  customerId: number;
-  customOrderId: number | null;
-  alterationOrderId: number | null;
+  id: string;
+  customerId: string;
+  customOrderId: string | null;
+  alterationOrderId: string | null;
   amount: Prisma.Decimal;
   method: PaymentMethod;
   concept: PaymentConcept;
@@ -70,10 +70,10 @@ export type PublicPayment = {
 };
 
 export type PublicComprobante = {
-  id: number;
-  customerId: number;
-  customOrderId: number | null;
-  alterationOrderId: number | null;
+  id: string;
+  customerId: string;
+  customOrderId: string | null;
+  alterationOrderId: string | null;
   type: ComprobanteType;
   status: ComprobanteStatus;
   serie: string | null;
@@ -90,7 +90,7 @@ export type PublicComprobante = {
 };
 
 export type CustomOrderPaymentSummary = {
-  customOrderId: number;
+  customOrderId: string;
   orderTotal: Prisma.Decimal;
   approvedPaymentsTotal: Prisma.Decimal;
   pendingBalance: Prisma.Decimal;
@@ -141,7 +141,7 @@ export type CreateSaleOrderComprobanteInput = {
 };
 
 export type SaleOrderPaymentSummary = {
-  saleOrderId: number;
+  saleOrderId: string;
   orderTotal: Prisma.Decimal;
   approvedPaymentsTotal: Prisma.Decimal;
   pendingBalance: Prisma.Decimal;
@@ -191,7 +191,7 @@ export type CreateRentalOrderComprobanteInput = {
 };
 
 export type RentalOrderPaymentSummary = {
-  rentalOrderId: number;
+  rentalOrderId: string;
   orderTotal: Prisma.Decimal;
   approvedPaymentsTotal: Prisma.Decimal;
   pendingBalance: Prisma.Decimal;
@@ -241,7 +241,7 @@ export type CreateAlterationOrderComprobanteInput = {
 };
 
 export type AlterationOrderPaymentSummary = {
-  alterationOrderId: number;
+  alterationOrderId: string;
   orderTotal: Prisma.Decimal;
   approvedPaymentsTotal: Prisma.Decimal;
   pendingBalance: Prisma.Decimal;

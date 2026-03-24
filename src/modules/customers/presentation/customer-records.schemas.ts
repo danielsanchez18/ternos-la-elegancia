@@ -1,26 +1,26 @@
 import { z } from "zod";
 
 export const idParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const noteIdParamSchema = z.object({
-  noteId: z.coerce.number().int().positive(),
+  noteId: z.string().uuid(),
 });
 
 export const fileIdParamSchema = z.object({
-  fileId: z.coerce.number().int().positive(),
+  fileId: z.string().uuid(),
 });
 
 export const createCustomerNoteSchema = z.object({
   note: z.string().trim().min(1).max(4000),
-  adminUserId: z.coerce.number().int().positive().nullable().optional(),
+  adminUserId: z.string().uuid().nullable().optional(),
 });
 
 export const updateCustomerNoteSchema = z
   .object({
     note: z.string().trim().min(1).max(4000).optional(),
-    adminUserId: z.coerce.number().int().positive().nullable().optional(),
+    adminUserId: z.string().uuid().nullable().optional(),
   })
   .refine((value) => value.note !== undefined || value.adminUserId !== undefined, {
     message: "At least one field is required",

@@ -8,8 +8,8 @@ export type AlterationOrderAction =
   | "CANCEL";
 
 export type ListAlterationOrdersFilters = {
-  customerId?: number;
-  serviceId?: number;
+  customerId?: string;
+  serviceId?: string;
   status?: AlterationOrderStatus;
   code?: string;
   receivedFrom?: Date;
@@ -31,8 +31,8 @@ export type AlterationOrderListResult = {
 };
 
 export type CreateAlterationOrderInput = {
-  customerId: number;
-  serviceId?: number;
+  customerId: string;
+  serviceId?: string;
   garmentDescription: string;
   workDescription: string;
   initialCondition?: string;
@@ -49,11 +49,11 @@ export type AlterationOrderActionInput = {
 };
 
 export type PublicAlterationOrder = {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   code: string;
   status: AlterationOrderStatus;
-  serviceId: number | null;
+  serviceId: string | null;
   garmentDescription: string;
   workDescription: string;
   initialCondition: string | null;
@@ -67,7 +67,7 @@ export type PublicAlterationOrder = {
   createdAt: Date;
   updatedAt: Date;
   service: {
-    id: number;
+    id: string;
     nombre: string;
     precioBase: Prisma.Decimal | null;
     activo: boolean;

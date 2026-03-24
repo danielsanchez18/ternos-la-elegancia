@@ -2,11 +2,11 @@ import { SaleOrderStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const saleOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listSaleOrdersQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
+  customerId: z.string().uuid().optional(),
   status: z.nativeEnum(SaleOrderStatus).optional(),
   code: z.string().trim().min(1).max(50).optional(),
   requestedFrom: z.coerce.date().optional(),
@@ -19,8 +19,8 @@ export const listSaleOrdersQuerySchema = z.object({
 
 const createSaleOrderItemComponentSchema = z
   .object({
-    productId: z.number().int().positive().optional(),
-    variantId: z.number().int().positive().optional(),
+    productId: z.string().uuid().optional(),
+    variantId: z.string().uuid().optional(),
     quantity: z.number().int().positive().default(1),
   })
   .refine(
@@ -30,8 +30,8 @@ const createSaleOrderItemComponentSchema = z
 
 const createSaleOrderItemSchema = z
   .object({
-    productId: z.number().int().positive().optional(),
-    bundleId: z.number().int().positive().optional(),
+    productId: z.string().uuid().optional(),
+    bundleId: z.string().uuid().optional(),
     itemNameSnapshot: z.string().trim().min(1).max(200).optional(),
     quantity: z.number().int().positive().default(1),
     unitPrice: z.number().min(0),
@@ -47,7 +47,7 @@ const createSaleOrderItemSchema = z
   );
 
 export const createSaleOrderSchema = z.object({
-  customerId: z.number().int().positive(),
+  customerId: z.string().uuid(),
   notes: z.string().trim().max(2000).optional(),
   requestedAt: z.coerce.date().optional(),
   items: z.array(createSaleOrderItemSchema).min(1),

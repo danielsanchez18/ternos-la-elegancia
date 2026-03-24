@@ -1,14 +1,14 @@
 export type PublicCustomerNote = {
-  id: number;
-  customerId: number;
-  adminUserId: number | null;
+  id: string;
+  customerId: string;
+  adminUserId: string | null;
   note: string;
   createdAt: Date;
 };
 
 export type PublicCustomerFile = {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   fileName: string;
   fileUrl: string;
   mimeType: string | null;
@@ -18,12 +18,12 @@ export type PublicCustomerFile = {
 
 export type CreateCustomerNoteInput = {
   note: string;
-  adminUserId?: number | null;
+  adminUserId?: string | null;
 };
 
 export type UpdateCustomerNoteInput = {
   note?: string;
-  adminUserId?: number | null;
+  adminUserId?: string | null;
 };
 
 export type CreateCustomerFileInput = {

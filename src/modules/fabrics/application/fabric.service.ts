@@ -33,7 +33,7 @@ export class FabricService {
     return this.fabricRepository.list();
   }
 
-  async getFabricById(id: number): Promise<PublicFabric> {
+  async getFabricById(id: string): Promise<PublicFabric> {
     const fabric = await this.fabricRepository.findById(id);
     if (!fabric) {
       throw new FabricNotFoundError();
@@ -54,7 +54,7 @@ export class FabricService {
     }
   }
 
-  async updateFabric(id: number, input: UpdateFabricInput): Promise<PublicFabric> {
+  async updateFabric(id: string, input: UpdateFabricInput): Promise<PublicFabric> {
     try {
       return await this.fabricRepository.updateById(id, input);
     } catch (error: unknown) {
@@ -70,7 +70,7 @@ export class FabricService {
     }
   }
 
-  async deactivateFabric(id: number): Promise<PublicFabric> {
+  async deactivateFabric(id: string): Promise<PublicFabric> {
     try {
       return await this.fabricRepository.deactivateById(id);
     } catch (error: unknown) {
@@ -82,7 +82,7 @@ export class FabricService {
     }
   }
 
-  async listFabricMovements(fabricId: number): Promise<FabricMovementItem[]> {
+  async listFabricMovements(fabricId: string): Promise<FabricMovementItem[]> {
     const exists = await this.fabricRepository.exists(fabricId);
     if (!exists) {
       throw new FabricNotFoundError();
@@ -92,7 +92,7 @@ export class FabricService {
   }
 
   async createFabricMovement(
-    fabricId: number,
+    fabricId: string,
     input: CreateFabricMovementInput
   ): Promise<{ fabric: PublicFabric; movement: FabricMovementItem }> {
     const current = await this.fabricRepository.findById(fabricId);

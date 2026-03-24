@@ -35,7 +35,7 @@ export class PromotionService {
     return this.promotionRepository.listPromotions(filters);
   }
 
-  async getPromotionById(id: number): Promise<PublicPromotion> {
+  async getPromotionById(id: string): Promise<PublicPromotion> {
     const promotion = await this.promotionRepository.findPromotionById(id);
     if (!promotion) {
       throw new PromotionNotFoundError();
@@ -59,7 +59,7 @@ export class PromotionService {
     }
   }
 
-  async updatePromotion(id: number, input: UpdatePromotionInput): Promise<PublicPromotion> {
+  async updatePromotion(id: string, input: UpdatePromotionInput): Promise<PublicPromotion> {
     const existing = await this.getPromotionById(id);
     const finalScope = input.scope ?? existing.scope;
 
@@ -86,7 +86,7 @@ export class PromotionService {
     }
   }
 
-  async deactivatePromotion(id: number): Promise<PublicPromotion> {
+  async deactivatePromotion(id: string): Promise<PublicPromotion> {
     return this.updatePromotion(id, { active: false });
   }
 
@@ -94,7 +94,7 @@ export class PromotionService {
     return this.promotionRepository.listCoupons(filters);
   }
 
-  async getCouponById(id: number): Promise<PublicCoupon> {
+  async getCouponById(id: string): Promise<PublicCoupon> {
     const coupon = await this.promotionRepository.findCouponById(id);
     if (!coupon) {
       throw new CouponNotFoundError();
@@ -115,7 +115,7 @@ export class PromotionService {
     }
   }
 
-  async updateCoupon(id: number, input: UpdateCouponInput): Promise<PublicCoupon> {
+  async updateCoupon(id: string, input: UpdateCouponInput): Promise<PublicCoupon> {
     const existing = await this.getCouponById(id);
 
     const promotionId = input.promotionId !== undefined ? input.promotionId : existing.promotionId;
@@ -134,11 +134,11 @@ export class PromotionService {
     }
   }
 
-  async deactivateCoupon(id: number): Promise<PublicCoupon> {
+  async deactivateCoupon(id: string): Promise<PublicCoupon> {
     return this.updateCoupon(id, { active: false });
   }
 
-  async listCouponUses(couponId: number): Promise<PublicCouponUse[]> {
+  async listCouponUses(couponId: string): Promise<PublicCouponUse[]> {
     await this.getCouponById(couponId);
     return this.promotionRepository.listCouponUses(couponId);
   }
@@ -292,7 +292,7 @@ export class PromotionService {
     return available;
   }
 
-  async revertCouponUse(couponUseId: number): Promise<RevertedCouponUseResult> {
+  async revertCouponUse(couponUseId: string): Promise<RevertedCouponUseResult> {
     try {
       return await this.promotionRepository.revertCouponUse(couponUseId);
     } catch (error: unknown) {
@@ -331,7 +331,7 @@ export class PromotionService {
   private async calculateCouponApplication(input: ApplyCouponToOrderInput): Promise<{
     coupon: PublicCoupon;
     order: {
-      id: number;
+      id: string;
       code: string;
       subtotal: Prisma.Decimal;
       discountTotal: Prisma.Decimal;
@@ -466,8 +466,8 @@ export class PromotionService {
   }
 
   private assertCouponRelations(
-    promotionId: number | null | undefined,
-    bundleId: number | null | undefined
+    promotionId: string | null | undefined,
+    bundleId: string | null | undefined
   ): void {
     if (promotionId && bundleId) {
       throw new PromotionValidationError("Coupon cannot reference promotion and bundle at the same time");
@@ -475,8 +475,8 @@ export class PromotionService {
   }
 
   private async assertCouponRelationsExist(
-    promotionId: number | null | undefined,
-    bundleId: number | null | undefined
+    promotionId: string | null | undefined,
+    bundleId: string | null | undefined
   ): Promise<void> {
     if (promotionId) {
       const exists = await this.promotionRepository.promotionExists(promotionId);
@@ -493,7 +493,7 @@ export class PromotionService {
     }
   }
 
-  private normalizeProductIds(productIds: number[] | undefined): number[] | undefined {
+  private normalizeProductIds(productIds: string[] | undefined): string[] | undefined {
     if (productIds === undefined) {
       return undefined;
     }
@@ -503,7 +503,7 @@ export class PromotionService {
 
   private async assertPromotionTargeting(
     scope: "ORDEN" | "PRODUCTO" | "BUNDLE",
-    productIds: number[]
+    productIds: string[]
   ): Promise<void> {
     if (scope === "PRODUCTO") {
       if (productIds.length === 0) {

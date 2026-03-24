@@ -91,8 +91,8 @@ const publicCouponUseSelect = {
 export class PromotionRepository {
   async getProductDiscountableSubtotal(
     orderType: CouponOrderType,
-    orderId: number,
-    eligibleProductIds?: number[]
+    orderId: string,
+    eligibleProductIds?: string[]
   ): Promise<Prisma.Decimal | null> {
     if (eligibleProductIds && eligibleProductIds.length === 0) {
       return new Prisma.Decimal(0);
@@ -165,7 +165,7 @@ export class PromotionRepository {
     });
   }
 
-  async findPromotionById(id: number): Promise<PublicPromotion | null> {
+  async findPromotionById(id: string): Promise<PublicPromotion | null> {
     return prisma.promotion.findUnique({ where: { id }, select: publicPromotionSelect });
   }
 
@@ -192,7 +192,7 @@ export class PromotionRepository {
     });
   }
 
-  async updatePromotionById(id: number, input: UpdatePromotionInput): Promise<PublicPromotion> {
+  async updatePromotionById(id: string, input: UpdatePromotionInput): Promise<PublicPromotion> {
     return prisma.$transaction(async (tx) => {
       await tx.promotion.update({
         where: { id },
@@ -255,7 +255,7 @@ export class PromotionRepository {
     });
   }
 
-  async findCouponById(id: number): Promise<PublicCoupon | null> {
+  async findCouponById(id: string): Promise<PublicCoupon | null> {
     return prisma.coupon.findUnique({ where: { id }, select: publicCouponSelect });
   }
 
@@ -276,7 +276,7 @@ export class PromotionRepository {
     });
   }
 
-  async updateCouponById(id: number, input: UpdateCouponInput): Promise<PublicCoupon> {
+  async updateCouponById(id: string, input: UpdateCouponInput): Promise<PublicCoupon> {
     return prisma.coupon.update({
       where: { id },
       data: {
@@ -294,7 +294,7 @@ export class PromotionRepository {
     });
   }
 
-  async listCouponUses(couponId: number): Promise<PublicCouponUse[]> {
+  async listCouponUses(couponId: string): Promise<PublicCouponUse[]> {
     return prisma.orderCouponUse.findMany({
       where: { couponId },
       orderBy: { createdAt: "desc" },
@@ -302,15 +302,15 @@ export class PromotionRepository {
     });
   }
 
-  async getCouponUseById(couponUseId: number): Promise<PublicCouponUse | null> {
+  async getCouponUseById(couponUseId: string): Promise<PublicCouponUse | null> {
     return prisma.orderCouponUse.findUnique({
       where: { id: couponUseId },
       select: publicCouponUseSelect,
     });
   }
 
-  async getOrderCouponBase(orderType: CouponOrderType, orderId: number): Promise<{
-    id: number;
+  async getOrderCouponBase(orderType: CouponOrderType, orderId: string): Promise<{
+    id: string;
     code: string;
     subtotal: Prisma.Decimal;
     discountTotal: Prisma.Decimal;
@@ -343,7 +343,7 @@ export class PromotionRepository {
     });
   }
 
-  async saleOrderHasBundle(saleOrderId: number, bundleId: number): Promise<boolean> {
+  async saleOrderHasBundle(saleOrderId: string, bundleId: string): Promise<boolean> {
     const row = await prisma.saleOrderItem.findFirst({
       where: {
         saleOrderId,
@@ -356,9 +356,9 @@ export class PromotionRepository {
   }
 
   async couponAlreadyUsedOnOrder(
-    couponId: number,
+    couponId: string,
     orderType: CouponOrderType,
-    orderId: number
+    orderId: string
   ): Promise<boolean> {
     const where: Prisma.OrderCouponUseWhereInput =
       orderType === "sale"
@@ -379,8 +379,8 @@ export class PromotionRepository {
 
   async listUsedCouponIdsOnOrder(
     orderType: CouponOrderType,
-    orderId: number
-  ): Promise<Set<number>> {
+    orderId: string
+  ): Promise<Set<string>> {
     const where: Prisma.OrderCouponUseWhereInput =
       orderType === "sale"
         ? { saleOrderId: orderId }
@@ -399,9 +399,9 @@ export class PromotionRepository {
   }
 
   async applyCouponToOrder(input: {
-    couponId: number;
+    couponId: string;
     orderType: CouponOrderType;
-    orderId: number;
+    orderId: string;
     appliedAmount: Prisma.Decimal;
   }): Promise<AppliedCouponToOrderResult> {
     return prisma.$transaction(async (tx) => {
@@ -503,7 +503,7 @@ export class PromotionRepository {
     });
   }
 
-  async revertCouponUse(couponUseId: number): Promise<RevertedCouponUseResult> {
+  async revertCouponUse(couponUseId: string): Promise<RevertedCouponUseResult> {
     return prisma.$transaction(async (tx) => {
       const couponUse = await tx.orderCouponUse.findUnique({
         where: { id: couponUseId },
@@ -680,12 +680,12 @@ export class PromotionRepository {
     });
   }
 
-  async promotionExists(promotionId: number): Promise<boolean> {
+  async promotionExists(promotionId: string): Promise<boolean> {
     const row = await prisma.promotion.findUnique({ where: { id: promotionId }, select: { id: true } });
     return Boolean(row);
   }
 
-  async productsExist(productIds: number[]): Promise<boolean> {
+  async productsExist(productIds: string[]): Promise<boolean> {
     const uniqueProductIds = Array.from(new Set(productIds));
     if (uniqueProductIds.length === 0) {
       return true;
@@ -702,7 +702,7 @@ export class PromotionRepository {
     return count === uniqueProductIds.length;
   }
 
-  async bundleExists(bundleId: number): Promise<boolean> {
+  async bundleExists(bundleId: string): Promise<boolean> {
     const row = await prisma.bundle.findUnique({ where: { id: bundleId }, select: { id: true } });
     return Boolean(row);
   }

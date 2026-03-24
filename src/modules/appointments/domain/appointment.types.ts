@@ -1,8 +1,8 @@
 import { AppointmentStatus, AppointmentType } from "@prisma/client";
 
 export type PublicAppointment = {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   code: string;
   type: AppointmentType;
   status: AppointmentStatus;
@@ -22,7 +22,7 @@ export type PublicAppointment = {
 };
 
 export type CreateAppointmentInput = {
-  customerId: number;
+  customerId: string;
   type: AppointmentType;
   scheduledAt: Date;
   notes?: string;
@@ -37,7 +37,7 @@ export type AppointmentActionInput =
   | { action: "RESCHEDULE"; scheduledAt: Date; note?: string };
 
 export type ListAppointmentsFilters = {
-  customerId?: number;
+  customerId?: string;
   status?: AppointmentStatus;
   from?: Date;
   to?: Date;
@@ -45,7 +45,7 @@ export type ListAppointmentsFilters = {
 
 export type ListAvailableAppointmentSlotsInput = {
   date: Date;
-  excludeAppointmentId?: number;
+  excludeAppointmentId?: string;
 };
 
 export type PublicAppointmentSlot = {
@@ -69,7 +69,7 @@ export type PublicAvailableAppointmentSlots = {
 };
 
 export type PublicBusinessHour = {
-  id: number | null;
+  id: string | null;
   dayOfWeek: number;
   openTime: string | null;
   closeTime: string | null;
@@ -86,7 +86,7 @@ export type UpsertBusinessHourInput = {
 };
 
 export type PublicSpecialSchedule = {
-  id: number;
+  id: string;
   date: Date;
   openTime: string | null;
   closeTime: string | null;

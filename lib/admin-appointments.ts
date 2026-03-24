@@ -1,6 +1,7 @@
 import { AppointmentStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { isUuidLike } from "@/src/security/public-id";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -28,29 +29,29 @@ function fullName(input: { nombres: string; apellidos: string | null }) {
   return `${input.nombres} ${input.apellidos ?? ""}`.trim();
 }
 
-function parseId(value: string): number | null {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? null : parsed;
-}
+export function parseAdminAppointmentId(value: string): string | null {
+  const trimmed = value.trim();
+  if (!isUuidLike(trimmed)) {
+    return null;
+  }
 
-export function parseAdminAppointmentId(value: string): number | null {
-  return parseId(value);
+  return trimmed.toLowerCase();
 }
 
 type LinkedOrderType = "venta" | "confeccion" | "alquiler" | "arreglo";
 
 type LinkedOrderData = {
-  id: number;
+  id: string;
   type: LinkedOrderType;
   code: string | null;
   status: string | null;
 };
 
 type LinkedOrderInput = {
-  saleOrderId: number | null;
-  customOrderId: number | null;
-  rentalOrderId: number | null;
-  alterationOrderId: number | null;
+  saleOrderId: string | null;
+  customOrderId: string | null;
+  rentalOrderId: string | null;
+  alterationOrderId: string | null;
   saleOrder?: { code: string; status: string } | null;
   customOrder?: { code: string; status: string } | null;
   rentalOrder?: { code: string; status: string } | null;
@@ -265,7 +266,15 @@ export async function getAdminAppointmentsAgendaData() {
   });
 }
 
-export async function getAdminAppointmentDetail(id: number) {
+export async function getAdminAppointmentDetail(id: string) {
+  if (!isUuidLike(id)) {
+    return null;
+  }
+
+  if (!id) {
+    return null;
+  }
+
   const appointment = await prisma.appointment.findUnique({
     where: { id },
     select: {

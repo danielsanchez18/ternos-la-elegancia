@@ -1,12 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/prisma";
+import { isUuidLike } from "@/src/security/public-id";
 
-function parseId(value: string): number | null {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? null : parsed;
+function parseId(value: string): string | null {
+  const trimmed = value.trim();
+  if (!isUuidLike(trimmed)) {
+    return null;
+  }
+
+  return trimmed.toLowerCase();
 }
 
-export function parseAdminCustomOrderId(value: string): number | null {
+export function parseAdminCustomOrderId(value: string): string | null {
   return parseId(value);
 }
 
@@ -129,7 +134,7 @@ export async function getAdminOrdersOverviewData() {
   };
 }
 
-export async function getAdminCustomOrderDetail(id: number) {
+export async function getAdminCustomOrderDetail(id: string) {
   const order = await prisma.customOrder.findUnique({
     where: { id },
     include: {
@@ -172,15 +177,15 @@ export async function getAdminCustomOrderDetail(id: number) {
   return serializeOrder(order);
 }
 
-function buildWorkshopMeasurementsMap(order: any): number[] {
+function buildWorkshopMeasurementsMap(order: any): string[] {
   const profileIds = Array.from(
-    new Set<number>(
+    new Set<string>(
       order.items
         .flatMap((item: any) => item.parts)
-        .map((part: any) => part.measurementProfileId as number | null)
+        .map((part: any) => part.measurementProfileId as string | null)
         .filter(
-          (profileId: number | null): profileId is number =>
-            typeof profileId === "number"
+          (profileId: string | null): profileId is string =>
+            typeof profileId === "string" && profileId.length > 0
         )
     )
   );
@@ -209,7 +214,7 @@ function attachWorkshopMeasurementsToOrder(order: any, profiles: any[]) {
   });
 }
 
-export async function getAdminWorkshopSheetData(id: number) {
+export async function getAdminWorkshopSheetData(id: string) {
   const order = await prisma.customOrder.findUnique({
     where: { id },
     include: {

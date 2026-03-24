@@ -5,26 +5,34 @@ import { z } from "zod";
 import { requireApiAuth } from "@/lib/api-auth";
 import { generateIzipaySessionToken } from "@/lib/izipay";
 import { prisma } from "@/lib/prisma";
+import { isUuidLike } from "@/src/security/public-id";
 
 const yapeSessionTokenRequestSchema = z.object({
   orderType: z.enum(["sale", "custom", "rental", "alteration"]),
-  orderId: z.coerce.number().int().positive(),
+  orderId: z.string().trim().uuid().transform((value) => value.toLowerCase()),
 });
 
 type OrderCheckoutContext = {
-  id: number;
+  id: string;
   code: string;
-  customerId: number;
+  customerId: string;
   total: Prisma.Decimal;
 };
 
 async function loadOrderContext(
   orderType: "sale" | "custom" | "rental" | "alteration",
-  orderId: number
+  orderId: string,
+  customerId?: string
 ): Promise<OrderCheckoutContext | null> {
+  if (!isUuidLike(orderId)) {
+    return null;
+  }
+
+  const whereClause = customerId ? { id: orderId, customerId } : { id: orderId };
+
   if (orderType === "sale") {
-    const order = await prisma.saleOrder.findUnique({
-      where: { id: orderId },
+    const order = await prisma.saleOrder.findFirst({
+      where: whereClause,
       select: { id: true, code: true, customerId: true, total: true },
     });
 
@@ -32,8 +40,8 @@ async function loadOrderContext(
   }
 
   if (orderType === "custom") {
-    const order = await prisma.customOrder.findUnique({
-      where: { id: orderId },
+    const order = await prisma.customOrder.findFirst({
+      where: whereClause,
       select: { id: true, code: true, customerId: true, total: true },
     });
 
@@ -41,16 +49,16 @@ async function loadOrderContext(
   }
 
   if (orderType === "rental") {
-    const order = await prisma.rentalOrder.findUnique({
-      where: { id: orderId },
+    const order = await prisma.rentalOrder.findFirst({
+      where: whereClause,
       select: { id: true, code: true, customerId: true, total: true },
     });
 
     return order;
   }
 
-  const order = await prisma.alterationOrder.findUnique({
-    where: { id: orderId },
+  const order = await prisma.alterationOrder.findFirst({
+    where: whereClause,
     select: { id: true, code: true, customerId: true, total: true },
   });
 
@@ -78,23 +86,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const order = await loadOrderContext(
-      parsedBody.data.orderType,
-      parsedBody.data.orderId
-    );
+    const ownedCustomerId = auth.context.adminUserId
+      ? undefined
+      : auth.context.customerId ?? undefined;
+
+    if (!auth.context.adminUserId && !ownedCustomerId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const order = await loadOrderContext(parsedBody.data.orderType, parsedBody.data.orderId, ownedCustomerId);
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    if (!auth.context.adminUserId) {
-      if (!auth.context.customerId) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-
-      if (order.customerId !== auth.context.customerId) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
     }
 
     if (order.total.gt(new Prisma.Decimal(2000))) {
@@ -118,6 +121,7 @@ export async function POST(request: Request) {
       checkout: {
         orderType: parsedBody.data.orderType,
         orderId: order.id,
+        orderPublicId: order.id,
         orderCode: order.code,
         currency: "PEN",
         amount: order.total.toFixed(2),

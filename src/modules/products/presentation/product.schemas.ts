@@ -23,7 +23,7 @@ const booleanFromQuery = z
   });
 
 export const productIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const productSlugParamSchema = z.object({
@@ -31,15 +31,15 @@ export const productSlugParamSchema = z.object({
 });
 
 export const brandIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const productVariantIdParamSchema = z.object({
-  variantId: z.coerce.number().int().positive(),
+  variantId: z.string().uuid(),
 });
 
 export const productImageIdParamSchema = z.object({
-  imageId: z.coerce.number().int().positive(),
+  imageId: z.string().uuid(),
 });
 
 export const listProductsQuerySchema = z.object({
@@ -51,7 +51,7 @@ export const listProductsQuerySchema = z.object({
   allowsSale: booleanFromQuery.optional(),
   allowsRental: booleanFromQuery.optional(),
   allowsCustomization: booleanFromQuery.optional(),
-  brandId: z.coerce.number().int().positive().optional(),
+  brandId: z.string().uuid().optional(),
 });
 
 export const createProductSchema = z.object({
@@ -69,7 +69,7 @@ export const createProductSchema = z.object({
   isFeatured: z.boolean().optional(),
   isNew: z.boolean().optional(),
   active: z.boolean().optional(),
-  brandId: z.coerce.number().int().positive().nullable().optional(),
+  brandId: z.string().uuid().nullable().optional(),
 });
 
 export const updateProductSchema = z
@@ -88,7 +88,7 @@ export const updateProductSchema = z
     isFeatured: z.boolean().optional(),
     isNew: z.boolean().optional(),
     active: z.boolean().optional(),
-    brandId: z.coerce.number().int().positive().nullable().optional(),
+    brandId: z.string().uuid().nullable().optional(),
   })
   .refine(
     (data) => Object.values(data).some((value) => value !== undefined),

@@ -1,9 +1,9 @@
 import { Prisma, RentalPriceTier, RentalUnitStatus } from "@prisma/client";
 
 export type PublicRentalUnit = {
-  id: number;
-  productId: number;
-  variantId: number | null;
+  id: string;
+  productId: string;
+  variantId: string | null;
   internalCode: string;
   sizeLabel: string | null;
   color: string | null;
@@ -18,16 +18,16 @@ export type PublicRentalUnit = {
 };
 
 export type ListRentalUnitsFilters = {
-  productId?: number;
-  variantId?: number;
+  productId?: string;
+  variantId?: string;
   status?: RentalUnitStatus;
   currentTier?: RentalPriceTier;
   search?: string;
 };
 
 export type CreateRentalUnitInput = {
-  productId: number;
-  variantId?: number;
+  productId: string;
+  variantId?: string;
   internalCode: string;
   sizeLabel?: string;
   color?: string;
@@ -39,7 +39,7 @@ export type CreateRentalUnitInput = {
 };
 
 export type UpdateRentalUnitInput = {
-  variantId?: number | null;
+  variantId?: string | null;
   sizeLabel?: string | null;
   color?: string | null;
   normalPrice?: number;

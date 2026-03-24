@@ -38,7 +38,7 @@ export class CatalogService {
     return this.catalogRepository.listAttributeDefinitions(filters);
   }
 
-  async getAttributeDefinitionById(id: number): Promise<PublicCatalogAttributeDefinition> {
+  async getAttributeDefinitionById(id: string): Promise<PublicCatalogAttributeDefinition> {
     const definition = await this.catalogRepository.findAttributeDefinitionById(id);
     if (!definition) {
       throw new CatalogAttributeDefinitionNotFoundError();
@@ -58,7 +58,7 @@ export class CatalogService {
   }
 
   async updateAttributeDefinition(
-    id: number,
+    id: string,
     input: UpdateAttributeDefinitionInput
   ): Promise<PublicCatalogAttributeDefinition> {
     try {
@@ -68,17 +68,17 @@ export class CatalogService {
     }
   }
 
-  async deactivateAttributeDefinition(id: number): Promise<PublicCatalogAttributeDefinition> {
+  async deactivateAttributeDefinition(id: string): Promise<PublicCatalogAttributeDefinition> {
     return this.updateAttributeDefinition(id, { active: false });
   }
 
-  async listAttributeOptions(definitionId: number): Promise<PublicCatalogAttributeOption[]> {
+  async listAttributeOptions(definitionId: string): Promise<PublicCatalogAttributeOption[]> {
     await this.getAttributeDefinitionById(definitionId);
     return this.catalogRepository.listAttributeOptionsByDefinitionId(definitionId);
   }
 
   async createAttributeOption(
-    definitionId: number,
+    definitionId: string,
     input: CreateAttributeOptionInput
   ): Promise<PublicCatalogAttributeOption> {
     await this.getAttributeDefinitionById(definitionId);
@@ -91,7 +91,7 @@ export class CatalogService {
   }
 
   async updateAttributeOption(
-    optionId: number,
+    optionId: string,
     input: UpdateAttributeOptionInput
   ): Promise<PublicCatalogAttributeOption> {
     try {
@@ -101,17 +101,17 @@ export class CatalogService {
     }
   }
 
-  async deactivateAttributeOption(optionId: number): Promise<PublicCatalogAttributeOption> {
+  async deactivateAttributeOption(optionId: string): Promise<PublicCatalogAttributeOption> {
     return this.updateAttributeOption(optionId, { active: false });
   }
 
-  async listProductAttributeValues(productId: number): Promise<PublicProductAttributeValue[]> {
+  async listProductAttributeValues(productId: string): Promise<PublicProductAttributeValue[]> {
     await this.assertProductExists(productId);
     return this.catalogRepository.listProductAttributeValues(productId);
   }
 
   async upsertProductAttributeValue(
-    productId: number,
+    productId: string,
     input: UpsertProductAttributeValueInput
   ): Promise<PublicProductAttributeValue> {
     await this.assertProductExists(productId);
@@ -126,7 +126,7 @@ export class CatalogService {
     }
   }
 
-  async deleteProductAttributeValue(productId: number, definitionId: number): Promise<void> {
+  async deleteProductAttributeValue(productId: string, definitionId: string): Promise<void> {
     await this.assertProductExists(productId);
 
     try {
@@ -143,13 +143,13 @@ export class CatalogService {
     }
   }
 
-  async listVariantAttributeValues(variantId: number): Promise<PublicVariantAttributeValue[]> {
+  async listVariantAttributeValues(variantId: string): Promise<PublicVariantAttributeValue[]> {
     await this.assertVariantExists(variantId);
     return this.catalogRepository.listVariantAttributeValues(variantId);
   }
 
   async upsertVariantAttributeValue(
-    variantId: number,
+    variantId: string,
     input: UpsertVariantAttributeValueInput
   ): Promise<PublicVariantAttributeValue> {
     await this.assertVariantExists(variantId);
@@ -164,7 +164,7 @@ export class CatalogService {
     }
   }
 
-  async deleteVariantAttributeValue(variantId: number, definitionId: number): Promise<void> {
+  async deleteVariantAttributeValue(variantId: string, definitionId: string): Promise<void> {
     await this.assertVariantExists(variantId);
 
     try {
@@ -181,13 +181,13 @@ export class CatalogService {
     }
   }
 
-  async listProductComponents(parentProductId: number): Promise<PublicProductComponent[]> {
+  async listProductComponents(parentProductId: string): Promise<PublicProductComponent[]> {
     await this.assertProductExists(parentProductId);
     return this.catalogRepository.listProductComponents(parentProductId);
   }
 
   async createProductComponent(
-    parentProductId: number,
+    parentProductId: string,
     input: CreateProductComponentInput
   ): Promise<PublicProductComponent> {
     await this.assertProductExists(parentProductId);
@@ -212,7 +212,7 @@ export class CatalogService {
   }
 
   async updateProductComponent(
-    componentId: number,
+    componentId: string,
     input: UpdateProductComponentInput
   ): Promise<PublicProductComponent> {
     const existing = await this.catalogRepository.getProductComponentById(componentId);
@@ -241,7 +241,7 @@ export class CatalogService {
     }
   }
 
-  async deleteProductComponent(componentId: number): Promise<void> {
+  async deleteProductComponent(componentId: string): Promise<void> {
     try {
       await this.catalogRepository.deleteProductComponentById(componentId);
     } catch (error: unknown) {
@@ -256,14 +256,14 @@ export class CatalogService {
     }
   }
 
-  private async assertProductExists(productId: number): Promise<void> {
+  private async assertProductExists(productId: string): Promise<void> {
     const exists = await this.catalogRepository.productExists(productId);
     if (!exists) {
       throw new CatalogRelatedEntityNotFoundError("product");
     }
   }
 
-  private async assertVariantExists(variantId: number): Promise<void> {
+  private async assertVariantExists(variantId: string): Promise<void> {
     const exists = await this.catalogRepository.variantExists(variantId);
     if (!exists) {
       throw new CatalogRelatedEntityNotFoundError("variant");
@@ -271,7 +271,7 @@ export class CatalogService {
   }
 
   private async assertDefinitionScope(
-    definitionId: number,
+    definitionId: string,
     expectedScope: AttributeScope
   ): Promise<void> {
     const scopeMatches = await this.catalogRepository.ensureDefinitionScope(
@@ -287,8 +287,8 @@ export class CatalogService {
   }
 
   private async assertOptionBelongsToDefinition(
-    optionId: number | null | undefined,
-    definitionId: number
+    optionId: string | null | undefined,
+    definitionId: string
   ): Promise<void> {
     if (optionId === undefined || optionId === null) {
       return;

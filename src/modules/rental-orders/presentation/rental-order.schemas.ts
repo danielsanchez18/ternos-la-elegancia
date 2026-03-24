@@ -6,11 +6,11 @@ const queryBooleanSchema = z
   .transform((value) => value === "true");
 
 export const rentalOrderIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listRentalOrdersQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
+  customerId: z.string().uuid().optional(),
   status: z.nativeEnum(RentalOrderStatus).optional(),
   code: z.string().trim().min(1).max(50).optional(),
   hasDelay: queryBooleanSchema.optional(),
@@ -28,8 +28,8 @@ export const listRentalOrdersQuerySchema = z.object({
 });
 
 const createRentalOrderItemSchema = z.object({
-  rentalUnitId: z.number().int().positive(),
-  productId: z.number().int().positive().optional(),
+  rentalUnitId: z.string().uuid(),
+  productId: z.string().uuid().optional(),
   itemNameSnapshot: z.string().trim().min(1).max(200).optional(),
   tierAtRental: z.nativeEnum(RentalPriceTier).optional(),
   unitPrice: z.number().min(0).optional(),
@@ -37,7 +37,7 @@ const createRentalOrderItemSchema = z.object({
 });
 
 export const createRentalOrderSchema = z.object({
-  customerId: z.number().int().positive(),
+  customerId: z.string().uuid(),
   pickupAt: z.coerce.date().optional(),
   dueBackAt: z.coerce.date(),
   notes: z.string().trim().max(2000).optional(),

@@ -6,8 +6,8 @@ import {
 } from "@prisma/client";
 
 export type PublicCatalogAttributeOption = {
-  id: number;
-  definitionId: number;
+  id: string;
+  definitionId: string;
   code: string;
   label: string;
   sortOrder: number;
@@ -15,7 +15,7 @@ export type PublicCatalogAttributeOption = {
 };
 
 export type PublicCatalogAttributeDefinition = {
-  id: number;
+  id: string;
   code: string;
   label: string;
   scope: AttributeScope;
@@ -66,85 +66,85 @@ export type UpdateAttributeOptionInput = {
 };
 
 export type UpsertProductAttributeValueInput = {
-  definitionId: number;
-  optionId?: number | null;
+  definitionId: string;
+  optionId?: string | null;
   valueText?: string | null;
   valueNumber?: number | null;
   valueBoolean?: boolean | null;
 };
 
 export type PublicProductAttributeValue = {
-  id: number;
-  productId: number;
-  definitionId: number;
-  optionId: number | null;
+  id: string;
+  productId: string;
+  definitionId: string;
+  optionId: string | null;
   valueText: string | null;
   valueNumber: Prisma.Decimal | null;
   valueBoolean: boolean | null;
   definition: {
-    id: number;
+    id: string;
     code: string;
     label: string;
     scope: AttributeScope;
     inputType: InputFieldType;
   };
   option: {
-    id: number;
+    id: string;
     code: string;
     label: string;
   } | null;
 };
 
 export type UpsertVariantAttributeValueInput = {
-  definitionId: number;
-  optionId?: number | null;
+  definitionId: string;
+  optionId?: string | null;
   valueText?: string | null;
   valueNumber?: number | null;
   valueBoolean?: boolean | null;
 };
 
 export type PublicVariantAttributeValue = {
-  id: number;
-  variantId: number;
-  definitionId: number;
-  optionId: number | null;
+  id: string;
+  variantId: string;
+  definitionId: string;
+  optionId: string | null;
   valueText: string | null;
   valueNumber: Prisma.Decimal | null;
   valueBoolean: boolean | null;
   definition: {
-    id: number;
+    id: string;
     code: string;
     label: string;
     scope: AttributeScope;
     inputType: InputFieldType;
   };
   option: {
-    id: number;
+    id: string;
     code: string;
     label: string;
   } | null;
 };
 
 export type CreateProductComponentInput = {
-  childProductId: number;
+  childProductId: string;
   quantity?: number;
   sortOrder?: number;
 };
 
 export type UpdateProductComponentInput = {
-  childProductId?: number;
+  childProductId?: string;
   quantity?: number;
   sortOrder?: number;
 };
 
 export type PublicProductComponent = {
-  id: number;
-  parentProductId: number;
-  childProductId: number;
+  id: string;
+  parentProductId: string;
+  childProductId: string;
   quantity: number;
   sortOrder: number;
   childProduct: {
-    id: number;
+    id: string;
     nombre: string;
     slug: string;
     active: boolean;

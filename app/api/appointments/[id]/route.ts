@@ -39,9 +39,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       );
     }
 
-    const appointment = await appointmentService.getAppointmentById(
-      parsedParams.data.id
-    );
+    const appointment = await appointmentService.getAppointmentById(parsedParams.data.id);
 
     return NextResponse.json(appointment);
   } catch (error: unknown) {

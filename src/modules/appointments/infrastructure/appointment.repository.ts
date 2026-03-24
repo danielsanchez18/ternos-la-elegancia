@@ -48,7 +48,7 @@ export class AppointmentRepository {
   }
 
   async customerExists(
-    customerId: number,
+    customerId: string,
     db: AppointmentDbClient = prisma
   ): Promise<boolean> {
     const customer = await db.customer.findUnique({
@@ -81,7 +81,7 @@ export class AppointmentRepository {
   }
 
   async findById(
-    id: number,
+    id: string,
     db: AppointmentDbClient = prisma
   ): Promise<PublicAppointment | null> {
     return db.appointment.findUnique({
@@ -116,7 +116,7 @@ export class AppointmentRepository {
   async countOverlappingAppointments(input: {
     startsAt: Date;
     endsAt: Date;
-    excludeAppointmentId?: number;
+    excludeAppointmentId?: string;
   }, db: AppointmentDbClient = prisma): Promise<number> {
     return db.appointment.count({
       where: {
@@ -192,10 +192,10 @@ export class AppointmentRepository {
   }
 
   async lockAppointmentRow(
-    id: number,
+    id: string,
     db: Prisma.TransactionClient
   ): Promise<boolean> {
-    const rows = await db.$queryRaw<Array<{ id: number }>>`
+    const rows = await db.$queryRaw<Array<{ id: string }>>`
       SELECT id
       FROM "Appointment"
       WHERE id = ${id}
@@ -206,7 +206,7 @@ export class AppointmentRepository {
   }
 
   async create(input: {
-    customerId: number;
+    customerId: string;
     type: AppointmentType;
     scheduledAt: Date;
     estimatedEndAt: Date;
@@ -233,7 +233,7 @@ export class AppointmentRepository {
   }
 
   async updateById(
-    id: number,
+    id: string,
     input: Prisma.AppointmentUpdateInput,
     db: AppointmentDbClient = prisma
   ): Promise<PublicAppointment> {
@@ -245,7 +245,7 @@ export class AppointmentRepository {
   }
 
   async createStatusHistory(input: {
-    appointmentId: number;
+    appointmentId: string;
     status: AppointmentStatus;
     note?: string;
   }, db: AppointmentDbClient = prisma): Promise<void> {
@@ -316,7 +316,7 @@ export class AppointmentRepository {
   }
 
   async findSpecialScheduleById(
-    id: number,
+    id: string,
     db: AppointmentDbClient = prisma
   ): Promise<PublicSpecialSchedule | null> {
     return db.specialSchedule.findUnique({
@@ -347,7 +347,7 @@ export class AppointmentRepository {
   }
 
   async updateSpecialScheduleById(
-    id: number,
+    id: string,
     input: UpdateSpecialScheduleInput,
     db: AppointmentDbClient = prisma
   ): Promise<PublicSpecialSchedule> {
@@ -363,7 +363,7 @@ export class AppointmentRepository {
   }
 
   async deleteSpecialScheduleById(
-    id: number,
+    id: string,
     db: AppointmentDbClient = prisma
   ): Promise<void> {
     await db.specialSchedule.delete({

@@ -13,7 +13,7 @@ export class AlterationOrderCustomerNotFoundError extends Error {
 }
 
 export class AlterationOrderServiceNotFoundError extends Error {
-  constructor(serviceId: number) {
+  constructor(serviceId: string) {
     super(`Alteration service ${serviceId} not found`);
     this.name = "AlterationOrderServiceNotFoundError";
   }

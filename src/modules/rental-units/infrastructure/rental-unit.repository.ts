@@ -48,7 +48,7 @@ export class RentalUnitRepository {
     });
   }
 
-  async findById(id: number): Promise<PublicRentalUnit | null> {
+  async findById(id: string): Promise<PublicRentalUnit | null> {
     return prisma.rentalUnit.findUnique({
       where: { id },
       select: publicRentalUnitSelect,
@@ -73,7 +73,7 @@ export class RentalUnitRepository {
     });
   }
 
-  async updateById(id: number, input: UpdateRentalUnitInput): Promise<PublicRentalUnit> {
+  async updateById(id: string, input: UpdateRentalUnitInput): Promise<PublicRentalUnit> {
     return prisma.rentalUnit.update({
       where: { id },
       data: {
@@ -96,7 +96,7 @@ export class RentalUnitRepository {
   }
 
   async updateStatusAndTier(input: {
-    id: number;
+    id: string;
     status?: RentalUnitStatus;
     currentTier?: RentalPriceTier;
     note?: string;
@@ -112,14 +112,14 @@ export class RentalUnitRepository {
     });
   }
 
-  async getProductById(productId: number) {
+  async getProductById(productId: string) {
     return prisma.product.findUnique({
       where: { id: productId },
       select: { id: true },
     });
   }
 
-  async getVariantById(variantId: number) {
+  async getVariantById(variantId: string) {
     return prisma.productVariant.findUnique({
       where: { id: variantId },
       select: { id: true, productId: true },

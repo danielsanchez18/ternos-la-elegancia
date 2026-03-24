@@ -7,7 +7,7 @@ import {
 } from "@prisma/client";
 
 export type PublicBrand = {
-  id: number;
+  id: string;
   nombre: string;
   activo: boolean;
   createdAt: Date;
@@ -25,20 +25,20 @@ export type UpdateBrandInput = {
 };
 
 export type ProductBrandSummary = {
-  id: number;
+  id: string;
   nombre: string;
   activo: boolean;
 } | null;
 
 export type PublicProductImage = {
-  id: number;
+  id: string;
   url: string;
   altText: string | null;
   sortOrder: number;
 };
 
 export type PublicProductVariant = {
-  id: number;
+  id: string;
   sku: string;
   talla: string | null;
   tallaSecundaria: string | null;
@@ -52,7 +52,7 @@ export type PublicProductVariant = {
 };
 
 export type PublicProduct = {
-  id: number;
+  id: string;
   nombre: string;
   slug: string;
   descripcion: string | null;
@@ -67,7 +67,7 @@ export type PublicProduct = {
   isFeatured: boolean;
   isNew: boolean;
   active: boolean;
-  brandId: number | null;
+  brandId: string | null;
   brand: ProductBrandSummary;
   images: PublicProductImage[];
   variants: PublicProductVariant[];
@@ -84,7 +84,7 @@ export type ListProductsFilters = {
   allowsSale?: boolean;
   allowsRental?: boolean;
   allowsCustomization?: boolean;
-  brandId?: number;
+  brandId?: string;
 };
 
 export type CreateProductInput = {
@@ -102,7 +102,7 @@ export type CreateProductInput = {
   isFeatured?: boolean;
   isNew?: boolean;
   active?: boolean;
-  brandId?: number | null;
+  brandId?: string | null;
 };
 
 export type UpdateProductInput = {
@@ -120,7 +120,7 @@ export type UpdateProductInput = {
   isFeatured?: boolean;
   isNew?: boolean;
   active?: boolean;
-  brandId?: number | null;
+  brandId?: string | null;
 };
 
 export type CreateProductImageInput = {

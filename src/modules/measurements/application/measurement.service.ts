@@ -56,7 +56,7 @@ export class MeasurementService {
     }
   }
 
-  async listProfilesByCustomer(customerId: number): Promise<PublicMeasurementProfile[]> {
+  async listProfilesByCustomer(customerId: string): Promise<PublicMeasurementProfile[]> {
     return this.measurementRepository.listProfilesByCustomer(customerId);
   }
 
@@ -66,7 +66,7 @@ export class MeasurementService {
     return this.measurementRepository.listFieldsByGarmentType(garmentType);
   }
 
-  async getProfileById(id: number): Promise<PublicMeasurementProfile> {
+  async getProfileById(id: string): Promise<PublicMeasurementProfile> {
     const profile = await this.measurementRepository.findProfileById(id);
 
     if (!profile) {
@@ -77,7 +77,7 @@ export class MeasurementService {
   }
 
   async updateProfile(
-    id: number,
+    id: string,
     input: UpdateMeasurementProfileInput
   ): Promise<PublicMeasurementProfile> {
     try {
@@ -95,7 +95,7 @@ export class MeasurementService {
   }
 
   async getProfileValuesByGarmentType(
-    profileId: number,
+    profileId: string,
     garmentType: MeasurementGarmentType
   ): Promise<MeasurementValuesByGarment> {
     const profile = await this.measurementRepository.findProfileById(profileId);
@@ -118,7 +118,7 @@ export class MeasurementService {
   }
 
   async upsertProfileValues(
-    profileId: number,
+    profileId: string,
     input: UpsertMeasurementValuesInput
   ): Promise<MeasurementValuesByGarment> {
     const profile = await this.measurementRepository.findProfileById(profileId);

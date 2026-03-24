@@ -94,7 +94,7 @@ export async function getAdminFabricsOverviewData() {
   };
 }
 
-export async function getAdminFabricMovementsData(fabricId: number) {
+export async function getAdminFabricMovementsData(fabricId: string) {
   return prisma.fabricMovement.findMany({
     where: { fabricId },
     orderBy: { happenedAt: "desc" },

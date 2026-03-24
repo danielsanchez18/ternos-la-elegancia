@@ -38,7 +38,7 @@ export class RentalOrderService {
     return this.rentalOrderRepository.list(filters);
   }
 
-  async getRentalOrderById(id: number): Promise<PublicRentalOrder> {
+  async getRentalOrderById(id: string): Promise<PublicRentalOrder> {
     const order = await this.rentalOrderRepository.findById(id);
     if (!order) {
       throw new RentalOrderNotFoundError();
@@ -70,8 +70,8 @@ export class RentalOrderService {
     }
 
     const preparedItems = [] as Array<{
-      rentalUnitId: number;
-      productId?: number;
+      rentalUnitId: string;
+      productId?: string;
       itemNameSnapshot: string;
       tierAtRental: "ESTRENO" | "NORMAL";
       unitPrice: Prisma.Decimal;
@@ -128,7 +128,7 @@ export class RentalOrderService {
   }
 
   async actOnRentalOrder(
-    rentalOrderId: number,
+    rentalOrderId: string,
     input: RentalOrderActionInput
   ): Promise<PublicRentalOrder> {
     const order = await this.rentalOrderRepository.findById(rentalOrderId);

@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 export const customerIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
+
+export const customerIdentifierParamSchema = customerIdParamSchema;
 
 export const createCustomerSchema = z.object({
   nombres: z.string().trim().min(1).max(120),

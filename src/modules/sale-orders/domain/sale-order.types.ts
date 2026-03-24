@@ -8,7 +8,7 @@ export type SaleOrderAction =
   | "CANCEL";
 
 export type ListSaleOrdersFilters = {
-  customerId?: number;
+  customerId?: string;
   status?: SaleOrderStatus;
   code?: string;
   requestedFrom?: Date;
@@ -28,14 +28,14 @@ export type SaleOrderListResult = {
 };
 
 export type CreateSaleOrderItemComponentInput = {
-  productId?: number;
-  variantId?: number;
+  productId?: string;
+  variantId?: string;
   quantity?: number;
 };
 
 export type CreateSaleOrderItemInput = {
-  productId?: number;
-  bundleId?: number;
+  productId?: string;
+  bundleId?: string;
   itemNameSnapshot?: string;
   quantity?: number;
   unitPrice: number;
@@ -45,7 +45,7 @@ export type CreateSaleOrderItemInput = {
 };
 
 export type CreateSaleOrderInput = {
-  customerId: number;
+  customerId: string;
   notes?: string;
   requestedAt?: Date;
   items: CreateSaleOrderItemInput[];
@@ -57,8 +57,8 @@ export type SaleOrderActionInput = {
 };
 
 export type PublicSaleOrder = {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   code: string;
   status: SaleOrderStatus;
   subtotal: Prisma.Decimal;
@@ -72,10 +72,10 @@ export type PublicSaleOrder = {
   createdAt: Date;
   updatedAt: Date;
   items: {
-    id: number;
-    saleOrderId: number;
-    productId: number | null;
-    bundleId: number | null;
+    id: string;
+    saleOrderId: string;
+    productId: string | null;
+    bundleId: string | null;
     itemNameSnapshot: string;
     quantity: number;
     unitPrice: Prisma.Decimal;
@@ -83,10 +83,10 @@ export type PublicSaleOrder = {
     subtotal: Prisma.Decimal;
     notes: string | null;
     components: {
-      id: number;
-      saleOrderItemId: number;
-      productId: number | null;
-      variantId: number | null;
+      id: string;
+      saleOrderItemId: string;
+      productId: string | null;
+      variantId: string | null;
       quantity: number;
     }[];
   }[];

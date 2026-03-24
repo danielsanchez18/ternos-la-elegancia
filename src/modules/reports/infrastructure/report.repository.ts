@@ -131,7 +131,7 @@ export class ReportRepository {
 
     const productIds = grouped
       .map((row) => row.productId)
-      .filter((value): value is number => value !== null);
+      .filter((value): value is string => value !== null);
 
     if (productIds.length === 0) {
       return [];
@@ -194,11 +194,11 @@ export class ReportRepository {
     ]);
 
     const stats = new Map<
-      number,
+      string,
       { sale: number; custom: number; rental: number; alteration: number }
     >();
 
-    const ensure = (customerId: number) => {
+    const ensure = (customerId: string) => {
       if (!stats.has(customerId)) {
         stats.set(customerId, { sale: 0, custom: 0, rental: 0, alteration: 0 });
       }

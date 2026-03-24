@@ -1,8 +1,8 @@
 import { NotificationChannel, NotificationStatus } from "@prisma/client";
 
 export type PublicNotification = {
-  id: number;
-  customerId: number | null;
+  id: string;
+  customerId: string | null;
   channel: NotificationChannel;
   status: NotificationStatus;
   subject: string | null;
@@ -13,7 +13,7 @@ export type PublicNotification = {
 };
 
 export type ListNotificationsFilters = {
-  customerId?: number;
+  customerId?: string;
   channel?: NotificationChannel;
   status?: NotificationStatus;
   from?: Date;

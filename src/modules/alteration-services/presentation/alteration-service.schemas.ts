@@ -5,7 +5,7 @@ const queryBooleanSchema = z
   .transform((value) => value === "true");
 
 export const alterationServiceIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const listAlterationServicesQuerySchema = z.object({

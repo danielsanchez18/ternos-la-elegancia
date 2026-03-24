@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { ComponentProps } from "react";
 import {
   getAdminCustomOrderDetail,
   getAdminEditCustomOrderFormData,
@@ -20,13 +21,14 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
   }
 
   const { customers, fabrics } = await getAdminEditCustomOrderFormData();
+  type EditFormProps = ComponentProps<typeof AdminEditCustomOrderForm>;
 
   return (
     <div className="p-4 md:p-8">
       <AdminEditCustomOrderForm 
         initialOrder={order} 
-        customers={customers} 
-        fabrics={fabrics} 
+        customers={customers as unknown as EditFormProps["customers"]} 
+        fabrics={fabrics as unknown as EditFormProps["fabrics"]} 
       />
     </div>
   );

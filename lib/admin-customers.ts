@@ -1,6 +1,7 @@
 import { NotificationChannel, NotificationStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { isUuidLike } from "@/src/security/public-id";
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -35,7 +36,7 @@ function toOrderCount(input: {
 }
 
 type CustomerRecentOverviewSource = {
-  id: number;
+  id: string;
   nombres: string;
   apellidos: string | null;
   email: string;
@@ -60,7 +61,7 @@ type CustomerRecentOverviewSource = {
 };
 
 type UpcomingAppointmentSource = {
-  id: number;
+  id: string;
   code: string;
   type: string;
   status: string;
@@ -72,7 +73,7 @@ type UpcomingAppointmentSource = {
 };
 
 type CustomerListSource = {
-  id: number;
+  id: string;
   nombres: string;
   apellidos: string | null;
   email: string;
@@ -96,29 +97,29 @@ type CustomerListSource = {
 };
 
 type RecentMeasurementProfileSource = {
-  id: number;
+  id: string;
   takenAt: Date;
   validUntil: Date;
   notes: string | null;
   isActive: boolean;
   customer: {
-    id: number;
+    id: string;
     nombres: string;
     apellidos: string | null;
   };
   garments: Array<{
-    id: number;
+    id: string;
     garmentType: string;
-    values: Array<{ id: number }>;
+    values: Array<{ id: string }>;
   }>;
 };
 
 type RecentCustomerNoteSource = {
-  id: number;
+  id: string;
   note: string;
   createdAt: Date;
   customer: {
-    id: number;
+    id: string;
     nombres: string;
     apellidos: string | null;
   };
@@ -130,21 +131,21 @@ type RecentCustomerNoteSource = {
 };
 
 type RecentCustomerFileSource = {
-  id: number;
+  id: string;
   fileName: string;
   mimeType: string | null;
   description: string | null;
   fileUrl: string;
   createdAt: Date;
   customer: {
-    id: number;
+    id: string;
     nombres: string;
     apellidos: string | null;
   };
 };
 
 type RecentNotificationSource = {
-  id: number;
+  id: string;
   channel: NotificationChannel;
   status: NotificationStatus;
   subject: string | null;
@@ -153,7 +154,7 @@ type RecentNotificationSource = {
   relatedCode: string | null;
   createdAt: Date;
   customer: {
-    id: number;
+    id: string;
     nombres: string;
     apellidos: string | null;
   } | null;
@@ -162,10 +163,10 @@ type RecentNotificationSource = {
 type NumericLike = number | string | bigint | Prisma.Decimal | null | undefined;
 
 type MeasurementGarmentSource = {
-  id: number;
+  id: string;
   garmentType: string;
   values: Array<{
-    id: number;
+    id: string;
     field: {
       label: string;
       code: string;
@@ -306,6 +307,15 @@ function mapMeasurementGarmentForView(garment: MeasurementGarmentSource) {
       value: Number(value.valueNumber || 0),
     })),
   };
+}
+
+async function resolveCustomerId(customerId: string): Promise<string | null> {
+  const normalizedId = customerId.trim().toLowerCase();
+  if (!isUuidLike(normalizedId)) {
+    return null;
+  }
+
+  return normalizedId;
 }
 
 export async function getAdminCustomersOverviewData() {
@@ -811,7 +821,12 @@ export async function getAdminCustomersCommunicationsData() {
   };
 }
 
-export async function getAdminCustomerDetail(id: number) {
+export async function getAdminCustomerDetail(idOrPublicId: string) {
+  const id = await resolveCustomerId(idOrPublicId);
+  if (!id) {
+    return null;
+  }
+
   const customer = await prisma.customer.findUnique({
     where: { id },
     select: {
@@ -892,7 +907,16 @@ export async function getAdminCustomerDetail(id: number) {
   };
 }
 
-export async function getAdminCustomerMeasurements(customerId: number) {
+export async function getAdminCustomerMeasurements(customerIdOrPublicId: string) {
+  const customerId = await resolveCustomerId(customerIdOrPublicId);
+  if (!customerId) {
+    return {
+      customerId: null,
+      customerName: "",
+      profiles: [],
+    };
+  }
+
   const profiles = await prisma.measurementProfile.findMany({
     where: { customerId },
     orderBy: { takenAt: "desc" },
@@ -926,6 +950,7 @@ export async function getAdminCustomerMeasurements(customerId: number) {
   });
 
   return {
+    customerId,
     customerName: customer ? `${customer.nombres} ${customer.apellidos ?? ""}`.trim() : "Cliente desconocido",
     profiles: profiles.map((profile) => ({
       ...profile,

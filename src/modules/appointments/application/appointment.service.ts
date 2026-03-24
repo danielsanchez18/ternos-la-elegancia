@@ -144,13 +144,17 @@ export class AppointmentService {
     return this.appointmentRepository.list(filters);
   }
 
-  async getAppointmentById(id: number): Promise<PublicAppointment> {
+  async getAppointmentById(id: string): Promise<PublicAppointment> {
     const appointment = await this.appointmentRepository.findById(id);
     if (!appointment) {
       throw new AppointmentNotFoundError();
     }
 
     return appointment;
+  }
+
+  async getAppointmentByIdentifier(id: string): Promise<PublicAppointment> {
+    return this.getAppointmentById(id);
   }
 
   async createAppointment(input: CreateAppointmentInput): Promise<PublicAppointment> {
@@ -201,7 +205,7 @@ export class AppointmentService {
   }
 
   async actOnAppointment(
-    id: number,
+    id: string,
     input: AppointmentActionInput
   ): Promise<PublicAppointment> {
     return this.appointmentRepository.transaction(async (tx) => {
@@ -364,6 +368,14 @@ export class AppointmentService {
     });
   }
 
+  async actOnAppointmentByIdentifier(
+    id: string,
+    input: AppointmentActionInput
+  ): Promise<PublicAppointment> {
+    const appointment = await this.getAppointmentByIdentifier(id);
+    return this.actOnAppointment(appointment.id, input);
+  }
+
   async listBusinessHours(): Promise<PublicBusinessHour[]> {
     const configured = await this.appointmentRepository.listBusinessHours();
 
@@ -505,7 +517,7 @@ export class AppointmentService {
   }
 
   async updateSpecialSchedule(
-    id: number,
+    id: string,
     input: UpdateSpecialScheduleInput
   ): Promise<PublicSpecialSchedule> {
     const existing = await this.appointmentRepository.findSpecialScheduleById(id);
@@ -539,7 +551,7 @@ export class AppointmentService {
     });
   }
 
-  async deleteSpecialSchedule(id: number): Promise<void> {
+  async deleteSpecialSchedule(id: string): Promise<void> {
     const existing = await this.appointmentRepository.findSpecialScheduleById(id);
     if (!existing) {
       throw new AppointmentSpecialScheduleNotFoundError();
@@ -550,7 +562,7 @@ export class AppointmentService {
 
   private async assertSlotIsAvailable(
     scheduledAt: Date,
-    excludeAppointmentId?: number,
+    excludeAppointmentId?: string,
     tx?: Parameters<AppointmentRepository["countOverlappingAppointments"]>[1]
   ): Promise<void> {
     await this.assertInsideBusinessHours(scheduledAt, tx);

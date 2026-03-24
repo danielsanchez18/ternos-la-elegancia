@@ -65,7 +65,7 @@ export class AlterationOrderService {
     return this.alterationOrderRepository.list(filters);
   }
 
-  async getAlterationOrderById(id: number): Promise<PublicAlterationOrder> {
+  async getAlterationOrderById(id: string): Promise<PublicAlterationOrder> {
     const order = await this.alterationOrderRepository.findById(id);
     if (!order) {
       throw new AlterationOrderNotFoundError();
@@ -128,7 +128,7 @@ export class AlterationOrderService {
   }
 
   async actOnAlterationOrder(
-    id: number,
+    id: string,
     input: AlterationOrderActionInput
   ): Promise<PublicAlterationOrder> {
     const order = await this.alterationOrderRepository.findById(id);

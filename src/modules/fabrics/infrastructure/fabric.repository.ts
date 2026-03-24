@@ -34,7 +34,7 @@ export class FabricRepository {
     });
   }
 
-  async findById(id: number): Promise<PublicFabric | null> {
+  async findById(id: string): Promise<PublicFabric | null> {
     return prisma.fabric.findUnique({
       where: { id },
       select: publicFabricSelect,
@@ -72,7 +72,7 @@ export class FabricRepository {
     });
   }
 
-  async updateById(id: number, input: UpdateFabricInput): Promise<PublicFabric> {
+  async updateById(id: string, input: UpdateFabricInput): Promise<PublicFabric> {
     return prisma.fabric.update({
       where: { id },
       data: {
@@ -99,11 +99,11 @@ export class FabricRepository {
     });
   }
 
-  async deactivateById(id: number): Promise<PublicFabric> {
+  async deactivateById(id: string): Promise<PublicFabric> {
     return this.updateById(id, { active: false });
   }
 
-  async listMovements(fabricId: number): Promise<FabricMovementItem[]> {
+  async listMovements(fabricId: string): Promise<FabricMovementItem[]> {
     return prisma.fabricMovement.findMany({
       where: { fabricId },
       orderBy: { happenedAt: "desc" },
@@ -119,7 +119,7 @@ export class FabricRepository {
   }
 
   async createMovement(
-    fabricId: number,
+    fabricId: string,
     input: CreateFabricMovementInput,
     delta: Prisma.Decimal
   ): Promise<{ fabric: PublicFabric; movement: FabricMovementItem }> {
@@ -158,7 +158,7 @@ export class FabricRepository {
     });
   }
 
-  async exists(fabricId: number): Promise<boolean> {
+  async exists(fabricId: string): Promise<boolean> {
     const fabric = await prisma.fabric.findUnique({
       where: { id: fabricId },
       select: { id: true },

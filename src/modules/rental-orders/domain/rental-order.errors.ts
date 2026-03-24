@@ -13,14 +13,14 @@ export class RentalOrderCustomerNotFoundError extends Error {
 }
 
 export class RentalOrderUnitNotFoundError extends Error {
-  constructor(unitId: number) {
+  constructor(unitId: string) {
     super(`Rental unit ${unitId} not found`);
     this.name = "RentalOrderUnitNotFoundError";
   }
 }
 
 export class RentalOrderUnitUnavailableError extends Error {
-  constructor(unitId: number) {
+  constructor(unitId: string) {
     super(`Rental unit ${unitId} is not available`);
     this.name = "RentalOrderUnitUnavailableError";
   }

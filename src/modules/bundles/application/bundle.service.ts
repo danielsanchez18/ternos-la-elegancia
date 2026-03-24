@@ -29,7 +29,7 @@ export class BundleService {
     return this.bundleRepository.listBundles(filters);
   }
 
-  async getBundleById(id: number): Promise<PublicBundle> {
+  async getBundleById(id: string): Promise<PublicBundle> {
     const bundle = await this.bundleRepository.findBundleById(id);
     if (!bundle) {
       throw new BundleNotFoundError();
@@ -46,7 +46,7 @@ export class BundleService {
     }
   }
 
-  async updateBundle(id: number, input: UpdateBundleInput): Promise<PublicBundle> {
+  async updateBundle(id: string, input: UpdateBundleInput): Promise<PublicBundle> {
     try {
       return await this.bundleRepository.updateBundleById(id, input);
     } catch (error: unknown) {
@@ -54,16 +54,16 @@ export class BundleService {
     }
   }
 
-  async deactivateBundle(id: number): Promise<PublicBundle> {
+  async deactivateBundle(id: string): Promise<PublicBundle> {
     return this.updateBundle(id, { active: false });
   }
 
-  async listBundleItems(bundleId: number): Promise<PublicBundleItem[]> {
+  async listBundleItems(bundleId: string): Promise<PublicBundleItem[]> {
     await this.getBundleById(bundleId);
     return this.bundleRepository.listBundleItems(bundleId);
   }
 
-  async createBundleItem(bundleId: number, input: CreateBundleItemInput): Promise<PublicBundleItem> {
+  async createBundleItem(bundleId: string, input: CreateBundleItemInput): Promise<PublicBundleItem> {
     await this.getBundleById(bundleId);
     await this.assertProductExists(input.productId);
 
@@ -74,7 +74,7 @@ export class BundleService {
     }
   }
 
-  async updateBundleItem(itemId: number, input: UpdateBundleItemInput): Promise<PublicBundleItem> {
+  async updateBundleItem(itemId: string, input: UpdateBundleItemInput): Promise<PublicBundleItem> {
     const existing = await this.bundleRepository.getBundleItemById(itemId);
     if (!existing) {
       throw new BundleItemNotFoundError();
@@ -91,7 +91,7 @@ export class BundleService {
     }
   }
 
-  async deleteBundleItem(itemId: number): Promise<void> {
+  async deleteBundleItem(itemId: string): Promise<void> {
     try {
       await this.bundleRepository.deleteBundleItemById(itemId);
     } catch (error: unknown) {
@@ -106,13 +106,13 @@ export class BundleService {
     }
   }
 
-  async listBundleVariantItems(bundleId: number): Promise<PublicBundleVariantItem[]> {
+  async listBundleVariantItems(bundleId: string): Promise<PublicBundleVariantItem[]> {
     await this.getBundleById(bundleId);
     return this.bundleRepository.listBundleVariantItems(bundleId);
   }
 
   async createBundleVariantItem(
-    bundleId: number,
+    bundleId: string,
     input: CreateBundleVariantItemInput
   ): Promise<PublicBundleVariantItem> {
     await this.getBundleById(bundleId);
@@ -126,7 +126,7 @@ export class BundleService {
   }
 
   async updateBundleVariantItem(
-    itemId: number,
+    itemId: string,
     input: UpdateBundleVariantItemInput
   ): Promise<PublicBundleVariantItem> {
     const existing = await this.bundleRepository.getBundleVariantItemById(itemId);
@@ -145,7 +145,7 @@ export class BundleService {
     }
   }
 
-  async deleteBundleVariantItem(itemId: number): Promise<void> {
+  async deleteBundleVariantItem(itemId: string): Promise<void> {
     try {
       await this.bundleRepository.deleteBundleVariantItemById(itemId);
     } catch (error: unknown) {
@@ -160,14 +160,14 @@ export class BundleService {
     }
   }
 
-  private async assertProductExists(productId: number): Promise<void> {
+  private async assertProductExists(productId: string): Promise<void> {
     const exists = await this.bundleRepository.productExists(productId);
     if (!exists) {
       throw new BundleRelatedEntityNotFoundError("product");
     }
   }
 
-  private async assertVariantExists(variantId: number): Promise<void> {
+  private async assertVariantExists(variantId: string): Promise<void> {
     const exists = await this.bundleRepository.variantExists(variantId);
     if (!exists) {
       throw new BundleRelatedEntityNotFoundError("variant");

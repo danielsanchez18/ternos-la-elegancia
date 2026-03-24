@@ -56,6 +56,16 @@ function statusBadgeClasses(status: string) {
   }
 }
 
+function toAppointmentActionData(input: {
+  id: string;
+  code: string;
+  status: string;
+  customerName: string;
+  scheduledAt: Date | string;
+}): AppointmentActionData {
+  return input as unknown as AppointmentActionData;
+}
+
 function statCard({
   title,
   value,
@@ -341,15 +351,13 @@ export function AgendaSubrouteView({
                     </td>
                     <td className="px-4 py-4">
                       <AdminAppointmentActions
-                        appointment={
-                          {
-                            id: a.id,
-                            code: a.code,
-                            status: a.status,
-                            customerName: a.customerName,
-                            scheduledAt: a.scheduledAt,
-                          } satisfies AppointmentActionData
-                        }
+                        appointment={toAppointmentActionData({
+                          id: a.id,
+                          code: a.code,
+                          status: a.status,
+                          customerName: a.customerName,
+                          scheduledAt: a.scheduledAt,
+                        })}
                       />
                     </td>
                   </tr>
@@ -421,7 +429,9 @@ export function FechasEspecialesSubrouteView({
         eyebrow: "Excepciones",
         title: "Calendario especial",
         children: (
-          <AdminSpecialScheduleForm schedules={schedules as SpecialScheduleRow[]} />
+          <AdminSpecialScheduleForm
+            schedules={schedules as unknown as SpecialScheduleRow[]}
+          />
         ),
       })}
     </section>

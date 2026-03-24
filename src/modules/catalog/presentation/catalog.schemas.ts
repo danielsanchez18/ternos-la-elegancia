@@ -23,23 +23,23 @@ const booleanFromQuery = z
   });
 
 export const definitionIdParamSchema = z.object({
-  definitionId: z.coerce.number().int().positive(),
+  definitionId: z.string().uuid(),
 });
 
 export const optionIdParamSchema = z.object({
-  optionId: z.coerce.number().int().positive(),
+  optionId: z.string().uuid(),
 });
 
 export const componentIdParamSchema = z.object({
-  componentId: z.coerce.number().int().positive(),
+  componentId: z.string().uuid(),
 });
 
 export const productIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.string().uuid(),
 });
 
 export const variantIdParamSchema = z.object({
-  variantId: z.coerce.number().int().positive(),
+  variantId: z.string().uuid(),
 });
 
 export const listAttributeDefinitionsQuerySchema = z.object({
@@ -91,8 +91,8 @@ export const updateAttributeOptionSchema = z
 
 const baseUpsertAttributeValueSchema = z
   .object({
-    definitionId: z.coerce.number().int().positive(),
-    optionId: z.coerce.number().int().positive().nullable().optional(),
+    definitionId: z.string().uuid(),
+    optionId: z.string().uuid().nullable().optional(),
     valueText: z.union([z.string().trim().max(1000), z.null()]).optional(),
     valueNumber: z.union([z.number(), z.null()]).optional(),
     valueBoolean: z.union([z.boolean(), z.null()]).optional(),
@@ -110,18 +110,18 @@ export const upsertProductAttributeValueSchema = baseUpsertAttributeValueSchema;
 export const upsertVariantAttributeValueSchema = baseUpsertAttributeValueSchema;
 
 export const attributeValueDefinitionIdParamSchema = z.object({
-  definitionId: z.coerce.number().int().positive(),
+  definitionId: z.string().uuid(),
 });
 
 export const createProductComponentSchema = z.object({
-  childProductId: z.coerce.number().int().positive(),
+  childProductId: z.string().uuid(),
   quantity: z.coerce.number().int().positive().optional(),
   sortOrder: z.coerce.number().int().min(0).optional(),
 });
 
 export const updateProductComponentSchema = z
   .object({
-    childProductId: z.coerce.number().int().positive().optional(),
+    childProductId: z.string().uuid().optional(),
     quantity: z.coerce.number().int().positive().optional(),
     sortOrder: z.coerce.number().int().min(0).optional(),
   })
