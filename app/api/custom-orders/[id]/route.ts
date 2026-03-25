@@ -6,6 +6,7 @@ import {
   CustomOrderAdvancePaymentRequiredError,
   CustomOrderCustomizationNotFoundError,
   CustomOrderFabricNotFoundError,
+  CustomOrderFabricReservationError,
   CustomOrderMeasurementNotValidError,
   CustomOrderNotFoundError,
   CustomOrderStatusTransitionError,
@@ -111,6 +112,22 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     if (error instanceof CustomOrderAdvancePaymentRequiredError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof CustomOrderMeasurementNotValidError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof CustomOrderFabricNotFoundError) {
+      return NextResponse.json({ error: "Fabric not found" }, { status: 404 });
+    }
+
+    if (error instanceof CustomOrderFabricReservationError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof CustomOrderCustomizationNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 

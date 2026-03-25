@@ -124,13 +124,39 @@ export class FabricRepository {
     delta: Prisma.Decimal
   ): Promise<{ fabric: PublicFabric; movement: FabricMovementItem }> {
     return prisma.$transaction(async (tx) => {
-      const updatedFabric = await tx.fabric.update({
-        where: { id: fabricId },
+      const requiredStock = delta.isNegative() ? delta.abs() : null;
+      const updateResult = await tx.fabric.updateMany({
+        where: {
+          id: fabricId,
+          metersInStock:
+            requiredStock !== null
+              ? {
+                  gte: requiredStock,
+                }
+              : undefined,
+        },
         data: {
           metersInStock: {
             increment: delta,
           },
         },
+      });
+
+      if (updateResult.count === 0) {
+        const exists = await tx.fabric.findUnique({
+          where: { id: fabricId },
+          select: { id: true },
+        });
+
+        if (!exists) {
+          throw new Error("FABRIC_NOT_FOUND_IN_TX");
+        }
+
+        throw new Error("FABRIC_STOCK_BELOW_ZERO");
+      }
+
+      const updatedFabric = await tx.fabric.findUniqueOrThrow({
+        where: { id: fabricId },
         select: publicFabricSelect,
       });
 

@@ -8,22 +8,27 @@ import {
   ProductNotFoundError,
   ProductRelatedEntityNotFoundError,
   ProductVariantConflictError,
+  ProductVariantImageNotFoundError,
   ProductVariantNotFoundError,
+  ProductVariantValidationError,
 } from "@/src/modules/products/domain/product.errors";
 import {
   CreateBrandInput,
   CreateProductImageInput,
   CreateProductInput,
   CreateProductVariantInput,
+  CreateProductVariantImageInput,
   ListProductsFilters,
   PublicBrand,
   PublicProductImage,
   PublicProduct,
   PublicProductVariant,
+  PublicProductVariantImage,
   UpdateBrandInput,
   UpdateProductImageInput,
   UpdateProductInput,
   UpdateProductVariantInput,
+  UpdateProductVariantImageInput,
 } from "@/src/modules/products/domain/product.types";
 import { ProductRepository } from "@/src/modules/products/infrastructure/product.repository";
 
@@ -156,11 +161,26 @@ export class ProductService {
     return this.productRepository.listProductVariants(productId);
   }
 
+  async getProductVariantById(variantId: string): Promise<PublicProductVariant> {
+    const variant = await this.productRepository.findProductVariantById(variantId);
+    if (!variant) {
+      throw new ProductVariantNotFoundError();
+    }
+
+    return variant;
+  }
+
   async createProductVariant(
     productId: string,
     input: CreateProductVariantInput
   ): Promise<PublicProductVariant> {
-    await this.getProductById(productId);
+    const product = await this.getProductById(productId);
+
+    if (product.kind === "TERNO" && !input.tallaSecundaria?.trim()) {
+      throw new ProductVariantValidationError(
+        "For TERNO products, secondary size (tallaSecundaria) is required"
+      );
+    }
 
     try {
       return await this.productRepository.createProductVariant(productId, input);
@@ -185,6 +205,61 @@ export class ProductService {
       return await this.productRepository.deactivateProductVariantById(variantId);
     } catch (error: unknown) {
       this.handleProductVariantPersistenceError(error);
+    }
+  }
+
+  async listProductVariantImages(variantId: string): Promise<PublicProductVariantImage[]> {
+    await this.getProductVariantById(variantId);
+    return this.productRepository.listProductVariantImages(variantId);
+  }
+
+  async createProductVariantImage(
+    variantId: string,
+    input: CreateProductVariantImageInput
+  ): Promise<PublicProductVariantImage> {
+    await this.getProductVariantById(variantId);
+    return this.productRepository.createProductVariantImage(variantId, input);
+  }
+
+  async getProductVariantImageById(imageId: string): Promise<PublicProductVariantImage> {
+    const image = await this.productRepository.findProductVariantImageById(imageId);
+    if (!image) {
+      throw new ProductVariantImageNotFoundError();
+    }
+
+    return image;
+  }
+
+  async updateProductVariantImage(
+    imageId: string,
+    input: UpdateProductVariantImageInput
+  ): Promise<PublicProductVariantImage> {
+    try {
+      return await this.productRepository.updateProductVariantImageById(imageId, input);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        throw new ProductVariantImageNotFoundError();
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteProductVariantImage(imageId: string): Promise<void> {
+    try {
+      await this.productRepository.deleteProductVariantImageById(imageId);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        throw new ProductVariantImageNotFoundError();
+      }
+
+      throw error;
     }
   }
 

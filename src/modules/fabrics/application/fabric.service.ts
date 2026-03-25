@@ -107,7 +107,19 @@ export class FabricService {
       throw new FabricInvalidMovementError("Movement would leave stock below zero");
     }
 
-    return this.fabricRepository.createMovement(fabricId, input, delta);
+    try {
+      return await this.fabricRepository.createMovement(fabricId, input, delta);
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === "FABRIC_STOCK_BELOW_ZERO") {
+        throw new FabricInvalidMovementError("Movement would leave stock below zero");
+      }
+
+      if (error instanceof Error && error.message === "FABRIC_NOT_FOUND_IN_TX") {
+        throw new FabricNotFoundError();
+      }
+
+      throw error;
+    }
   }
 }
 

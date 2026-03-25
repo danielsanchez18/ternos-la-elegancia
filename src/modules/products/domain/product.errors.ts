@@ -65,3 +65,17 @@ export class ProductVariantConflictError extends Error {
     this.fields = fields;
   }
 }
+
+export class ProductVariantValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProductVariantValidationError";
+  }
+}
+
+export class ProductVariantImageNotFoundError extends Error {
+  constructor() {
+    super("Product variant image not found");
+    this.name = "ProductVariantImageNotFoundError";
+  }
+}

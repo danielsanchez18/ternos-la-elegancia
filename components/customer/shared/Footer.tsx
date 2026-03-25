@@ -62,7 +62,7 @@ export const Footer = () => {
           <article className="text-sm flex flex-col text-white/80 max-sm:items-center w-fit mx-auto gap-y-3">
             <h3 className="uppercase mb-3 text-lg font-oswald">contacto</h3>
 
-            <a
+            <Link
               href="/productos#foxrooms"
               className="hover:text-white hover:underline flex items-center gap-x-1 w-fit"
             >
@@ -85,7 +85,7 @@ export const Footer = () => {
                 </g>
               </svg>
               <p>Leoncio Prado #942, Chiclayo</p>
-            </a>
+            </Link>
             <a
               href="https://wa.me/51960606442"
               target="_blank"
@@ -146,7 +146,7 @@ export const Footer = () => {
           <article className="text-sm flex flex-col uppercase text-white/80 max-sm:items-center w-fit mx-auto gap-y-3">
             <h3 className="uppercase mb-3 text-lg font-oswald">síguenos</h3>
 
-            <a
+            <Link
               href="/productos#foxrooms"
               className="hover:text-white hover:underline flex items-center gap-x-2 w-fit"
             >
@@ -163,8 +163,8 @@ export const Footer = () => {
                 />
               </svg>
               <p>Facebook</p>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/productos#foxrooms"
               className="hover:text-white hover:underline flex items-center gap-x-2 w-fit"
             >
@@ -193,8 +193,8 @@ export const Footer = () => {
                 />
               </svg>
               <p>Instagram</p>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/productos#foxrooms"
               className="hover:text-white hover:underline flex items-center gap-x-2 w-fit"
             >
@@ -211,7 +211,7 @@ export const Footer = () => {
                 />
               </svg>
               <p>Tiktok</p>
-            </a>
+            </Link>
           </article>
         </div>
 

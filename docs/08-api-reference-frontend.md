@@ -23,6 +23,7 @@ Este documento describe todos los endpoints implementados actualmente en `app/ap
 
 Nota:
 - En `users`, `issues` usa clave `field` en vez de `path`.
+- Todos los IDs de dominio y claves foraneas usan `UUID` (string). Solo `page` y `pageSize` permanecen numericos.
 
 ## 2. Enums utiles para frontend
 
@@ -393,10 +394,10 @@ Respuestas:
 - `409`: cliente existente (`fields` con campos en conflicto)
 
 ## 5.3 GET /api/customers/:id
-Obtiene cliente por id numerico.
+Obtiene cliente por UUID.
 
 Route params:
-- `id`: entero positivo
+- `id`: UUID
 
 Respuestas:
 - `200`: cliente
@@ -451,7 +452,7 @@ Respuestas:
 Lista perfiles de medidas del cliente.
 
 Route params:
-- `id`: customerId entero positivo
+- `id`: customerId UUID
 
 Respuestas:
 - `200`: array de perfiles
@@ -461,7 +462,7 @@ Respuestas:
 Crea perfil de medidas para cliente.
 
 Route params:
-- `id`: customerId entero positivo
+- `id`: customerId UUID
 
 Body:
 ```json
@@ -487,7 +488,7 @@ Respuestas:
 Obtiene perfil por id.
 
 Route params:
-- `id`: profileId entero positivo
+- `id`: profileId UUID
 
 Respuestas:
 - `200`: perfil con garments y valores
@@ -518,13 +519,13 @@ Respuestas:
 Obtiene valores de una prenda del perfil.
 
 Route params:
-- `id`: profileId entero positivo
+- `id`: profileId UUID
 
 Query params:
 - `garmentType` (requerido): `MeasurementGarmentType`
 
 Ejemplo:
-- `/api/measurement-profiles/10/values?garmentType=SACO_CABALLERO`
+- `/api/measurement-profiles/<profile_uuid>/values?garmentType=SACO_CABALLERO`
 
 Respuestas:
 - `200`: valores del garment
@@ -539,8 +540,8 @@ Body:
 {
   "garmentType": "SACO_CABALLERO",
   "values": [
-    { "fieldId": 1, "valueNumber": 46.5 },
-    { "fieldId": 2, "valueText": "Regular" }
+    { "fieldId": "<fieldId_uuid>", "valueNumber": 46.5 },
+    { "fieldId": "<fieldId_uuid>", "valueText": "Regular" }
   ]
 }
 ```
@@ -562,16 +563,16 @@ Respuestas:
 Lista citas con filtros.
 
 Query params opcionales:
-- `customerId`: entero positivo
+- `customerId`: UUID
 - `status`: `AppointmentStatus`
 - `from`: fecha
 - `to`: fecha
 
 Ejemplos de consulta:
-- `/api/appointments?customerId=1`
+- `/api/appointments?customerId=<customer_uuid>`
 - `/api/appointments?status=PENDIENTE`
 - `/api/appointments?from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
-- `/api/appointments?customerId=1&status=CONFIRMADA&from=2026-03-01T00:00:00.000Z`
+- `/api/appointments?customerId=<customer_uuid>&status=CONFIRMADA&from=2026-03-01T00:00:00.000Z`
 
 Respuestas:
 - `200`: array de citas
@@ -583,7 +584,7 @@ Crea cita.
 Body:
 ```json
 {
-  "customerId": 1,
+  "customerId": "<customerId_uuid>",
   "type": "TOMA_MEDIDAS",
   "scheduledAt": "2026-03-12T15:30:00.000Z",
   "notes": "Cliente nuevo",
@@ -828,7 +829,7 @@ Respuestas:
 Lista ordenes de confeccion con filtros avanzados, orden y paginacion.
 
 Query params opcionales:
-- `customerId`: entero positivo
+- `customerId`: UUID
 - `status`: `CustomOrderStatus`
 - `code`: texto, busqueda parcial case-insensitive
 - `requiresMeasurement`: `true` o `false`
@@ -845,7 +846,7 @@ Query params opcionales:
 Ejemplos de consulta:
 - `/api/custom-orders?page=1&pageSize=20`
 - `/api/custom-orders?status=EN_CONFECCION&orderBy=createdAt&order=desc`
-- `/api/custom-orders?customerId=1&requiresMeasurement=true`
+- `/api/custom-orders?customerId=<customer_uuid>&requiresMeasurement=true`
 - `/api/custom-orders?code=CUS-20260309`
 - `/api/custom-orders?createdFrom=2026-03-01T00:00:00-05:00&createdTo=2026-03-31T23:59:59-05:00`
 - `/api/custom-orders?promisedFrom=2026-03-10T00:00:00-05:00&promisedTo=2026-03-20T23:59:59-05:00&orderBy=promisedDeliveryAt&order=asc`
@@ -870,7 +871,7 @@ Crea orden de confeccion con items, partes, telas y selecciones.
 Body (estructura completa):
 ```json
 {
-  "customerId": 1,
+  "customerId": "<customerId_uuid>",
   "firstPurchaseFlow": false,
   "requestedDeliveryAt": "2026-03-20T10:00:00.000Z",
   "promisedDeliveryAt": "2026-03-25T10:00:00.000Z",
@@ -878,7 +879,7 @@ Body (estructura completa):
   "internalNotes": "Prioridad media",
   "items": [
     {
-      "productId": 5,
+      "productId": "<productId_uuid>",
       "itemNameSnapshot": "Terno 2 piezas",
       "quantity": 1,
       "unitPrice": 650,
@@ -886,22 +887,22 @@ Body (estructura completa):
       "notes": "Incluye prueba intermedia",
       "parts": [
         {
-          "productId": 6,
+          "productId": "<productId_uuid>",
           "garmentType": "SACO_CABALLERO",
           "label": "Saco principal",
           "workMode": "A_TODO_COSTO",
-          "measurementProfileId": 3,
-          "measurementProfileGarmentId": 10,
-          "fabricId": 2,
+          "measurementProfileId": "<measurementProfileId_uuid>",
+          "measurementProfileGarmentId": "<measurementProfileGarmentId_uuid>",
+          "fabricId": "<fabricId_uuid>",
           "unitPrice": 350,
           "notes": "Cuello clasico",
           "selections": [
             {
-              "definitionId": 1,
-              "optionId": 4
+              "definitionId": "<definitionId_uuid>",
+              "optionId": "<optionId_uuid>"
             },
             {
-              "definitionId": 2,
+              "definitionId": "<definitionId_uuid>",
               "valueText": "Sin hombreras"
             }
           ]
@@ -978,7 +979,7 @@ Los endpoints de este bloque estan anidados en `custom-orders` para mantener tra
 Lista pagos de la orden y devuelve resumen financiero de validacion de adelanto.
 
 Route params:
-- `id`: customOrderId entero positivo
+- `id`: customOrderId UUID
 
 Query params opcionales:
 - `status`: `PaymentStatus`
@@ -988,19 +989,19 @@ Query params opcionales:
 - `to`: fecha
 
 Ejemplos:
-- `/api/custom-orders/12/payments`
-- `/api/custom-orders/12/payments?status=APROBADO`
-- `/api/custom-orders/12/payments?concept=ADELANTO&method=YAPE`
-- `/api/custom-orders/12/payments?from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
+- `/api/custom-orders/<custom_order_uuid>/payments`
+- `/api/custom-orders/<custom_order_uuid>/payments?status=APROBADO`
+- `/api/custom-orders/<custom_order_uuid>/payments?concept=ADELANTO&method=YAPE`
+- `/api/custom-orders/<custom_order_uuid>/payments?from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
 
 Respuesta `200`:
 ```json
 {
   "payments": [
     {
-      "id": 10,
-      "customerId": 3,
-      "customOrderId": 12,
+      "id": "<id_uuid>",
+      "customerId": "<customerId_uuid>",
+      "customOrderId": "<customOrderId_uuid>",
       "amount": "350.00",
       "method": "YAPE",
       "concept": "ADELANTO",
@@ -1016,7 +1017,7 @@ Respuesta `200`:
     }
   ],
   "summary": {
-    "customOrderId": 12,
+    "customOrderId": "<customOrderId_uuid>",
     "orderTotal": "650.00",
     "approvedPaymentsTotal": "350.00",
     "pendingBalance": "300.00",
@@ -1034,7 +1035,7 @@ Errores:
 Crea pago para la orden de confeccion.
 
 Route params:
-- `id`: customOrderId entero positivo
+- `id`: customOrderId UUID
 
 Body:
 ```json
@@ -1063,9 +1064,9 @@ Respuesta `201`:
 ```json
 {
   "payment": {
-    "id": 10,
-    "customerId": 3,
-    "customOrderId": 12,
+    "id": "<id_uuid>",
+    "customerId": "<customerId_uuid>",
+    "customOrderId": "<customOrderId_uuid>",
     "amount": "350.00",
     "method": "YAPE",
     "concept": "ADELANTO",
@@ -1080,7 +1081,7 @@ Respuesta `201`:
     "updatedAt": "2026-03-09T23:01:00.000Z"
   },
   "summary": {
-    "customOrderId": 12,
+    "customOrderId": "<customOrderId_uuid>",
     "orderTotal": "650.00",
     "approvedPaymentsTotal": "350.00",
     "pendingBalance": "300.00",
@@ -1099,7 +1100,7 @@ Errores:
 Lista comprobantes de la orden.
 
 Route params:
-- `id`: customOrderId entero positivo
+- `id`: customOrderId UUID
 
 Query params opcionales:
 - `status`: `ComprobanteStatus`
@@ -1108,9 +1109,9 @@ Query params opcionales:
 - `to`: fecha
 
 Ejemplos:
-- `/api/custom-orders/12/comprobantes`
-- `/api/custom-orders/12/comprobantes?status=EMITIDO`
-- `/api/custom-orders/12/comprobantes?type=BOLETA&from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
+- `/api/custom-orders/<custom_order_uuid>/comprobantes`
+- `/api/custom-orders/<custom_order_uuid>/comprobantes?status=EMITIDO`
+- `/api/custom-orders/<custom_order_uuid>/comprobantes?type=BOLETA&from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
 
 Respuesta `200`:
 - Array de comprobantes de la orden.
@@ -1123,7 +1124,7 @@ Errores:
 Crea comprobante para la orden.
 
 Route params:
-- `id`: customOrderId entero positivo
+- `id`: customOrderId UUID
 
 Body:
 ```json
@@ -1204,7 +1205,7 @@ Respuestas:
 Lista ordenes de venta con filtros avanzados, orden y paginacion.
 
 Query params opcionales:
-- `customerId`: entero positivo
+- `customerId`: UUID
 - `status`: `SaleOrderStatus`
 - `code`: texto, busqueda parcial case-insensitive
 - `requestedFrom`: fecha
@@ -1217,7 +1218,7 @@ Query params opcionales:
 Ejemplos:
 - `/api/sale-orders?page=1&pageSize=20`
 - `/api/sale-orders?status=PENDIENTE_PAGO`
-- `/api/sale-orders?customerId=1&status=PAGADO`
+- `/api/sale-orders?customerId=<customer_uuid>&status=PAGADO`
 - `/api/sale-orders?code=SAL-20260309`
 - `/api/sale-orders?requestedFrom=2026-03-01T00:00:00.000Z&requestedTo=2026-03-31T23:59:59.000Z`
 - `/api/sale-orders?orderBy=total&order=asc&page=2&pageSize=10`
@@ -1242,12 +1243,12 @@ Crea orden de venta.
 Body completo:
 ```json
 {
-  "customerId": 1,
+  "customerId": "<customerId_uuid>",
   "notes": "Venta mostrador",
   "requestedAt": "2026-03-10T14:00:00.000Z",
   "items": [
     {
-      "productId": 10,
+      "productId": "<productId_uuid>",
       "itemNameSnapshot": "Camisa Blanca Slim",
       "quantity": 2,
       "unitPrice": 120,
@@ -1255,13 +1256,13 @@ Body completo:
       "notes": "Empaque regalo",
       "components": [
         {
-          "variantId": 33,
+          "variantId": "<variantId_uuid>",
           "quantity": 2
         }
       ]
     },
     {
-      "bundleId": 3,
+      "bundleId": "<bundleId_uuid>",
       "quantity": 1,
       "unitPrice": 450,
       "discountAmount": 0
@@ -1356,7 +1357,7 @@ Respuesta `200`:
 {
   "payments": [],
   "summary": {
-    "saleOrderId": 20,
+    "saleOrderId": "<saleOrderId_uuid>",
     "orderTotal": "690.00",
     "approvedPaymentsTotal": "300.00",
     "pendingBalance": "390.00",
@@ -1447,7 +1448,7 @@ Respuestas:
 Lista ordenes de alquiler con filtros avanzados, orden y paginacion.
 
 Query params opcionales:
-- `customerId`: entero positivo
+- `customerId`: UUID
 - `status`: `RentalOrderStatus`
 - `code`: texto, busqueda parcial case-insensitive
 - `hasDelay`: `true` | `false`
@@ -1464,7 +1465,7 @@ Query params opcionales:
 Ejemplos:
 - `/api/rental-orders?page=1&pageSize=20`
 - `/api/rental-orders?status=ENTREGADO`
-- `/api/rental-orders?customerId=1&hasDelay=true`
+- `/api/rental-orders?customerId=<customer_uuid>&hasDelay=true`
 - `/api/rental-orders?code=REN-20260311`
 - `/api/rental-orders?pickupFrom=2026-03-01T00:00:00.000Z&pickupTo=2026-03-31T23:59:59.000Z`
 - `/api/rental-orders?dueFrom=2026-03-10T00:00:00.000Z&dueTo=2026-03-20T23:59:59.000Z&orderBy=dueBackAt&order=asc`
@@ -1489,14 +1490,14 @@ Crea orden de alquiler (flujo inmediato, no reserva futura web).
 Body:
 ```json
 {
-  "customerId": 1,
+  "customerId": "<customerId_uuid>",
   "pickupAt": "2026-03-11T10:00:00.000Z",
   "dueBackAt": "2026-03-13T18:00:00.000Z",
   "notes": "Cliente recoge en tienda",
   "items": [
     {
-      "rentalUnitId": 5,
-      "productId": 10,
+      "rentalUnitId": "<rentalUnitId_uuid>",
+      "productId": "<productId_uuid>",
       "itemNameSnapshot": "Terno Azul Marino",
       "tierAtRental": "ESTRENO",
       "unitPrice": 250,
@@ -1578,7 +1579,7 @@ Respuesta `200`:
 {
   "payments": [],
   "summary": {
-    "rentalOrderId": 30,
+    "rentalOrderId": "<rentalOrderId_uuid>",
     "orderTotal": "250.00",
     "approvedPaymentsTotal": "100.00",
     "pendingBalance": "150.00",
@@ -1669,8 +1670,8 @@ Respuestas:
 Lista ordenes de arreglo con filtros avanzados, orden y paginacion.
 
 Query params opcionales:
-- `customerId`: entero positivo
-- `serviceId`: entero positivo
+- `customerId`: UUID
+- `serviceId`: UUID
 - `status`: `AlterationOrderStatus`
 - `code`: texto, busqueda parcial case-insensitive
 - `receivedFrom`: fecha
@@ -1685,7 +1686,7 @@ Query params opcionales:
 Ejemplos:
 - `/api/alteration-orders?page=1&pageSize=20`
 - `/api/alteration-orders?status=EN_PROCESO`
-- `/api/alteration-orders?customerId=1&serviceId=3`
+- `/api/alteration-orders?customerId=<customer_uuid>&serviceId=<service_uuid>`
 - `/api/alteration-orders?code=ALT-20260311`
 - `/api/alteration-orders?receivedFrom=2026-03-01T00:00:00.000Z&receivedTo=2026-03-31T23:59:59.000Z`
 
@@ -1709,8 +1710,8 @@ Crea orden de arreglo.
 Body:
 ```json
 {
-  "customerId": 1,
-  "serviceId": 2,
+  "customerId": "<customerId_uuid>",
+  "serviceId": "<serviceId_uuid>",
   "garmentDescription": "Pantalon de vestir azul",
   "workDescription": "Basta y ajuste de cintura",
   "initialCondition": "Buen estado",
@@ -1790,7 +1791,7 @@ Respuesta `200`:
 {
   "payments": [],
   "summary": {
-    "alterationOrderId": 18,
+    "alterationOrderId": "<alterationOrderId_uuid>",
     "orderTotal": "60.00",
     "approvedPaymentsTotal": "30.00",
     "pendingBalance": "30.00",
@@ -1956,7 +1957,7 @@ Respuestas:
 Lista notificaciones registradas.
 
 Query params opcionales:
-- `customerId`: entero positivo
+- `customerId`: UUID
 - `channel`: `NotificationChannel`
 - `status`: `NotificationStatus`
 - `from`: fecha
@@ -1965,7 +1966,7 @@ Query params opcionales:
 Ejemplos:
 - `/api/notifications`
 - `/api/notifications?channel=WHATSAPP&status=ENVIADA`
-- `/api/notifications?customerId=1&from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
+- `/api/notifications?customerId=<customer_uuid>&from=2026-03-01T00:00:00.000Z&to=2026-03-31T23:59:59.000Z`
 
 Respuestas:
 - `200`: array de notificaciones
@@ -2230,8 +2231,8 @@ Crea o actualiza (upsert) valor de atributo en producto.
 Body:
 ```json
 {
-  "definitionId": 12,
-  "optionId": 55,
+  "definitionId": "<definitionId_uuid>",
+  "optionId": "<optionId_uuid>",
   "valueText": null,
   "valueNumber": null,
   "valueBoolean": null
@@ -2299,7 +2300,7 @@ Crea componente para producto padre.
 Body:
 ```json
 {
-  "childProductId": 21,
+  "childProductId": "<childProductId_uuid>",
   "quantity": 1,
   "sortOrder": 0
 }
@@ -2352,8 +2353,8 @@ Crea unidad fisica de alquiler.
 Body:
 ```json
 {
-  "productId": 10,
-  "variantId": 25,
+  "productId": "<productId_uuid>",
+  "variantId": "<variantId_uuid>",
   "internalCode": "RU-TERNO-001",
   "sizeLabel": "48",
   "color": "Azul",
@@ -2504,7 +2505,7 @@ Agrega item de producto al bundle.
 Body:
 ```json
 {
-  "productId": 21,
+  "productId": "<productId_uuid>",
   "quantity": 1,
   "sortOrder": 0
 }
@@ -2547,7 +2548,7 @@ Agrega item de variante al bundle.
 Body:
 ```json
 {
-  "variantId": 44,
+  "variantId": "<variantId_uuid>",
   "quantity": 1,
   "sortOrder": 0
 }
@@ -2603,7 +2604,7 @@ Body:
   "startsAt": "2026-03-15T00:00:00.000Z",
   "endsAt": "2026-03-31T23:59:59.000Z",
   "active": true,
-  "productIds": [21, 35]
+  "productIds": ["<product_uuid_1>", "<product_uuid_2>"]
 }
 ```
 
@@ -2655,8 +2656,8 @@ Lista cupones.
 Query params opcionales:
 - `search`: texto en code
 - `active`: `true` | `false`
-- `promotionId`: entero positivo
-- `bundleId`: entero positivo
+- `promotionId`: UUID
+- `bundleId`: UUID
 
 Respuestas:
 - `200`: array de cupones
@@ -2669,7 +2670,7 @@ Body:
 ```json
 {
   "code": "TENOFF",
-  "promotionId": 2,
+  "promotionId": "<promotionId_uuid>",
   "discountType": "PORCENTAJE",
   "value": 10,
   "maxUses": 100,
@@ -2728,7 +2729,7 @@ Body:
 ```json
 {
   "orderType": "sale",
-  "orderId": 10
+  "orderId": "<orderId_uuid>"
 }
 ```
 
@@ -2744,7 +2745,7 @@ Body:
 ```json
 {
   "orderType": "sale",
-  "orderId": 10
+  "orderId": "<orderId_uuid>"
 }
 ```
 
@@ -2777,7 +2778,7 @@ Lista cupones aplicables para una orden especifica, con monto proyectado.
 
 Route params:
 - `orderType`: `sale` | `custom` | `rental` | `alteration`
-- `orderId`: entero positivo
+- `orderId`: UUID
 
 Reglas de filtrado:
 - solo cupones activos y vigentes
@@ -2790,6 +2791,32 @@ Respuestas:
 - `400`: params invalidos
 - `404`: orden no encontrada
 
+
+## 26.2 POST /api/payments/izipay/session-token
+Genera token de sesion para checkout de Izipay en flujo autenticado.
+
+Body:
+```json
+{
+  "orderType": "sale",
+  "orderId": "<order_uuid>"
+}
+```
+
+Reglas:
+- Requiere sesion valida (`authenticated`).
+- Cliente solo puede solicitar token para ordenes propias.
+- Admin puede solicitar token para cualquier orden.
+- Flujo actual de Izipay esta enfocado en Yape Code (metodo principal).
+- Tope de orden para Yape Code: `S/ 2000`.
+- Si `IZIPAY_MOCK_MODE=true`, responde token simulado (`tokenSource: "mock"`).
+
+Respuestas:
+- `200`: token y metadata de checkout (`authorization`, `checkout`, `merchantCode`, `keyRSA`).
+- `400`: body invalido.
+- `404`: orden no encontrada o fuera de alcance.
+- `409`: orden supera tope permitido para Yape Code.
+- `500`: error al generar token de sesion.
 ## 27. Reportes
 
 ## 27.1 GET /api/reports/minimum
@@ -2823,7 +2850,7 @@ Respuestas:
 Lista notas de un cliente (ordenadas por `createdAt` desc).
 
 Route params:
-- `id`: entero positivo
+- `id`: UUID
 
 Respuestas:
 - `200`: `{ "data": PublicCustomerNote[] }`
@@ -2834,19 +2861,19 @@ Respuestas:
 Crea una nota para un cliente.
 
 Route params:
-- `id`: entero positivo
+- `id`: UUID
 
 Body:
 ```json
 {
   "note": "Cliente solicita entalle mas ajustado en cintura.",
-  "adminUserId": 1
+  "adminUserId": "<adminUserId_uuid>"
 }
 ```
 
 Validaciones:
 - `note`: requerido, trim, min 1, max 4000
-- `adminUserId`: opcional, entero positivo o `null`
+- `adminUserId`: opcional, UUID o `null`
 
 Respuestas:
 - `201`: `{ "data": PublicCustomerNote }`
@@ -2857,18 +2884,18 @@ Respuestas:
 Actualiza una nota por id (parcial).
 
 Route params:
-- `noteId`: entero positivo
+- `noteId`: UUID
 
 Body (al menos 1 campo):
 ```json
 {
   "note": "Actualizar observacion del cliente",
-  "adminUserId": 1
+  "adminUserId": "<adminUserId_uuid>"
 }
 ```
 
 Route params:
-- `noteId`: entero positivo
+- `noteId`: UUID
 
 Reglas:
 - se requiere al menos uno de: `note`, `adminUserId`
@@ -2883,7 +2910,7 @@ Respuestas:
 Elimina una nota por id.
 
 Route params:
-- `noteId`: entero positivo
+- `noteId`: UUID
 
 Respuestas:
 - `200`: `{ "data": { "deleted": true } }`
@@ -2894,7 +2921,7 @@ Respuestas:
 Lista archivos asociados a un cliente (ordenados por `createdAt` desc).
 
 Route params:
-- `id`: entero positivo
+- `id`: UUID
 
 Respuestas:
 - `200`: `{ "data": PublicCustomerFile[] }`
@@ -2905,7 +2932,7 @@ Respuestas:
 Registra archivo de cliente (metadatos + URL).
 
 Route params:
-- `id`: entero positivo
+- `id`: UUID
 
 Body:
 ```json
@@ -2932,7 +2959,7 @@ Respuestas:
 Actualiza metadatos de archivo de cliente (parcial).
 
 Route params:
-- `fileId`: entero positivo
+- `fileId`: UUID
 
 Body (al menos 1 campo):
 ```json
@@ -2955,9 +2982,10 @@ Respuestas:
 Elimina archivo de cliente por id.
 
 Route params:
-- `fileId`: entero positivo
+- `fileId`: UUID
 
 Respuestas:
 - `200`: `{ "data": { "deleted": true } }`
 - `400`: param invalido
 - `404`: archivo no encontrado
+

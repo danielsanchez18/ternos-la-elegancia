@@ -50,11 +50,11 @@ export default function AdminCreateCustomOrderForm({
     setForm((prev) => ({ ...prev, [key]: value }));
     
     if (key === "customerId" && value) {
-      void fetchCustomerProfilesForCustomer(Number(value));
+      void fetchCustomerProfilesForCustomer(value);
     }
   };
 
-  const fetchCustomerProfilesForCustomer = async (id: number) => {
+  const fetchCustomerProfilesForCustomer = async (id: string) => {
     setIsFetchingProfiles(true);
     try {
       const data = await fetchCustomerProfiles(id);

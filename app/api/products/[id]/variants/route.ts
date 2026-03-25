@@ -5,6 +5,7 @@ import { productService } from "@/src/modules/products/application/product.servi
 import {
   ProductNotFoundError,
   ProductVariantConflictError,
+  ProductVariantValidationError,
 } from "@/src/modules/products/domain/product.errors";
 import {
   createProductVariantSchema,
@@ -76,6 +77,10 @@ export async function POST(request: Request, { params }: RouteContext) {
         { error: "Product variant already exists", fields: error.fields },
         { status: 409 }
       );
+    }
+
+    if (error instanceof ProductVariantValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
     return NextResponse.json({ error: "Could not create product variant" }, { status: 500 });

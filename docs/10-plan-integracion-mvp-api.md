@@ -55,3 +55,11 @@ Integrar la API construida en `feature/backend` con la experiencia actual de `ma
 - Proteccion de vistas por rol.
 - CRUDs completos del panel admin.
 - Flujo de pedidos, cupones y pagos desde frontend.
+
+## Estado actual (12 fases)
+
+Este documento fue el plan inicial de integracion MVP en 4 fases. El plan de ejecucion vigente para backend + frontend opera en 12 fases (base tecnica, seeds, modulos core, flujo transaccional, integracion frontend, hardening y cierre).
+
+### Nota de pagos
+
+La integracion de pasarela prioriza Izipay con Yape como metodo principal en esta etapa.

@@ -1,50 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { CategoryCard, type Category } from "@/components/shared/CategoryCard";
 import { getStorefrontBundles } from "@/lib/storefront-api";
 
-const fallbackCollections: Category[] = [
-  {
-    id: "col-001",
-    name: "Ternos Clásicos",
-    description: "Elegancia atemporal para ocasiones formales.",
-    image: "/images/cat-ternos.webp",
-    slug: "ternos-clasicos",
-  },
-  {
-    id: "col-002",
-    name: "Business Premium",
-    description: "Diseños ejecutivos para el profesional moderno.",
-    image: "/images/cat-business.webp",
-    slug: "business-premium",
-  },
-  {
-    id: "col-003",
-    name: "Smoking & Gala",
-    description: "Perfectos para eventos especiales y ceremonias.",
-    image: "/images/cat-smooking.jpg",
-    slug: "smoking-gala",
-  },
-  {
-    id: "col-004",
-    name: "Casual Elegante",
-    description: "Versatilidad y estilo para el día a día.",
-    image: "/images/cat-casual.webp",
-    slug: "casual-elegante",
-  },
-  {
-    id: "col-005",
-    name: "Novios",
-    description: "Colección exclusiva para el día más importante.",
-    image: "/images/cat-novios.jpg",
-    slug: "novios",
-  },
+const COLLECTION_IMAGES = [
+  "/images/cat-ternos.webp",
+  "/images/cat-business.webp",
+  "/images/cat-smooking.jpg",
+  "/images/cat-casual.webp",
+  "/images/cat-novios.jpg",
 ];
 
 export const Collections = () => {
-  const [collections, setCollections] = useState<Category[]>(fallbackCollections);
+  const [collections, setCollections] = useState<Category[]>([]);
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -52,25 +24,27 @@ export const Collections = () => {
     async function loadCollections() {
       try {
         const response = await getStorefrontBundles();
-
-        if (!isMounted || response.length === 0) {
+        if (!isMounted) {
           return;
         }
 
-        setCollections(
-          response.map((bundle, index) => ({
-            id: bundle.id,
-            name: bundle.nombre,
-            description: bundle.descripcion ?? "Conjunto recomendado para ocasiones especiales.",
-            image: fallbackCollections[index % fallbackCollections.length].image,
-            slug: bundle.slug,
-          }))
-        );
+        const mapped = response.map((bundle, index) => ({
+          id: bundle.id,
+          name: bundle.nombre,
+          description:
+            bundle.descripcion ??
+            "Conjunto recomendado para ocasiones especiales.",
+          image: COLLECTION_IMAGES[index % COLLECTION_IMAGES.length],
+          slug: bundle.slug,
+        }));
+
+        setCollections(mapped);
+        if (mapped.length === 0) {
+          setLoadMessage("Aun no hay colecciones activas.");
+        }
       } catch {
         if (isMounted) {
-          setLoadMessage(
-            "Mostrando colecciones referenciales mientras se habilitan datos reales."
-          );
+          setLoadError("No se pudieron cargar colecciones desde la API.");
         }
       }
     }
@@ -83,29 +57,34 @@ export const Collections = () => {
   }, []);
 
   return (
-    <div className="bg-white space-y-15">
-      {/* Título y Descripción */}
-      <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <h2 className="text-5xl font-oswald font-medium uppercase">
-          Colecciones
-        </h2>
-        <p className="text-neutral-700 text-balance text-lg">
-          Excelencia en cada detalle para el caballero moderno.
+    <div className="space-y-15 bg-white">
+      <div className="mx-auto max-w-3xl space-y-4 text-center">
+        <h2 className="text-5xl font-oswald font-medium uppercase">Colecciones</h2>
+        <p className="text-balance text-lg text-neutral-700">
+          Paquetes comerciales configurados desde el catalogo real.
         </p>
-        {loadMessage ? <p className="text-sm text-amber-700">{loadMessage}</p> : null}
+        {loadMessage ? <p className="text-sm text-neutral-600">{loadMessage}</p> : null}
+        {loadError ? <p className="text-sm text-amber-700">{loadError}</p> : null}
       </div>
 
-      {/* Galería de Colecciones */}
-      <div className="grid grid-cols-5 gap-4">
-        {collections.map((collection) => (
-          <CategoryCard key={collection.id} category={collection} />
-        ))}
-      </div>
+      {collections.length === 0 ? (
+        <div className="rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-12 text-center text-neutral-600">
+          No hay colecciones para mostrar por ahora.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {collections.map((collection) => (
+            <CategoryCard key={collection.id} category={collection} />
+          ))}
+        </div>
+      )}
 
-      {/* Boton de Ver Más */}
       <div className="text-center">
-        <button className="btn-primary">Ver Todas las Colecciones</button>
+        <button className="btn-primary" type="button">
+          Ver Todas las Colecciones
+        </button>
       </div>
     </div>
   );
 };
+

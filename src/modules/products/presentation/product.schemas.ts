@@ -22,6 +22,11 @@ const booleanFromQuery = z
     return z.NEVER;
   });
 
+const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#([0-9A-Fa-f]{6})$/, "Expected hex color format #RRGGBB");
+
 export const productIdParamSchema = z.object({
   id: z.string().uuid(),
 });
@@ -39,6 +44,10 @@ export const productVariantIdParamSchema = z.object({
 });
 
 export const productImageIdParamSchema = z.object({
+  imageId: z.string().uuid(),
+});
+
+export const productVariantImageIdParamSchema = z.object({
   imageId: z.string().uuid(),
 });
 
@@ -132,7 +141,7 @@ export const createProductVariantSchema = z.object({
   talla: z.string().trim().max(40).optional(),
   tallaSecundaria: z.string().trim().max(40).optional(),
   color: z.string().trim().max(60).optional(),
-  colorCodigo: z.string().trim().max(20).optional(),
+  colorCodigo: hexColorSchema.optional(),
   stock: z.number().int().min(0).optional(),
   minStock: z.number().int().min(0).optional(),
   salePrice: z.number().min(0),
@@ -145,12 +154,29 @@ export const updateProductVariantSchema = z
     talla: z.union([z.string().trim().max(40), z.null()]).optional(),
     tallaSecundaria: z.union([z.string().trim().max(40), z.null()]).optional(),
     color: z.union([z.string().trim().max(60), z.null()]).optional(),
-    colorCodigo: z.union([z.string().trim().max(20), z.null()]).optional(),
+    colorCodigo: z.union([hexColorSchema, z.null()]).optional(),
     stock: z.number().int().min(0).optional(),
     minStock: z.number().int().min(0).optional(),
     salePrice: z.number().min(0).optional(),
     compareAtPrice: z.union([z.number().min(0), z.null()]).optional(),
     active: z.boolean().optional(),
+  })
+  .refine(
+    (data) => Object.values(data).some((value) => value !== undefined),
+    "At least one field is required"
+  );
+
+export const createProductVariantImageSchema = z.object({
+  url: z.string().url().max(500),
+  altText: z.string().trim().max(200).optional(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+export const updateProductVariantImageSchema = z
+  .object({
+    url: z.string().url().max(500).optional(),
+    altText: z.union([z.string().trim().max(200), z.null()]).optional(),
+    sortOrder: z.number().int().min(0).optional(),
   })
   .refine(
     (data) => Object.values(data).some((value) => value !== undefined),

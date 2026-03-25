@@ -89,14 +89,14 @@ Recomendacion operativa:
 
 Se agrego endpoint backend para obtener token de sesion de Izipay para checkout SDK:
 
-- `POST /api/payments/izipay/session-token`
+- `POST /api/payments/izipay/session-token` (checkout Izipay enfocado en Yape Code)
 
 Body:
 
 ```json
 {
 	"orderType": "sale",
-	"orderId": 123
+	"orderId": "<order_uuid>"
 }
 ```
 
@@ -106,9 +106,9 @@ Acceso:
 - Cliente solo puede solicitar token para ordenes propias.
 - Admin puede solicitar token para cualquier orden.
 
-Regla Yape Code:
+Regla Yape (metodo principal):
 
-- Monto maximo permitido por backend: `S/ 2000`.
+- Monto maximo permitido por backend para Yape Code: `S/ 2000`.
 
 Variables de entorno requeridas para integracion:
 
@@ -143,3 +143,4 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+

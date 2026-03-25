@@ -13,15 +13,26 @@ export type PaymentFormState = {
   amount: string;
   method: string;
   concept: string;
+  status: string;
+  provider: string;
+  approvalCode: string;
+  voucherUrl: string;
+  paidAt: string;
   notes: string;
   operationCode: string;
 };
 
 export type ComprobanteFormState = {
   type: string;
+  status: string;
   serie: string;
   numero: string;
+  subtotal: string;
+  impuesto: string;
   total: string;
+  issuedAt: string;
+  pdfUrl: string;
+  xmlUrl: string;
   notes: string;
 };
 
@@ -29,15 +40,26 @@ export const initialPaymentFormState: PaymentFormState = {
   amount: "",
   method: "EFECTIVO",
   concept: "ADELANTO",
+  status: "APROBADO",
+  provider: "",
+  approvalCode: "",
+  voucherUrl: "",
+  paidAt: "",
   notes: "",
   operationCode: "",
 };
 
 export const initialComprobanteFormState: ComprobanteFormState = {
   type: "BOLETA",
+  status: "EMITIDO",
   serie: "",
   numero: "",
+  subtotal: "",
+  impuesto: "",
   total: "",
+  issuedAt: "",
+  pdfUrl: "",
+  xmlUrl: "",
   notes: "",
 };
 
@@ -110,7 +132,8 @@ export function calculateCustomOrderPendingBalance(
 
 export function validatePaymentAmount(
   rawAmount: string,
-  pendingBalance: number
+  pendingBalance: number,
+  status: string
 ): string | null {
   const amount = parseFloat(rawAmount);
 
@@ -118,21 +141,52 @@ export function validatePaymentAmount(
     return "El monto debe ser un n\u00famero positivo";
   }
 
-  if (amount > pendingBalance + 0.01) {
+  if (status === "APROBADO" && amount > pendingBalance + 0.01) {
     return "El monto no puede exceder el saldo pendiente";
   }
 
   return null;
 }
 
-export function validateComprobanteTotal(rawTotal: string): string | null {
+export function validateComprobanteTotal(
+  rawTotal: string,
+  orderTotal: number
+): string | null {
   const total = parseFloat(rawTotal);
 
   if (Number.isNaN(total) || total <= 0) {
     return "El total debe ser un n\u00famero positivo";
   }
 
+  if (total > orderTotal + 0.01) {
+    return "El total del comprobante no puede exceder el total de la orden";
+  }
+
   return null;
+}
+
+function parseOptionalNumber(rawValue: string): number | undefined {
+  const normalized = rawValue.trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  const parsed = parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalDateToIso(rawValue: string): string | undefined {
+  const normalized = rawValue.trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed.toISOString();
 }
 
 export function getPaymentPayload(paymentForm: PaymentFormState) {
@@ -140,20 +194,29 @@ export function getPaymentPayload(paymentForm: PaymentFormState) {
     amount: parseFloat(paymentForm.amount),
     method: paymentForm.method,
     concept: paymentForm.concept,
+    status: paymentForm.status,
+    provider: paymentForm.provider.trim() || undefined,
     notes: paymentForm.notes.trim() || undefined,
     operationCode: paymentForm.operationCode.trim() || undefined,
-    status: "APROBADO",
+    approvalCode: paymentForm.approvalCode.trim() || undefined,
+    voucherUrl: paymentForm.voucherUrl.trim() || undefined,
+    paidAt: parseOptionalDateToIso(paymentForm.paidAt),
   };
 }
 
 export function getComprobantePayload(comprobanteForm: ComprobanteFormState) {
   return {
     type: comprobanteForm.type,
+    status: comprobanteForm.status,
     serie: comprobanteForm.serie.trim() || undefined,
     numero: comprobanteForm.numero.trim() || undefined,
     total: parseFloat(comprobanteForm.total),
+    subtotal: parseOptionalNumber(comprobanteForm.subtotal),
+    impuesto: parseOptionalNumber(comprobanteForm.impuesto),
+    issuedAt: parseOptionalDateToIso(comprobanteForm.issuedAt),
+    pdfUrl: comprobanteForm.pdfUrl.trim() || undefined,
+    xmlUrl: comprobanteForm.xmlUrl.trim() || undefined,
     notes: comprobanteForm.notes.trim() || undefined,
-    status: "EMITIDO",
   };
 }
 
@@ -166,8 +229,14 @@ export function shouldShowAdvanceWarning(
   totalPaid: number,
   orderTotal: number
 ): boolean {
+  const preConfectionStatuses = [
+    "PENDIENTE_RESERVA",
+    "RESERVA_CONFIRMADA",
+    "MEDIDAS_TOMADAS",
+  ];
+
   return (
-    status === "PENDIENTE_RESERVA" &&
+    preConfectionStatuses.includes(status) &&
     totalPaid < getCustomOrderRequiredAdvance(orderTotal)
   );
 }
@@ -188,13 +257,17 @@ async function parseErrorResponse(
   }
 
   const payload = (await response.json().catch(() => null)) as
-    | { error?: string }
+    | { error?: string | { message?: string } }
     | null;
-  return { ok: false, message: payload?.error ?? fallback };
+  const rawMessage =
+    typeof payload?.error === "string"
+      ? payload.error
+      : payload?.error?.message;
+  return { ok: false, message: rawMessage ?? fallback };
 }
 
 export async function submitCustomOrderPayment(
-  orderId: number,
+  orderId: string,
   paymentForm: PaymentFormState
 ): Promise<ApiResult> {
   try {
@@ -211,7 +284,7 @@ export async function submitCustomOrderPayment(
 }
 
 export async function submitCustomOrderComprobante(
-  orderId: number,
+  orderId: string,
   comprobanteForm: ComprobanteFormState
 ): Promise<ApiResult> {
   try {
@@ -228,7 +301,7 @@ export async function submitCustomOrderComprobante(
 }
 
 export async function patchCustomOrderStatusAction(
-  orderId: number,
+  orderId: string,
   action: string,
   note?: string
 ): Promise<ApiResult> {
@@ -246,7 +319,7 @@ export async function patchCustomOrderStatusAction(
 }
 
 export async function fetchCustomerMeasurementProfiles(
-  customerId: number
+  customerId: string
 ): Promise<{ ok: true; profiles: any[] } | { ok: false; message: string }> {
   try {
     const response = await fetch(`/api/customers/${customerId}/measurement-profiles`);
@@ -263,10 +336,10 @@ export async function fetchCustomerMeasurementProfiles(
 }
 
 export async function patchCustomOrderMeasurementLink(input: {
-  orderId: number;
-  partId: number;
-  profileId: number;
-  profileGarmentId: number;
+  orderId: string;
+  partId: string;
+  profileId: string;
+  profileGarmentId: string;
 }): Promise<ApiResult> {
   try {
     const response = await fetch(`/api/custom-orders/${input.orderId}`, {

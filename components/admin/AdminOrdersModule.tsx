@@ -19,6 +19,9 @@ import {
   getOtherOrdersTotal,
   orderSectionIconsBySlug,
 } from "@/components/admin/orders/admin-orders-overview";
+import AdminRentalOrdersSubroute from "@/components/admin/orders/admin-rental-orders-subroute";
+import AdminAlterationOrdersSubroute from "@/components/admin/orders/admin-alteration-orders-subroute";
+import AdminAlterationServicesSubroute from "@/components/admin/orders/admin-alteration-services-subroute";
 
 function statCard({
   title,
@@ -264,6 +267,18 @@ export async function AdminOrdersSubroute({ subroute }: { subroute: string }) {
         <AdminCustomOrderListLayout orders={orders as any} />
       </section>
     );
+  }
+
+  if (subroute === "rentas") {
+    return <AdminRentalOrdersSubroute />;
+  }
+
+  if (subroute === "alteraciones") {
+    return <AdminAlterationOrdersSubroute />;
+  }
+
+  if (subroute === "servicios") {
+    return <AdminAlterationServicesSubroute />;
   }
 
   return (

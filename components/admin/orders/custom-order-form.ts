@@ -3,14 +3,14 @@
 export type DraftWorkMode = "A_TODO_COSTO" | "SOLO_CONFECCION";
 
 export type Customer = {
-  id: number;
+  id: string;
   nombres: string;
   apellidos: string;
   dni: string | null;
 };
 
 export type Fabric = {
-  id: number;
+  id: string;
   code: string;
   nombre: string;
   color: string | null;
@@ -243,7 +243,7 @@ export function getProfileGarments(
   measurementProfileId: string
 ) {
   return (
-    customerProfiles.find((profile) => profile.id === Number(measurementProfileId))
+    customerProfiles.find((profile) => profile.id === measurementProfileId)
       ?.garments || []
   );
 }
@@ -253,7 +253,7 @@ export function buildCreateCustomOrderPayload(
   items: CustomOrderItemDraft[]
 ) {
   return {
-    customerId: Number(form.customerId),
+    customerId: form.customerId,
     firstPurchaseFlow: false,
     requestedDeliveryAt: form.requestedDeliveryAt
       ? new Date(form.requestedDeliveryAt).toISOString()
@@ -273,13 +273,10 @@ export function buildCreateCustomOrderPayload(
         garmentType: part.garmentType,
         label: part.label,
         workMode: part.workMode,
-        fabricId: part.fabricId ? Number(part.fabricId) : undefined,
-        measurementProfileId: part.measurementProfileId
-          ? Number(part.measurementProfileId)
-          : undefined,
-        measurementProfileGarmentId: part.measurementProfileGarmentId
-          ? Number(part.measurementProfileGarmentId)
-          : undefined,
+        fabricId: part.fabricId || undefined,
+        measurementProfileId: part.measurementProfileId || undefined,
+        measurementProfileGarmentId:
+          part.measurementProfileGarmentId || undefined,
         unitPrice: Number(part.unitPrice) || undefined,
         notes: part.notes.trim() || undefined,
         selections: [],
@@ -311,7 +308,7 @@ export function buildUpdateCustomOrderPayload(
         garmentType: part.garmentType,
         label: part.label,
         workMode: part.workMode,
-        fabricId: part.fabricId ? Number(part.fabricId) : undefined,
+        fabricId: part.fabricId || undefined,
         unitPrice: part.unitPrice ? Number(part.unitPrice) : undefined,
         notes: part.notes.trim() || undefined,
         selections: [],
@@ -334,7 +331,7 @@ export function resolveCreateErrorMessage(responsePayload: any): string {
   return "Error al crear orden";
 }
 
-export async function fetchCustomerProfiles(customerId: number): Promise<any[]> {
+export async function fetchCustomerProfiles(customerId: string): Promise<any[]> {
   const response = await fetch(`/api/customers/${customerId}/measurement-profiles`);
 
   if (!response.ok) {

@@ -37,6 +37,16 @@ export type PublicProductImage = {
   sortOrder: number;
 };
 
+export type PublicProductVariantImage = {
+  id: string;
+  variantId: string;
+  url: string;
+  altText: string | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type PublicProductVariant = {
   id: string;
   sku: string;
@@ -49,6 +59,7 @@ export type PublicProductVariant = {
   salePrice: Prisma.Decimal;
   compareAtPrice: Prisma.Decimal | null;
   active: boolean;
+  images: PublicProductVariantImage[];
 };
 
 export type PublicProduct = {
@@ -130,6 +141,18 @@ export type CreateProductImageInput = {
 };
 
 export type UpdateProductImageInput = {
+  url?: string;
+  altText?: string | null;
+  sortOrder?: number;
+};
+
+export type CreateProductVariantImageInput = {
+  url: string;
+  altText?: string;
+  sortOrder?: number;
+};
+
+export type UpdateProductVariantImageInput = {
   url?: string;
   altText?: string | null;
   sortOrder?: number;

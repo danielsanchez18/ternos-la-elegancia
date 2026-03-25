@@ -26,6 +26,49 @@ import {
   validatePaymentAmount,
 } from "@/components/admin/orders/custom-order-detail";
 
+const paymentStatusLabel: Record<string, string> = {
+  PENDIENTE: "Pendiente",
+  APROBADO: "Aprobado",
+  OBSERVADO: "Observado",
+  ANULADO: "Anulado",
+  DEVUELTO: "Devuelto",
+};
+
+const paymentStatusTone: Record<string, string> = {
+  PENDIENTE: "bg-amber-500/10 text-amber-400",
+  APROBADO: "bg-emerald-500/10 text-emerald-400",
+  OBSERVADO: "bg-orange-500/10 text-orange-400",
+  ANULADO: "bg-rose-500/10 text-rose-400",
+  DEVUELTO: "bg-stone-500/10 text-stone-300",
+};
+
+const paymentMethodLabel: Record<string, string> = {
+  EFECTIVO: "Efectivo",
+  YAPE: "Yape",
+  PLIN: "Plin",
+  TRANSFERENCIA: "Transferencia",
+  TARJETA: "Tarjeta",
+  MIXTO: "Mixto",
+  OTRO: "Otro",
+};
+
+const comprobanteStatusLabel: Record<string, string> = {
+  BORRADOR: "Borrador",
+  EMITIDO: "Emitido",
+  ANULADO: "Anulado",
+};
+
+const comprobanteStatusTone: Record<string, string> = {
+  BORRADOR: "bg-amber-500/10 text-amber-400",
+  EMITIDO: "bg-emerald-500/10 text-emerald-400",
+  ANULADO: "bg-rose-500/10 text-rose-400",
+};
+
+function toDateTimeLocalValue(value: Date = new Date()): string {
+  const tzOffsetMs = value.getTimezoneOffset() * 60_000;
+  return new Date(value.getTime() - tzOffsetMs).toISOString().slice(0, 16);
+}
+
 export default function AdminCustomOrderDetailView({ order }: { order: any }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -45,11 +88,46 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
 
   const totalPaid = calculateCustomOrderTotalPaid(order.payments);
   const pendingBalance = calculateCustomOrderPendingBalance(order.total, totalPaid);
+  const advanceRequired = getCustomOrderRequiredAdvance(order.total);
+  const advanceProgress = Math.min(
+    100,
+    Math.max(0, (totalPaid / Math.max(advanceRequired, 1)) * 100)
+  );
+
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentForm((prev) => {
+      const suggestedProvider =
+        method === "YAPE"
+          ? "YAPE"
+          : method === "PLIN"
+            ? "PLIN"
+            : method === "TRANSFERENCIA"
+              ? "BANCO"
+              : "";
+
+      const previousProvider = prev.provider;
+      const shouldClearSuggestedProvider =
+        previousProvider === "YAPE" ||
+        previousProvider === "PLIN" ||
+        previousProvider === "BANCO";
+
+      return {
+        ...prev,
+        method,
+        provider: suggestedProvider || (shouldClearSuggestedProvider ? "" : previousProvider),
+      };
+    });
+  };
+
   const handleRegisterPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    const validationError = validatePaymentAmount(paymentForm.amount, pendingBalance);
+    const validationError = validatePaymentAmount(
+      paymentForm.amount,
+      pendingBalance,
+      paymentForm.status
+    );
     if (validationError) {
       setErrorMsg(validationError);
       return;
@@ -72,7 +150,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
     e.preventDefault();
     setErrorMsg("");
 
-    const validationError = validateComprobanteTotal(comprobanteForm.total);
+    const validationError = validateComprobanteTotal(comprobanteForm.total, order.total);
     if (validationError) {
       setErrorMsg(validationError);
       return;
@@ -116,7 +194,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
     setLoadingProfiles(false);
   };
 
-  const handleLinkMeasurement = async (profileId: number, profileGarmentId: number) => {
+  const handleLinkMeasurement = async (profileId: string, profileGarmentId: string) => {
     if (!selectedPartForMeasurement) return;
 
     setErrorMsg("");
@@ -391,7 +469,14 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               </div>
               <button
                 className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition disabled:opacity-50"
-                onClick={() => setShowPaymentModal(true)}
+                onClick={() => {
+                  setErrorMsg("");
+                  setPaymentForm((prev) => ({
+                    ...prev,
+                    paidAt: prev.paidAt || toDateTimeLocalValue(),
+                  }));
+                  setShowPaymentModal(true);
+                }}
                 disabled={pendingBalance <= 0}
               >
                 <PlusCircle className="size-3.5" />
@@ -415,6 +500,20 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                 <div className="col-span-2 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-center">
                   <p className="text-[10px] uppercase text-stone-500 tracking-wider mb-1">Total Orden</p>
                   <p className="text-xl font-bold text-white">S/ {order.total.toFixed(2)}</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-blue-500/10 bg-blue-500/5 p-4">
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="text-blue-300">Cobertura de adelanto m\u00ednimo (50%)</span>
+                    <span className="font-semibold text-blue-300">
+                      {Math.min(totalPaid, advanceRequired).toFixed(2)} / {advanceRequired.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-blue-400 transition-all"
+                      style={{ width: `${advanceProgress}%` }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -448,15 +547,32 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                             <Receipt className="size-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-white">Abono {payment.metodoPago || ""}</p>
-                            <p className="text-[10px] text-stone-500 italic">{formatLongDate(payment.createdAt)}</p>
+                            <p className="text-sm font-medium text-white">
+                              {paymentMethodLabel[payment.method] ?? payment.method}
+                              <span className="ml-2 text-xs font-normal text-stone-400">
+                                {payment.concept?.replace(/_/g, " ") ?? "PAGO"}
+                              </span>
+                            </p>
+                            <p className="text-[10px] text-stone-500 italic">
+                              {formatLongDate(payment.paidAt || payment.createdAt)}
+                            </p>
+                            {(payment.operationCode || payment.approvalCode) && (
+                              <p className="text-[10px] text-stone-500">
+                                {payment.operationCode ? `Op: ${payment.operationCode}` : ""}
+                                {payment.operationCode && payment.approvalCode ? " · " : ""}
+                                {payment.approvalCode ? `Aprob: ${payment.approvalCode}` : ""}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-white">S/ {payment.amount.toFixed(2)}</p>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${payment.status === 'APROBADO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-500'}`}>
-                            {payment.status}
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${paymentStatusTone[payment.status] ?? "bg-stone-500/10 text-stone-300"}`}>
+                            {paymentStatusLabel[payment.status] ?? payment.status}
                           </span>
+                          {payment.provider && (
+                            <p className="mt-1 text-[10px] text-stone-500">Proveedor: {payment.provider}</p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -469,7 +585,14 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               <p className="text-xs text-stone-500">Los pagos aprobados descuentan del saldo total.</p>
               <button
                 className="text-xs text-stone-400 hover:text-white transition flex items-center gap-1"
-                onClick={() => setShowComprobanteModal(true)}
+                onClick={() => {
+                  setErrorMsg("");
+                  setComprobanteForm((prev) => ({
+                    ...prev,
+                    issuedAt: prev.issuedAt || toDateTimeLocalValue(),
+                  }));
+                  setShowComprobanteModal(true);
+                }}
               >
                 <Receipt className="size-3" />
                 Ver Comprobantes ({order.comprobantes?.length || 0})
@@ -614,16 +737,16 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                       required
                       value={paymentForm.amount}
                       onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                      placeholder={`Máx S/ ${pendingBalance.toFixed(2)}`}
+                      placeholder={`Max S/ ${pendingBalance.toFixed(2)}`}
                       className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-stone-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition"
                     />
                   </div>
                   <div className="relative space-y-2">
-                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Método</label>
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Metodo</label>
                     <div className="relative">
                       <select
                         value={paymentForm.method}
-                        onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
+                        onChange={(e) => handlePaymentMethodChange(e.target.value)}
                         style={{ colorScheme: "dark" }}
                         className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition appearance-none"
                       >
@@ -632,6 +755,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                         <option value="PLIN" className="bg-stone-900">Plin</option>
                         <option value="TRANSFERENCIA" className="bg-stone-900">Transferencia</option>
                         <option value="TARJETA" className="bg-stone-900">Tarjeta</option>
+                        <option value="MIXTO" className="bg-stone-900">Mixto</option>
                         <option value="OTRO" className="bg-stone-900">Otro</option>
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-stone-500 pointer-events-none" />
@@ -651,14 +775,66 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                       >
                         <option value="ADELANTO" className="bg-stone-900">Adelanto</option>
                         <option value="SALDO" className="bg-stone-900">Saldo</option>
-                        <option value="PAGO_TOTAL" className="bg-stone-900">Pago Total</option>
+                        <option value="PAGO_TOTAL" className="bg-stone-900">Pago total</option>
+                        <option value="RESERVA_CITA" className="bg-stone-900">Reserva cita</option>
+                        <option value="OTRO" className="bg-stone-900">Otro</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-stone-500 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="relative space-y-2">
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Estado</label>
+                    <div className="relative">
+                      <select
+                        value={paymentForm.status}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, status: e.target.value })}
+                        style={{ colorScheme: "dark" }}
+                        className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition appearance-none"
+                      >
+                        <option value="APROBADO" className="bg-stone-900">Aprobado</option>
+                        <option value="PENDIENTE" className="bg-stone-900">Pendiente</option>
+                        <option value="OBSERVADO" className="bg-stone-900">Observado</option>
+                        <option value="ANULADO" className="bg-stone-900">Anulado</option>
+                        <option value="DEVUELTO" className="bg-stone-900">Devuelto</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-stone-500 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative space-y-2">
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Proveedor</label>
+                    <div className="relative">
+                      <select
+                        value={paymentForm.provider}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, provider: e.target.value })}
+                        style={{ colorScheme: "dark" }}
+                        className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition appearance-none"
+                      >
+                        <option value="" className="bg-stone-900">Sin proveedor</option>
+                        <option value="YAPE" className="bg-stone-900">Yape</option>
+                        <option value="PLIN" className="bg-stone-900">Plin</option>
+                        <option value="BANCO" className="bg-stone-900">Banco</option>
                         <option value="OTRO" className="bg-stone-900">Otro</option>
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-stone-500 pointer-events-none" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Código Operación</label>
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Fecha y hora de pago</label>
+                    <input
+                      type="datetime-local"
+                      value={paymentForm.paidAt}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, paidAt: e.target.value })}
+                      className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-stone-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Codigo operacion</label>
                     <input
                       type="text"
                       value={paymentForm.operationCode}
@@ -667,10 +843,37 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                       className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-stone-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Codigo aprobacion</label>
+                    <input
+                      type="text"
+                      value={paymentForm.approvalCode}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, approvalCode: e.target.value })}
+                      placeholder="Ej. APR-001"
+                      className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-stone-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Notas Internas</label>
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">URL de voucher</label>
+                  <input
+                    type="url"
+                    value={paymentForm.voucherUrl}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, voucherUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-stone-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition"
+                  />
+                </div>
+
+                {paymentForm.status !== "APROBADO" && (
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+                    Este pago no reduce saldo ni habilita transiciones hasta quedar en estado aprobado.
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider ml-1">Notas internas</label>
                   <textarea
                     rows={2}
                     value={paymentForm.notes}
@@ -694,7 +897,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                     className="flex-[2] rounded-2xl bg-emerald-500 py-4 text-sm font-bold text-emerald-950 hover:bg-emerald-400 transition disabled:opacity-50"
                     disabled={isPending}
                   >
-                    {isPending ? "Registrando..." : "Confirmar Pago"}
+                    {isPending ? "Registrando..." : "Registrar pago"}
                   </button>
                 </div>
               </form>
@@ -743,12 +946,47 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                         <div key={c.id} className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-2">
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="text-xs font-bold text-white">{c.type}</p>
-                              <p className="text-[10px] text-stone-500">{c.serie}-{c.numero}</p>
+                              <p className="text-xs font-bold text-white">
+                                {c.type?.replace(/_/g, " ")}
+                              </p>
+                              <p className="text-[10px] text-stone-500">
+                                {(c.serie || "-")}-{(c.numero || "-")}
+                              </p>
                             </div>
-                            <p className="text-sm font-bold text-emerald-400">S/ {c.total.toFixed(2)}</p>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-emerald-400">S/ {c.total.toFixed(2)}</p>
+                              <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] ${comprobanteStatusTone[c.status] ?? "bg-stone-500/10 text-stone-300"}`}>
+                                {comprobanteStatusLabel[c.status] ?? c.status}
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-stone-600">{formatLongDate(c.createdAt)}</p>
+                          <p className="text-[10px] text-stone-600">
+                            {formatLongDate(c.issuedAt || c.createdAt)}
+                          </p>
+                          {(c.pdfUrl || c.xmlUrl) && (
+                            <div className="flex gap-3 text-[10px]">
+                              {c.pdfUrl && (
+                                <a
+                                  href={c.pdfUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-blue-300 hover:text-blue-200"
+                                >
+                                  PDF
+                                </a>
+                              )}
+                              {c.xmlUrl && (
+                                <a
+                                  href={c.xmlUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-cyan-300 hover:text-cyan-200"
+                                >
+                                  XML
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -760,82 +998,163 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                   <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-6">Nuevo Comprobante</h4>
                   <form onSubmit={handleRegisterComprobante} className="space-y-4">
                     {errorMsg && (
-                      <div className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 mb-4">
+                      <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
                         <AlertTriangle className="size-4 flex-shrink-0" />
                         {errorMsg}
                       </div>
                     )}
 
-                    <div className="relative space-y-2">
-                      <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider ml-1">Tipo</label>
-                      <div className="relative">
-                        <select
-                          value={comprobanteForm.type}
-                          onChange={(e) => setComprobanteForm({ ...comprobanteForm, type: e.target.value })}
-                          style={{ colorScheme: "dark" }}
-                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition appearance-none"
-                        >
-                          <option value="BOLETA" className="bg-stone-900">Boleta</option>
-                          <option value="FACTURA" className="bg-stone-900">Factura</option>
-                          <option value="TICKET" className="bg-stone-900">Ticket</option>
-                          <option value="OTRO" className="bg-stone-900">Otro</option>
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-stone-500 pointer-events-none" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Tipo</label>
+                        <div className="relative">
+                          <select
+                            value={comprobanteForm.type}
+                            onChange={(e) => setComprobanteForm({ ...comprobanteForm, type: e.target.value })}
+                            style={{ colorScheme: "dark" }}
+                            className="w-full appearance-none rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                          >
+                            <option value="BOLETA" className="bg-stone-900">Boleta</option>
+                            <option value="FACTURA" className="bg-stone-900">Factura</option>
+                            <option value="NOTA_CREDITO" className="bg-stone-900">Nota de credito</option>
+                            <option value="NOTA_DEBITO" className="bg-stone-900">Nota de debito</option>
+                            <option value="TICKET" className="bg-stone-900">Ticket</option>
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+                        </div>
+                      </div>
+
+                      <div className="relative space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Estado</label>
+                        <div className="relative">
+                          <select
+                            value={comprobanteForm.status}
+                            onChange={(e) => setComprobanteForm({ ...comprobanteForm, status: e.target.value })}
+                            style={{ colorScheme: "dark" }}
+                            className="w-full appearance-none rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                          >
+                            <option value="BORRADOR" className="bg-stone-900">Borrador</option>
+                            <option value="EMITIDO" className="bg-stone-900">Emitido</option>
+                            <option value="ANULADO" className="bg-stone-900">Anulado</option>
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+                        </div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider ml-1">Serie</label>
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Serie</label>
                         <input
                           type="text"
                           value={comprobanteForm.serie}
                           onChange={(e) => setComprobanteForm({ ...comprobanteForm, serie: e.target.value })}
                           placeholder="F001"
-                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider ml-1">Número</label>
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Numero</label>
                         <input
                           type="text"
                           value={comprobanteForm.numero}
                           onChange={(e) => setComprobanteForm({ ...comprobanteForm, numero: e.target.value })}
                           placeholder="000123"
-                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Subtotal</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={comprobanteForm.subtotal}
+                          onChange={(e) => setComprobanteForm({ ...comprobanteForm, subtotal: e.target.value })}
+                          placeholder="0.00"
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Impuesto</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={comprobanteForm.impuesto}
+                          onChange={(e) => setComprobanteForm({ ...comprobanteForm, impuesto: e.target.value })}
+                          placeholder="0.00"
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Total (S/)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={comprobanteForm.total}
+                          onChange={(e) => setComprobanteForm({ ...comprobanteForm, total: e.target.value })}
+                          placeholder="0.00"
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider ml-1">Total (S/)</label>
+                      <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Fecha de emision</label>
                       <input
-                        type="number"
-                        step="0.01"
-                        required
-                        value={comprobanteForm.total}
-                        onChange={(e) => setComprobanteForm({ ...comprobanteForm, total: e.target.value })}
-                        placeholder="Sumatoria de pagos"
-                        className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                        type="datetime-local"
+                        value={comprobanteForm.issuedAt}
+                        onChange={(e) => setComprobanteForm({ ...comprobanteForm, issuedAt: e.target.value })}
+                        className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                       />
                     </div>
 
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">URL PDF</label>
+                        <input
+                          type="url"
+                          value={comprobanteForm.pdfUrl}
+                          onChange={(e) => setComprobanteForm({ ...comprobanteForm, pdfUrl: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">URL XML</label>
+                        <input
+                          type="url"
+                          value={comprobanteForm.xmlUrl}
+                          onChange={(e) => setComprobanteForm({ ...comprobanteForm, xmlUrl: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider ml-1">Notas</label>
+                      <label className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">Notas</label>
                       <textarea
                         rows={2}
                         value={comprobanteForm.notes}
                         onChange={(e) => setComprobanteForm({ ...comprobanteForm, notes: e.target.value })}
-                        className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition resize-none"
+                        className="w-full resize-none rounded-xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full rounded-xl bg-blue-500 py-3 text-sm font-bold text-white hover:bg-blue-400 transition disabled:opacity-50 mt-2"
+                      className="mt-2 w-full rounded-xl bg-blue-500 py-3 text-sm font-bold text-white transition hover:bg-blue-400 disabled:opacity-50"
                       disabled={isPending}
                     >
-                      {isPending ? "Registrando..." : "Registrar Comprobante"}
+                      {isPending ? "Registrando..." : "Registrar comprobante"}
                     </button>
                   </form>
                 </div>

@@ -42,7 +42,14 @@ export class CustomOrderStatusTransitionError extends Error {
 
 export class CustomOrderAdvancePaymentRequiredError extends Error {
   constructor() {
-    super("A 50% approved advance payment is required before starting confección");
+    super("A 50% approved advance payment is required before starting confeccion");
     this.name = "CustomOrderAdvancePaymentRequiredError";
+  }
+}
+
+export class CustomOrderFabricReservationError extends Error {
+  constructor(message = "Could not reserve required fabric stock for this order") {
+    super(message);
+    this.name = "CustomOrderFabricReservationError";
   }
 }

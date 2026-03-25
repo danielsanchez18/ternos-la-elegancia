@@ -422,6 +422,8 @@ export class CustomOrderRepository {
     subtotal: Prisma.Decimal;
     discountTotal: Prisma.Decimal;
     total: Prisma.Decimal;
+    requiresMeasurement: boolean;
+    measurementRequiredUntil?: Date | null;
     preparedItems: PreparedCustomOrderItem[];
   }): Promise<PublicCustomOrder> {
     return prisma.$transaction(async (tx) => {
@@ -439,6 +441,8 @@ export class CustomOrderRepository {
           subtotal: input.subtotal,
           discountTotal: input.discountTotal,
           total: input.total,
+          requiresMeasurement: input.requiresMeasurement,
+          measurementRequiredUntil: input.measurementRequiredUntil,
           items: {
             create: input.preparedItems.map((item) => ({
               productId: item.productId,

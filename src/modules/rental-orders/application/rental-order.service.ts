@@ -69,6 +69,16 @@ export class RentalOrderService {
       throw new RentalOrderValidationError("dueBackAt must be after pickupAt");
     }
 
+    const seenUnitIds = new Set<string>();
+    for (const item of input.items) {
+      if (seenUnitIds.has(item.rentalUnitId)) {
+        throw new RentalOrderValidationError(
+          "rentalUnitId cannot be duplicated in the same rental order"
+        );
+      }
+      seenUnitIds.add(item.rentalUnitId);
+    }
+
     const preparedItems = [] as Array<{
       rentalUnitId: string;
       productId?: string;
@@ -76,6 +86,7 @@ export class RentalOrderService {
       tierAtRental: "ESTRENO" | "NORMAL";
       unitPrice: Prisma.Decimal;
       notes?: string;
+      firstRentedAt: Date | null;
     }>;
 
     for (const item of input.items) {
@@ -112,6 +123,7 @@ export class RentalOrderService {
             ? new Prisma.Decimal(item.unitPrice)
             : defaultPrice,
         notes: item.notes,
+        firstRentedAt: unit.firstRentedAt,
       });
     }
 

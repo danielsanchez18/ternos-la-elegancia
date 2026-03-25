@@ -6,6 +6,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { RentalOrderUnitUnavailableError } from "@/src/modules/rental-orders/domain/rental-order.errors";
 import {
   CreateRentalOrderInput,
   ListRentalOrdersFilters,
@@ -179,9 +180,12 @@ export class RentalOrderRepository {
       tierAtRental: "ESTRENO" | "NORMAL";
       unitPrice: Prisma.Decimal;
       notes?: string;
+      firstRentedAt: Date | null;
     }>;
   }): Promise<PublicRentalOrder> {
     return prisma.$transaction(async (tx) => {
+      const rentedAt = new Date();
+
       const rentalOrder = await tx.rentalOrder.create({
         data: {
           customerId: input.payload.customerId,
@@ -214,13 +218,20 @@ export class RentalOrderRepository {
       });
 
       for (const item of input.preparedItems) {
-        await tx.rentalUnit.update({
-          where: { id: item.rentalUnitId },
+        const lockResult = await tx.rentalUnit.updateMany({
+          where: {
+            id: item.rentalUnitId,
+            status: RentalUnitStatus.DISPONIBLE,
+          },
           data: {
             status: RentalUnitStatus.ALQUILADO,
-            firstRentedAt: new Date(),
+            firstRentedAt: item.firstRentedAt ?? rentedAt,
           },
         });
+
+        if (lockResult.count !== 1) {
+          throw new RentalOrderUnitUnavailableError(item.rentalUnitId);
+        }
 
         await tx.rentalUnitMovement.create({
           data: {

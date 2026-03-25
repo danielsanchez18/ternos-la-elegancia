@@ -1,5 +1,5 @@
 export type AdminCustomOrderActionData = {
-  id: number;
+  id: string;
   status: string;
 };
 
@@ -49,7 +49,7 @@ export function getCustomOrderTransition(
 }
 
 export async function patchCustomOrderAction(
-  orderId: number,
+  orderId: string,
   action: string
 ): Promise<{ ok: true } | { ok: false; errorMessage: string }> {
   try {

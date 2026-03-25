@@ -4,12 +4,17 @@ import type { ComponentProps } from "react";
 import AdminFabricListLayout from "@/components/admin/AdminFabricListLayout";
 import { statCard } from "@/components/admin/inventory/inventory-ui";
 import { getAdminFabricsListData } from "@/lib/admin-inventory";
+import AdminRentalUnitsSubroute from "@/components/admin/inventory/admin-rental-units-subroute";
 
 export async function AdminInventorySubroute({
   subroute,
 }: {
   subroute: string;
 }) {
+  if (subroute === "unidades-renta") {
+    return <AdminRentalUnitsSubroute />;
+  }
+
   if (subroute === "telas") {
     const fabrics = await getAdminFabricsListData();
     type FabricListLayoutProps = ComponentProps<typeof AdminFabricListLayout>;

@@ -24,6 +24,7 @@ import {
   CustomOrderCustomerNotFoundError,
   CustomOrderCustomizationNotFoundError,
   CustomOrderFabricNotFoundError,
+  CustomOrderFabricReservationError,
   CustomOrderMeasurementNotValidError,
   CustomOrderNotFoundError,
   CustomOrderStatusTransitionError,
@@ -226,7 +227,7 @@ export class CustomOrderService {
       throw new CustomOrderStatusTransitionError();
     }
 
-    const { preparedItems } = await this.prepareItems(
+    const { preparedItems, requiresMeasurement } = await this.prepareItems(
       existing.customerId,
       input.items ?? [],
       existing.firstPurchaseFlow
@@ -245,6 +246,15 @@ export class CustomOrderService {
     );
     const total = subtotal.sub(discountTotal);
 
+    const nextRequiresMeasurement =
+      input.items !== undefined ? requiresMeasurement : existing.requiresMeasurement;
+    const nextMeasurementRequiredUntil =
+      input.items !== undefined
+        ? nextRequiresMeasurement
+          ? addDays(new Date(), 7)
+          : null
+        : existing.measurementRequiredUntil;
+
     return this.customOrderRepository.update({
       id,
       notes: input.notes !== undefined ? input.notes : existing.notes,
@@ -261,6 +271,8 @@ export class CustomOrderService {
       subtotal,
       discountTotal,
       total,
+      requiresMeasurement: nextRequiresMeasurement,
+      measurementRequiredUntil: nextMeasurementRequiredUntil,
       preparedItems: nextPreparedItems,
     });
   }
@@ -493,7 +505,9 @@ export class CustomOrderService {
 
     if (input.action === "LINK_MEASUREMENT") {
       if (!input.partId || !input.profileId || !input.profileGarmentId) {
-        throw new Error("Faltan datos para vincular las medidas");
+        throw new CustomOrderMeasurementNotValidError(
+          "Missing required data to link measurement profile"
+        );
       }
 
       const profileGarment = await this.customOrderRepository.getMeasurementProfileGarment(
@@ -502,7 +516,9 @@ export class CustomOrderService {
       const part = order.items.flatMap((item) => item.parts).find((value) => value.id === input.partId);
 
       if (!profileGarment || !part || profileGarment.garmentType !== part.garmentType) {
-        throw new Error("El tipo de prenda de las medidas no coincide con la prenda del pedido");
+        throw new CustomOrderMeasurementNotValidError(
+          "Measurement garment type does not match the selected order part"
+        );
       }
 
       return this.customOrderRepository.linkMeasurementToPart({
@@ -514,6 +530,12 @@ export class CustomOrderService {
     }
 
     if (input.action === "START_CONFECTION") {
+      if (order.requiresMeasurement) {
+        throw new CustomOrderMeasurementNotValidError(
+          "Order still requires measurements before starting confeccion"
+        );
+      }
+
       const approvedPaid = await this.customOrderRepository.getApprovedPaymentsTotal(id);
       const requiredAdvance = order.total.mul(new Prisma.Decimal(0.5));
 
@@ -566,11 +588,18 @@ export class CustomOrderService {
               },
               new Prisma.Decimal(consumption).neg()
             );
-          } catch (error) {
-            console.error(
-              `Error al reservar tela ${part.fabricId} para orden ${order.id}:`,
-              error
-            );
+          } catch (error: unknown) {
+            if (error instanceof Error && error.message === "FABRIC_STOCK_BELOW_ZERO") {
+              throw new CustomOrderFabricReservationError(
+                `Insufficient fabric stock for part "${part.label}" in order ${order.code}`
+              );
+            }
+
+            if (error instanceof Error && error.message === "FABRIC_NOT_FOUND_IN_TX") {
+              throw new CustomOrderFabricNotFoundError();
+            }
+
+            throw new CustomOrderFabricReservationError();
           }
         }
       }

@@ -6,15 +6,18 @@ import {
   CreateProductImageInput,
   CreateProductInput,
   CreateProductVariantInput,
+  CreateProductVariantImageInput,
   ListProductsFilters,
   PublicBrand,
   PublicProductImage,
   PublicProduct,
   PublicProductVariant,
+  PublicProductVariantImage,
   UpdateBrandInput,
   UpdateProductImageInput,
   UpdateProductInput,
   UpdateProductVariantInput,
+  UpdateProductVariantImageInput,
 } from "@/src/modules/products/domain/product.types";
 
 const publicBrandSelect = {
@@ -24,6 +27,16 @@ const publicBrandSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.BrandSelect;
+
+const publicProductVariantImageSelect = {
+  id: true,
+  variantId: true,
+  url: true,
+  altText: true,
+  sortOrder: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProductVariantImageSelect;
 
 const publicProductSelect = {
   id: true,
@@ -73,6 +86,10 @@ const publicProductSelect = {
       salePrice: true,
       compareAtPrice: true,
       active: true,
+      images: {
+        select: publicProductVariantImageSelect,
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -101,6 +118,10 @@ const publicProductVariantSelect = {
   salePrice: true,
   compareAtPrice: true,
   active: true,
+  images: {
+    select: publicProductVariantImageSelect,
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+  },
 } satisfies Prisma.ProductVariantSelect;
 
 export class ProductRepository {
@@ -288,6 +309,13 @@ export class ProductRepository {
     });
   }
 
+  async findProductVariantById(variantId: string): Promise<PublicProductVariant | null> {
+    return prisma.productVariant.findUnique({
+      where: { id: variantId },
+      select: publicProductVariantSelect,
+    });
+  }
+
   async createProductVariant(
     productId: string,
     input: CreateProductVariantInput
@@ -342,5 +370,56 @@ export class ProductRepository {
 
   async deactivateProductVariantById(variantId: string): Promise<PublicProductVariant> {
     return this.updateProductVariantById(variantId, { active: false });
+  }
+
+  async listProductVariantImages(variantId: string): Promise<PublicProductVariantImage[]> {
+    return prisma.productVariantImage.findMany({
+      where: { variantId },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+      select: publicProductVariantImageSelect,
+    });
+  }
+
+  async findProductVariantImageById(
+    imageId: string
+  ): Promise<PublicProductVariantImage | null> {
+    return prisma.productVariantImage.findUnique({
+      where: { id: imageId },
+      select: publicProductVariantImageSelect,
+    });
+  }
+
+  async createProductVariantImage(
+    variantId: string,
+    input: CreateProductVariantImageInput
+  ): Promise<PublicProductVariantImage> {
+    return prisma.productVariantImage.create({
+      data: {
+        variantId,
+        url: input.url,
+        altText: input.altText,
+        sortOrder: input.sortOrder,
+      },
+      select: publicProductVariantImageSelect,
+    });
+  }
+
+  async updateProductVariantImageById(
+    imageId: string,
+    input: UpdateProductVariantImageInput
+  ): Promise<PublicProductVariantImage> {
+    return prisma.productVariantImage.update({
+      where: { id: imageId },
+      data: {
+        url: input.url,
+        altText: input.altText,
+        sortOrder: input.sortOrder,
+      },
+      select: publicProductVariantImageSelect,
+    });
+  }
+
+  async deleteProductVariantImageById(imageId: string): Promise<void> {
+    await prisma.productVariantImage.delete({ where: { id: imageId } });
   }
 }
