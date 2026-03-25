@@ -7,6 +7,7 @@ export type SessionAccess = {
   session: AuthSession;
   isAdmin: boolean;
   isCustomer: boolean;
+  customerId: string | null;
   redirectTo: "/ingresa" | "/profile" | "/admin";
 };
 
@@ -22,6 +23,7 @@ export async function getSessionAccess(
       session: null,
       isAdmin: false,
       isCustomer: false,
+      customerId: null,
       redirectTo: "/ingresa",
     };
   }
@@ -36,6 +38,7 @@ export async function getSessionAccess(
       },
       customer: {
         select: {
+          id: true,
           isActive: true,
         },
       },
@@ -44,11 +47,14 @@ export async function getSessionAccess(
 
   const isAdmin = Boolean(memberships?.adminProfile?.isActive);
   const isCustomer = Boolean(memberships?.customer?.isActive);
+  const customerId = memberships?.customer?.id ?? null;
 
   return {
     session,
     isAdmin,
     isCustomer,
+    customerId,
     redirectTo: isAdmin ? "/admin" : "/profile",
   };
 }
+

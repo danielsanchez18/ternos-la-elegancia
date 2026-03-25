@@ -15,9 +15,14 @@ import {
 } from "@/src/modules/rental-orders/presentation/rental-order.schemas";
 
 export async function GET(request: Request) {
-  const auth = await requireApiAuth(request, "admin");
+  const auth = await requireApiAuth(request, "authenticated");
   if (!auth.ok) {
     return auth.response;
+  }
+
+  const isAdmin = Boolean(auth.context.adminUserId);
+  if (!isAdmin && !auth.context.customerId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -48,7 +53,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const orders = await rentalOrderService.listRentalOrders(parsedQuery.data);
+  const orders = await rentalOrderService.listRentalOrders({
+    ...parsedQuery.data,
+    customerId: isAdmin ? parsedQuery.data.customerId : auth.context.customerId!,
+  });
   return NextResponse.json(orders);
 }
 

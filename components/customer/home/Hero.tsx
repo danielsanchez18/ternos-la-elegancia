@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Image1 from "@/assets/images/ternos-hero.jpg";
 
 export const Hero = () => {
@@ -27,8 +28,8 @@ export const Hero = () => {
                     </div>
 
                     <div className="flex items-center gap-x-4">
-                        <button className="bg-primary text-white text-lg border border-primary px-5 py-2.5 hover:bg-primary-hover">Explorar Colección</button>
-                        <button className="bg-transparent border border-white text-lg text-white px-5 py-2.5 hover:bg-white/10">Agendar Cita</button>
+                        <Link href="/colecciones" className="bg-primary text-white text-lg border border-primary px-5 py-2.5 hover:bg-primary-hover">Explorar Colección</Link>
+                        <Link href="/ingresa" className="bg-transparent border border-white text-lg text-white px-5 py-2.5 hover:bg-white/10">Agendar Cita</Link>
                     </div>
                 </div>
 

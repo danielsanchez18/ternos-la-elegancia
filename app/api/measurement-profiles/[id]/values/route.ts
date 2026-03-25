@@ -20,7 +20,7 @@ type RouteContext = {
 
 export async function GET(request: Request, { params }: RouteContext) {
   try {
-    const auth = await requireApiAuth(request, "admin");
+    const auth = await requireApiAuth(request, "authenticated");
     if (!auth.ok) {
       return auth.response;
     }
@@ -35,6 +35,20 @@ export async function GET(request: Request, { params }: RouteContext) {
         },
         { status: 400 }
       );
+    }
+
+    // Enforce authorization for customers
+    const isAdmin = Boolean(auth.context.adminUserId);
+    if (!isAdmin) {
+      if (!auth.context.customerId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      
+      // Verify the profile belongs to this customer
+      const profileInfo = await measurementService.getProfileById(parsedParams.data.id);
+      if (profileInfo.customerId !== auth.context.customerId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const { searchParams } = new URL(request.url);

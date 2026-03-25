@@ -15,9 +15,14 @@ import {
 } from "@/src/modules/appointments/presentation/appointment.schemas";
 
 export async function GET(request: Request) {
-  const auth = await requireApiAuth(request, "admin");
+  const auth = await requireApiAuth(request, "authenticated");
   if (!auth.ok) {
     return auth.response;
+  }
+
+  const isAdmin = Boolean(auth.context.adminUserId);
+  if (!isAdmin && !auth.context.customerId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -39,7 +44,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const appointments = await appointmentService.listAppointments(parsedQuery.data);
+  const appointments = await appointmentService.listAppointments({
+    ...parsedQuery.data,
+    customerId: isAdmin ? parsedQuery.data.customerId : auth.context.customerId!,
+  });
   return NextResponse.json(appointments);
 }
 

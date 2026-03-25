@@ -885,13 +885,46 @@ async function seedFabrics() {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Alteration Services                                                */
+/* ------------------------------------------------------------------ */
+
+const baseAlterationServices = [
+  { nombre: "Basta de pantalón", precioBase: 15.0 },
+  { nombre: "Ajuste de cintura", precioBase: 25.0 },
+  { nombre: "Ajuste de manga (saco)", precioBase: 30.0 },
+  { nombre: "Ajuste de espalda", precioBase: 35.0 },
+  { nombre: "Cambio de forro", precioBase: 50.0 },
+  { nombre: "Reparación de costura", precioBase: 10.0 },
+  { nombre: "Arreglo completo (terno)", precioBase: 80.0 },
+];
+
+async function seedAlterationServices() {
+  for (const service of baseAlterationServices) {
+    const existing = await prisma.alterationService.findFirst({
+      where: { nombre: service.nombre },
+    });
+
+    if (!existing) {
+      await prisma.alterationService.create({
+        data: {
+          nombre: service.nombre,
+          precioBase: service.precioBase,
+          activo: true,
+        },
+      });
+    }
+  }
+}
+
 async function main() {
   await seedMeasurementFields();
   await seedCustomizations();
   await seedBusinessHours();
   await seedFabrics();
+  await seedAlterationServices();
   console.log(
-    "Seed completed: MeasurementField, CustomizationDefinition, CustomizationOption, BusinessHour, Fabric"
+    "Seed completed: MeasurementField, CustomizationDefinition, CustomizationOption, BusinessHour, Fabric, AlterationService"
   );
 }
 
@@ -903,3 +936,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

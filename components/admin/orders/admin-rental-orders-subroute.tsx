@@ -177,6 +177,10 @@ export default function AdminRentalOrdersSubroute() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [returnOrderId, setReturnOrderId] = useState<string | null>(null);
+  const [returnHasDamage, setReturnHasDamage] = useState(false);
+  const [returnNotes, setReturnNotes] = useState("");
+
   const [customerId, setCustomerId] = useState("");
   const [dueBackAt, setDueBackAt] = useState(buildDefaultDueBackAt);
   const [notes, setNotes] = useState("");
@@ -459,6 +463,13 @@ export default function AdminRentalOrdersSubroute() {
   };
 
   const handleOrderAction = async (orderId: string, action: string) => {
+    if (action === "MARK_RETURNED") {
+      setReturnOrderId(orderId);
+      setReturnHasDamage(false);
+      setReturnNotes("");
+      return;
+    }
+
     setActiveOrderId(orderId);
     setFeedback(null);
     setError(null);
@@ -468,7 +479,7 @@ export default function AdminRentalOrdersSubroute() {
         method: "PATCH",
         credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(action === "MARK_RETURNED" ? { action, hasDamage: false } : { action }),
+        body: JSON.stringify({ action }),
       });
 
       if (!response.ok) {
@@ -480,6 +491,40 @@ export default function AdminRentalOrdersSubroute() {
       await refreshData();
     } catch {
       setError("Error de red al actualizar la orden.");
+    } finally {
+      setActiveOrderId(null);
+    }
+  };
+
+  const handleConfirmReturn = async () => {
+    if (!returnOrderId) return;
+
+    setActiveOrderId(returnOrderId);
+    setFeedback(null);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/rental-orders/${returnOrderId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "MARK_RETURNED",
+          hasDamage: returnHasDamage,
+          returnNotes: returnNotes.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        setError(await parseApiError(response, "No se pudo registrar la devolucion."));
+        return;
+      }
+
+      setFeedback("Devolucion registrada correctamente.");
+      setReturnOrderId(null);
+      await refreshData();
+    } catch {
+      setError("Error de red al registrar devolucion.");
     } finally {
       setActiveOrderId(null);
     }
@@ -835,6 +880,54 @@ export default function AdminRentalOrdersSubroute() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {returnOrderId && (
+          <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-amber-200">Confirmar devolucion</p>
+            <p className="mt-2 text-sm text-stone-300">
+              Orden: <span className="font-medium text-white">{orders.find((o) => o.id === returnOrderId)?.code ?? returnOrderId}</span>
+            </p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <label className="flex items-center gap-2 self-center text-sm text-stone-300">
+                <input
+                  type="checkbox"
+                  checked={returnHasDamage}
+                  onChange={(event) => setReturnHasDamage(event.target.checked)}
+                  className="size-4 rounded border border-white/20 bg-transparent accent-rose-400"
+                />
+                Tiene danio
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm text-stone-300">
+                Observaciones de devolucion
+                <input
+                  type="text"
+                  value={returnNotes}
+                  onChange={(event) => setReturnNotes(event.target.value)}
+                  placeholder="Opcional"
+                  className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder:text-stone-500"
+                />
+              </label>
+
+              <div className="flex items-end gap-2">
+                <button
+                  onClick={() => void handleConfirmReturn()}
+                  disabled={activeOrderId === returnOrderId}
+                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
+                >
+                  Confirmar devolucion
+                </button>
+                <button
+                  onClick={() => setReturnOrderId(null)}
+                  className="rounded-xl border border-white/10 px-4 py-2 text-sm text-stone-200 transition hover:bg-white/[0.06]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </article>

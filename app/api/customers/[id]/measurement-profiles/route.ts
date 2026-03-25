@@ -17,12 +17,17 @@ type RouteContext = {
 };
 
 export async function GET(request: Request, { params }: RouteContext) {
-  const auth = await requireApiAuth(request, "admin");
+  const auth = await requireApiAuth(request, "authenticated");
   if (!auth.ok) {
     return auth.response;
   }
 
   const parsedParams = customerIdParamSchema.safeParse(await params);
+
+  const isAdmin = Boolean(auth.context.adminUserId);
+  if (!isAdmin && (!auth.context.customerId || auth.context.customerId !== parsedParams.data?.id)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   if (!parsedParams.success) {
     return NextResponse.json(
