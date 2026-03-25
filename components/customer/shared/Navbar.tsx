@@ -76,7 +76,8 @@ export const Navbar = () => {
           </a>
 
           {/* Carrito */}
-          <button className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">
+          <a href="/comprar" 
+            className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -95,7 +96,7 @@ export const Navbar = () => {
                 clipRule="evenodd"
               />
             </svg>
-          </button>
+          </a>
 
           {/* Usuario */}
           <button className="p-4 text-neutral-900 hover:bg-neutral-100 hover:text-neutral-600">

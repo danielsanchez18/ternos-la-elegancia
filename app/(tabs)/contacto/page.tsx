@@ -1,5 +1,5 @@
 import { Title } from '@/components/customer/contact/Title';
-import { Location } from '../../../components/customer/contact/Location';
+import { Location } from '@/components/customer/contact/Location';
 import { OurStore } from '@/components/customer/contact/OurStore';
 
 export default function CustomerContact() {
