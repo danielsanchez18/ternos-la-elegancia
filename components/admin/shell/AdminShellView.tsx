@@ -51,7 +51,7 @@ export default function AdminShellView({
                         <Button
                           variant="outline"
                           size="icon-sm"
-                          className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                          className="border-white/10 bg-white/3 text-white hover:bg-white/8"
                         >
                           <Menu className="size-4" />
                           <span className="sr-only">Abrir menÃº</span>
@@ -62,9 +62,9 @@ export default function AdminShellView({
                         className="w-[288px] border-white/8 bg-black p-0 text-white"
                       >
                         <SheetHeader className="sr-only">
-                          <SheetTitle>NavegaciÃ³n administrativa</SheetTitle>
+                          <SheetTitle>Navegación administrativa</SheetTitle>
                           <SheetDescription>
-                            Acceso a los mÃ³dulos del dashboard.
+                            Acceso a los móndulos del dashboard.
                           </SheetDescription>
                         </SheetHeader>
                         {sidebarContent}
@@ -74,7 +74,7 @@ export default function AdminShellView({
                     <Button
                       variant="outline"
                       size="icon-sm"
-                      className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                      className="border-white/10 bg-white/3 text-white hover:bg-white/8"
                       disabled
                     >
                       <Menu className="size-4" />
@@ -85,7 +85,7 @@ export default function AdminShellView({
                       Panel admin
                     </p>
                     <p className="text-sm font-medium text-stone-200">
-                      NavegaciÃ³n del sistema
+                      Navegación del sistema
                     </p>
                   </div>
                 </div>

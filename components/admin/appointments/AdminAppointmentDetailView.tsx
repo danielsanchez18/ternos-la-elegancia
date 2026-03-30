@@ -88,7 +88,7 @@ function panel({
 
 function dataRow(label: string, value: ReactNode) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3">
+    <div className="rounded-2xl border border-white/8 bg-white/2 px-4 py-3">
       <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">{label}</p>
       <div className="mt-1 text-sm text-stone-200">{value}</div>
     </div>
@@ -128,7 +128,7 @@ export default function AdminAppointmentDetailView({
           <div className="space-y-4">
             <Link
               href="/admin/citas/agenda"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] hover:text-white"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/3 px-3 py-2 text-sm text-stone-300 transition hover:bg-white/6 hover:text-white"
             >
               <ArrowLeft className="size-4" />
               Volver a agenda
@@ -212,7 +212,7 @@ export default function AdminAppointmentDetailView({
                 {appointment.history.map((event) => (
                   <article
                     key={event.id}
-                    className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-4"
+                    className="rounded-2xl border border-white/8 bg-white/2 px-4 py-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span
@@ -246,7 +246,7 @@ export default function AdminAppointmentDetailView({
             title: "Ficha vinculada",
             children: (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                   <div className="flex items-start gap-3">
                     <UserRound className="mt-0.5 size-4 text-emerald-300" />
                     <div className="min-w-0">
@@ -272,7 +272,7 @@ export default function AdminAppointmentDetailView({
             eyebrow: "Relacion",
             title: "Orden vinculada",
             children: linkedOrder ? (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+              <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                 <div className="flex items-start gap-3">
                   <Link2 className="mt-0.5 size-4 text-emerald-300" />
                   <div className="space-y-2">
@@ -308,7 +308,7 @@ export default function AdminAppointmentDetailView({
             title: "Linea de tiempo",
             children: (
               <div className="space-y-2">
-                <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                   <div className="flex items-start gap-3">
                     <CalendarClock className="mt-0.5 size-4 text-emerald-300" />
                     <div>
@@ -320,7 +320,7 @@ export default function AdminAppointmentDetailView({
                   </div>
                 </div>
                 {appointment.confirmedAt ? (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                  <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                     <div className="flex items-start gap-3">
                       <History className="mt-0.5 size-4 text-emerald-300" />
                       <div>
@@ -333,7 +333,7 @@ export default function AdminAppointmentDetailView({
                   </div>
                 ) : null}
                 {appointment.attendedAt ? (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                  <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                     <div className="flex items-start gap-3">
                       <FileText className="mt-0.5 size-4 text-emerald-300" />
                       <div>
@@ -346,7 +346,7 @@ export default function AdminAppointmentDetailView({
                   </div>
                 ) : null}
                 {appointment.noShowAt ? (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                  <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                     <div className="flex items-start gap-3">
                       <History className="mt-0.5 size-4 text-amber-300" />
                       <div>
@@ -359,7 +359,7 @@ export default function AdminAppointmentDetailView({
                   </div>
                 ) : null}
                 {appointment.cancelledAt ? (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                  <div className="rounded-2xl border border-white/8 bg-white/2 p-4">
                     <div className="flex items-start gap-3">
                       <History className="mt-0.5 size-4 text-rose-300" />
                       <div>

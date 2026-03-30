@@ -1,0 +1,3 @@
+app/api/customers/me/route.ts(3,10): error TS2305: Module '"@/lib/auth"' has no exported member 'requireApiAuth'.
+app/api/customers/me/route.ts(80,78): error TS2339: Property 'passwordHash' does not exist on type 'PublicCustomer'.
+app/api/customers/me/route.ts(89,20): error TS2339: Property 'authUserId' does not exist on type 'PublicCustomer'.

@@ -1,0 +1,80 @@
+/* Schedule-X Dark Mode Overrides */
+.sx-react-calendar-wrapper {
+  --sx-color-background: #000000;
+  --sx-color-on-background: #e5e7eb;
+  --sx-color-surface: #111827;
+  --sx-color-on-surface: #f3f4f6;
+  --sx-color-primary: #10B981; /* Emerald 500 */
+  --sx-color-on-primary: #ffffff;
+  --sx-color-border: rgba(255, 255, 255, 0.08);
+}
+
+.sx__header {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 1rem !important;
+}
+
+.sx__view-selection-item--active {
+  background-color: var(--sx-color-primary) !important;
+  color: #000 !important;
+  font-weight: 600 !important;
+}
+
+.sx__time-grid-day {
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.sx__time-grid-hour-text {
+  color: #9ca3af !important;
+  font-size: 0.75rem !important;
+}
+
+/* Event Status Colors */
+.sx-event-amber {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+  border-left: 4px solid #fbbf24 !important;
+  color: #fde68a !important;
+}
+
+.sx-event-emerald {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border-left: 4px solid #10b981 !important;
+  color: #a7f3d0 !important;
+}
+
+.sx-event-sky {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+  border-left: 4px solid #0ea5e9 !important;
+  color: #bae6fd !important;
+}
+
+.sx-event-rose {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+  border-left: 4px solid #f43f5e !important;
+  color: #fecdd3 !important;
+}
+
+.sx-event-orange {
+  background-color: rgba(249, 115, 22, 0.1) !important;
+  border-left: 4px solid #f97316 !important;
+  color: #ffedd5 !important;
+}
+
+.sx-event-violet {
+  background-color: rgba(139, 92, 246, 0.1) !important;
+  border-left: 4px solid #8b5cf6 !important;
+  color: #ddd6fe !important;
+}
+
+.sx__event {
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+  padding: 4px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.sx__event:hover {
+  filter: brightness(1.2);
+  transform: scale(1.02);
+}

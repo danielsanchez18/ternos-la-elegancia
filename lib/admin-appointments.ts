@@ -219,7 +219,7 @@ export async function getAdminAppointmentsOverviewData() {
 
 export async function getAdminAppointmentsAgendaData() {
   const appointments = await prisma.appointment.findMany({
-    take: 50,
+    take: 200,
     orderBy: { scheduledAt: "desc" },
     select: {
       id: true,

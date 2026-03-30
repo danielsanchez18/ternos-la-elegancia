@@ -30,6 +30,25 @@ export const updateCustomerSchema = z
     "At least one field is required"
   );
 
+export const updateMeSchema = z
+  .object({
+    nombres: z.string().trim().min(1).max(120).optional(),
+    apellidos: z.string().trim().min(1).max(120).optional(),
+    celular: z.union([z.string().trim().min(6).max(20), z.null()]).optional(),
+    currentPassword: z.string().min(1).optional(),
+    newPassword: z.string().min(8).max(72).optional(),
+  })
+  .refine((data) => {
+    // Si envian newPassword, deben enviar currentPassword
+    if (data.newPassword && !data.currentPassword) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "Debe proveer su contraseña actual para cambiarla por una nueva",
+    path: ["currentPassword"],
+  });
+
 export function formatZodIssues(error: z.ZodError) {
   return error.issues.map((issue) => ({
     path: issue.path.join("."),

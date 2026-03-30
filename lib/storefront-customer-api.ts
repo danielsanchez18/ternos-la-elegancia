@@ -74,6 +74,15 @@ export type CustomerMeasurementGarmentValues = {
   values: CustomerMeasurementValue[];
 };
 
+export type CustomerProfileInfo = {
+  id: string;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  celular?: string | null;
+  dni: string;
+};
+
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
     method: "GET",
@@ -132,4 +141,33 @@ export async function getMyMeasurementProfileValues(
     `/api/measurement-profiles/${encodeURIComponent(profileId)}/values?garmentType=${encodeURIComponent(garmentType)}`
   );
   return result;
+}
+
+export async function getMyProfileInfo(): Promise<CustomerProfileInfo> {
+  const result = await getJson<CustomerProfileInfo>(
+    `/api/customers/me`
+  );
+  return result;
+}
+
+export async function updateMyProfileInfo(
+  payload: Record<string, any>
+): Promise<CustomerProfileInfo> {
+  const response = await fetch(`/api/customers/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => null);
+    throw new Error(
+      errorPayload?.error || `Request failed with status ${response.status}`
+    );
+  }
+
+  return (await response.json()) as CustomerProfileInfo;
 }

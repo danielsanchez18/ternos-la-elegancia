@@ -149,7 +149,7 @@ export class RentalOrderRepository {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
-    const prefix = `REN-${y}${m}${d}-`;
+    const prefix = `ALQ-${y}${m}${d}-`;
 
     const existing = await prisma.rentalOrder.findMany({
       where: {

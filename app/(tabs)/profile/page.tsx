@@ -3,9 +3,7 @@ import { redirect } from "next/navigation";
 
 import SignOutButton from "@/components/shared/SignOutButton";
 import { getSessionAccess } from "@/lib/session-access";
-import ProfileOrdersSection from "@/components/customer/profile/ProfileOrdersSection";
-import ProfileAppointmentsSection from "@/components/customer/profile/ProfileAppointmentsSection";
-import ProfileMeasurementsSection from "@/components/customer/profile/ProfileMeasurementsSection";
+import ProfileTabs from "@/components/customer/profile/ProfileTabs";
 
 export default async function ProfilePage() {
   const access = await getSessionAccess(await headers());
@@ -33,34 +31,13 @@ export default async function ProfilePage() {
           </h1>
         </div>
 
-        {/* Info cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="col-span-2 rounded-[2rem] border border-black/10 bg-white p-6">
-            <p className="text-sm text-neutral-500">Correo</p>
-            <p className="mt-2 text-xl font-medium text-neutral-950">
-              {access.session.user.email}
-            </p>
-          </article>
-
-          <article className="col-span-1 rounded-[2rem] border border-black/10 bg-white p-6">
-            <p className="text-sm text-neutral-500">Perfil</p>
-            <p className="mt-2 text-xl font-medium text-neutral-950">
-              {roleLabel}
-            </p>
-          </article>
-        </div>
-
         {/* Customer sections */}
         {access.customerId && (
-          <>
-            <ProfileOrdersSection customerId={access.customerId} />
-            <ProfileAppointmentsSection customerId={access.customerId} />
-            <ProfileMeasurementsSection customerId={access.customerId} />
-          </>
+          <ProfileTabs customerId={access.customerId} />
         )}
 
         {!access.customerId && access.isCustomer && (
-          <article className="rounded-[2rem] border border-black/10 bg-white p-6">
+          <article className="border border-black/10 bg-white p-6">
             <p className="text-sm text-neutral-600">
               Tu cuenta esta siendo configurada. Pronto podras ver tus ordenes, citas y medidas aqui.
             </p>
