@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Power, PackagePlus } from "lucide-react";
 
 import { apiGet, apiPatch, apiPost } from "@/components/admin/catalog/api";
-import { catalogStatCard } from "@/components/admin/catalog/catalog-ui";
+import { AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 import type { AdminBundle } from "@/components/admin/catalog/types";
 
 type BundleDraft = {
@@ -71,21 +72,6 @@ export default function AdminCatalogBundlesSubroute() {
     void refreshBundles();
   }, []);
 
-  const activeBundles = useMemo(
-    () => bundles.filter((bundle) => bundle.active).length,
-    [bundles]
-  );
-
-  const totalBundleItems = useMemo(
-    () =>
-      bundles.reduce(
-        (accumulator, bundle) =>
-          accumulator + bundle.items.length + bundle.variantItems.length,
-        0
-      ),
-    [bundles]
-  );
-
   const handleCreateBundle = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -107,7 +93,7 @@ export default function AdminCatalogBundlesSubroute() {
       );
       setDraft(DEFAULT_BUNDLE_DRAFT);
       setIsSlugManuallyEdited(false);
-      setFeedback("Bundle creado correctamente.");
+      setFeedback("Paquete promocional creado.");
       await refreshBundles();
     } catch (saveError) {
       setError(
@@ -133,8 +119,8 @@ export default function AdminCatalogBundlesSubroute() {
       );
       setFeedback(
         bundle.active
-          ? "Bundle desactivado correctamente."
-          : "Bundle activado correctamente."
+          ? "Bundle pausado correctamente."
+          : "Bundle activado para venta."
       );
       await refreshBundles();
     } catch (saveError) {
@@ -150,34 +136,11 @@ export default function AdminCatalogBundlesSubroute() {
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        {catalogStatCard({
-          title: "Bundles",
-          value: bundles.length,
-          detail: "Paquetes comerciales",
-        })}
-        {catalogStatCard({
-          title: "Activos",
-          value: activeBundles,
-          detail: "Disponibles para venta",
-        })}
-        {catalogStatCard({
-          title: "Items ligados",
-          value: totalBundleItems,
-          detail: "Productos o variantes asociadas",
-        })}
-      </div>
-
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-          Nuevo bundle
-        </p>
-        <h2 className="mt-2 text-xl font-semibold text-white">Crear paquete</h2>
-
-        <form onSubmit={handleCreateBundle} className="mt-4 space-y-4">
-          <div className="grid gap-3 md:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-stone-300">
-              Nombre
+      <Panel eyebrow="Promociones" title="Crear Paquete (Bundle)">
+        <form onSubmit={handleCreateBundle} className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="flex flex-col gap-1.5 text-xs text-stone-500 uppercase tracking-widest pl-1">
+              Nombre Comercial
               <input
                 value={draft.nombre}
                 onChange={(event) => {
@@ -188,13 +151,13 @@ export default function AdminCatalogBundlesSubroute() {
                     slug: isSlugManuallyEdited ? current.slug : toSlug(nombre),
                   }));
                 }}
-                className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-white"
+                className="rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 outline-none focus:border-emerald-500/50 transition"
                 required
               />
             </label>
 
-            <label className="flex flex-col gap-1 text-xs text-stone-300">
-              Slug
+            <label className="flex flex-col gap-1.5 text-xs text-stone-500 uppercase tracking-widest pl-1">
+              Slug (URL)
               <input
                 value={draft.slug}
                 onChange={(event) => {
@@ -204,17 +167,17 @@ export default function AdminCatalogBundlesSubroute() {
                     slug: toSlug(event.target.value),
                   }));
                 }}
-                className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-white"
+                className="rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500/50 transition"
                 required
               />
             </label>
 
-            <label className="flex flex-col gap-1 text-xs text-stone-300">
-              Precio
+            <label className="flex flex-col gap-1.5 text-xs text-stone-500 uppercase tracking-widest pl-1">
+              Precio Especial Bundle
               <input
                 type="number"
-                min={0}
                 step="0.01"
+                min="0"
                 value={draft.price}
                 onChange={(event) =>
                   setDraft((current) => ({
@@ -222,28 +185,14 @@ export default function AdminCatalogBundlesSubroute() {
                     price: event.target.value,
                   }))
                 }
-                className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-white"
+                className="rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm font-bold text-white outline-none focus:border-emerald-500/50 transition"
                 required
               />
             </label>
-
-            <label className="inline-flex items-center gap-2 rounded-lg border border-white/8 bg-black/30 px-3 py-2 text-xs text-stone-300">
-              <input
-                type="checkbox"
-                checked={draft.active}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    active: event.target.checked,
-                  }))
-                }
-              />
-              Bundle activo
-            </label>
           </div>
 
-          <label className="flex flex-col gap-1 text-xs text-stone-300">
-            Descripcion
+          <label className="flex flex-col gap-1.5 text-xs text-stone-500 uppercase tracking-widest pl-1">
+            Descripción de la oferta
             <textarea
               value={draft.descripcion}
               onChange={(event) =>
@@ -253,86 +202,95 @@ export default function AdminCatalogBundlesSubroute() {
                 }))
               }
               rows={3}
-              className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-white"
+              placeholder="Detalla qué incluye este paquete..."
+              className="rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 outline-none focus:border-emerald-500/50 transition"
             />
           </label>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
-          >
-            {isSaving ? "Guardando..." : "Crear bundle"}
-          </button>
+          <footer className="flex items-center justify-between">
+            <label className="inline-flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={draft.active}
+                onChange={(e) => setDraft(curr => ({ ...curr, active: e.target.checked }))}
+                className="size-4 rounded border-white/10 bg-black/40 text-emerald-500 focus:ring-emerald-500/50"
+              />
+              <span className="text-sm text-stone-400 group-hover:text-stone-200 transition">Habilitar inmediatamente para venta</span>
+            </label>
+
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-xl bg-emerald-500 px-8 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-50 flex items-center gap-2"
+            >
+              <PackagePlus className="size-4" />
+              {isSaving ? "Creando..." : "Crear Bundle"}
+            </button>
+          </footer>
         </form>
-      </article>
+      </Panel>
 
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Listado</p>
-            <h2 className="mt-2 text-xl font-semibold text-white">Bundles registrados</h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => void refreshBundles()}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-          >
-            Actualizar
-          </button>
-        </div>
-
+      <Panel eyebrow="Maestro" title="Paquetes Registrados">
         {isLoading ? (
-          <p className="mt-6 text-sm text-stone-400">Cargando bundles...</p>
+          <div className="py-20 text-center animate-pulse font-mono text-stone-600 text-sm italic">
+            Cargando ofertas...
+          </div>
         ) : (
-          <div className="mt-6 overflow-x-auto">
+          <div className="overflow-x-auto mt-2">
             <table className="min-w-full text-left text-sm">
-              <thead className="text-stone-500">
+              <thead className="text-stone-500 uppercase tracking-widest text-[10px]">
                 <tr className="border-b border-white/8">
-                  <th className="px-3 py-3 font-medium">Bundle</th>
-                  <th className="px-3 py-3 font-medium">Precio</th>
-                  <th className="px-3 py-3 font-medium">Items</th>
-                  <th className="px-3 py-3 font-medium">Estado</th>
-                  <th className="px-3 py-3 font-medium">Accion</th>
+                  <th className="px-3 py-3 font-medium">Nombre del Bundle</th>
+                  <th className="px-3 py-3 font-medium text-center">Precio</th>
+                  <th className="px-3 py-3 font-medium text-center">Contenido</th>
+                  <th className="px-3 py-3 font-medium text-center">Estado</th>
+                  <th className="px-3 py-3 font-medium text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/5">
                 {bundles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-stone-500">
-                      No hay bundles registrados.
+                    <td colSpan={5} className="px-3 py-20 text-center text-stone-500 italic">
+                      No hay bundles configurados actualmente.
                     </td>
                   </tr>
                 ) : (
                   bundles.map((bundle) => (
-                    <tr key={bundle.id} className="border-b border-white/6">
-                      <td className="px-3 py-4">
-                        <p className="font-medium text-white">{bundle.nombre}</p>
-                        <p className="mt-1 text-xs text-stone-500">{bundle.slug}</p>
+                    <tr key={bundle.id} className="group hover:bg-white/2">
+                      <td className="px-3 py-6">
+                        <p className="font-semibold text-white text-base">{bundle.nombre}</p>
+                        <p className="mt-1 font-mono text-[10px] text-stone-500 uppercase tracking-tighter">
+                          {bundle.slug}
+                        </p>
                       </td>
-                      <td className="px-3 py-4 text-stone-300">
+                      <td className="px-3 py-6 text-center text-emerald-300 font-mono">
                         {formatMoney(bundle.price)}
                       </td>
-                      <td className="px-3 py-4 text-stone-400">
-                        {bundle.items.length} producto(s), {bundle.variantItems.length} variante(s)
+                      <td className="px-3 py-6 text-center">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-stone-400">
+                            {bundle.items.length} productos
+                          </span>
+                          <span className="text-[10px] text-stone-600">
+                            {bundle.variantItems.length} variantes
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-3 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${
-                            bundle.active
-                              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-                              : "border-white/12 bg-white/[0.03] text-stone-400"
-                          }`}
-                        >
+                      <td className="px-3 py-6 text-center">
+                        <div className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${bundle.active
+                            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                            : "border-white/10 bg-white/5 text-stone-500"
+                          }`}>
                           {bundle.active ? "Activo" : "Inactivo"}
-                        </span>
+                        </div>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-6 text-right">
                         <button
-                          type="button"
-                          disabled={isSaving}
                           onClick={() => void handleToggleBundleActive(bundle)}
-                          className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-stone-200 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
+                          className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-tighter transition opacity-0 group-hover:opacity-100 ${bundle.active
+                              ? "bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                              : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                            }`}
                         >
                           {bundle.active ? "Desactivar" : "Activar"}
                         </button>
@@ -344,19 +302,22 @@ export default function AdminCatalogBundlesSubroute() {
             </table>
           </div>
         )}
-      </article>
+      </Panel>
 
-      {feedback ? (
-        <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-          {feedback}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">
-          {error}
-        </p>
-      ) : null}
+      {error && (
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-center">
+          <p className="text-sm text-rose-300 font-medium">Error: {error}</p>
+        </div>
+      )}
+
+      {feedback && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-emerald-500/20 bg-[#0e0e0e] px-6 py-3 shadow-2xl shadow-emerald-500/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <p className="text-sm text-emerald-300 font-medium flex items-center gap-2">
+            <Sparkles className="size-4" />
+            {feedback}
+          </p>
+        </div>
+      )}
     </section>
   );
 }
-

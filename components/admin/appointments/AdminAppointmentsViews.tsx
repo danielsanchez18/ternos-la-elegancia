@@ -198,7 +198,7 @@ export function AgendaSubrouteView({
                       ) : null}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="text-[10px] uppercase tracking-[0.1em] text-stone-400 border border-white/10 px-2 py-0.5 rounded-md bg-white/5">
+                      <span className="text-[10px] uppercase tracking-widest text-stone-400 border border-white/10 px-2 py-0.5 rounded-md bg-white/5">
                         {a.type.replaceAll("_", " ").toLowerCase()}
                       </span>
                     </td>

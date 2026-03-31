@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Save, Power } from "lucide-react";
 
 import { apiGet, apiPatch, apiPost } from "@/components/admin/catalog/api";
-import { catalogStatCard } from "@/components/admin/catalog/catalog-ui";
+import { AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 import type { AdminBrand } from "@/components/admin/catalog/types";
 
 export default function AdminCatalogBrandsSubroute() {
@@ -39,11 +40,6 @@ export default function AdminCatalogBrandsSubroute() {
   useEffect(() => {
     void refreshBrands();
   }, []);
-
-  const activeBrands = useMemo(
-    () => brands.filter((brand) => brand.activo).length,
-    [brands]
-  );
 
   const handleCreateBrand = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -87,7 +83,7 @@ export default function AdminCatalogBrandsSubroute() {
         { nombre: nextName },
         "No se pudo actualizar la marca."
       );
-      setFeedback("Marca actualizada correctamente.");
+      setFeedback("Marca actualizada con éxito.");
       await refreshBrands();
     } catch (saveError) {
       setError(
@@ -130,148 +126,101 @@ export default function AdminCatalogBrandsSubroute() {
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        {catalogStatCard({
-          title: "Marcas",
-          value: brands.length,
-          detail: "Registradas en catalogo",
-        })}
-        {catalogStatCard({
-          title: "Activas",
-          value: activeBrands,
-          detail: "Disponibles para productos",
-        })}
-        {catalogStatCard({
-          title: "Inactivas",
-          value: brands.length - activeBrands,
-          detail: "Ocultas temporalmente",
-        })}
-      </div>
-
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-          Nueva marca
-        </p>
-        <h2 className="mt-2 text-xl font-semibold text-white">Registrar marca</h2>
-
-        <form onSubmit={handleCreateBrand} className="mt-4 flex flex-wrap gap-3">
-          <input
-            value={newBrandName}
-            onChange={(event) => setNewBrandName(event.target.value)}
-            placeholder="Nombre de marca"
-            className="w-full max-w-sm rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder:text-stone-500"
-            required
-          />
+      <Panel eyebrow="Maestro" title="Gestión de Marcas">
+        <form onSubmit={handleCreateBrand} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <p className="mb-1.5 text-[10px] text-stone-500 uppercase tracking-widest pl-1">Nueva Marca</p>
+            <input
+              value={newBrandName}
+              onChange={(event) => setNewBrandName(event.target.value)}
+              placeholder="Ej: Scabal, Loro Piana..."
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-stone-600 outline-none focus:border-emerald-500/50 transition"
+              required
+            />
+          </div>
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
+            className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-50"
           >
             {isSaving ? "Guardando..." : "Crear marca"}
           </button>
         </form>
-      </article>
 
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Listado</p>
-            <h2 className="mt-2 text-xl font-semibold text-white">Marcas registradas</h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => void refreshBrands()}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-          >
-            Actualizar
-          </button>
-        </div>
-
-        {isLoading ? (
-          <p className="mt-6 text-sm text-stone-400">Cargando marcas...</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-stone-500">
-                <tr className="border-b border-white/8">
-                  <th className="px-3 py-3 font-medium">Marca</th>
-                  <th className="px-3 py-3 font-medium">Estado</th>
-                  <th className="px-3 py-3 font-medium">Acciones</th>
+        <div className="mt-12 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-stone-500 uppercase tracking-widest text-[10px]">
+              <tr className="border-b border-white/8">
+                <th className="px-3 py-3 font-medium">Nombre de Marca</th>
+                <th className="px-3 py-3 font-medium text-center">Estado</th>
+                <th className="px-3 py-3 font-medium text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {brands.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-3 py-20 text-center text-stone-500 font-mono italic">
+                    Sin marcas registradas actualmente.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {brands.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-3 py-10 text-center text-stone-500">
-                      No hay marcas registradas.
+              ) : (
+                brands.map((brand) => (
+                  <tr key={brand.id} className="group hover:bg-white/2">
+                    <td className="px-3 py-4">
+                      <input
+                        value={nameDraftById[brand.id] ?? ""}
+                        onChange={(e) => setNameDraftById(curr => ({ ...curr, [brand.id]: e.target.value }))}
+                        className="w-full max-w-sm rounded-lg border border-transparent bg-transparent px-3 py-2 text-base font-semibold text-white transition hover:border-white/5 focus:bg-white/5 focus:border-emerald-500/30 outline-none"
+                      />
+                    </td>
+                    <td className="px-3 py-4 text-center">
+                      <div className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${brand.activo
+                          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                          : "border-white/10 bg-white/5 text-stone-500"
+                        }`}>
+                        {brand.activo ? "Activa" : "Inactiva"}
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
+                        <button
+                          onClick={() => void handleRenameBrand(brand)}
+                          title="Guardar nombre"
+                          className="p-2 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition"
+                        >
+                          <Save className="size-4" />
+                        </button>
+                        <button
+                          onClick={() => void handleToggleBrandActive(brand)}
+                          title={brand.activo ? "Desactivar" : "Activar"}
+                          className="p-2 rounded-lg bg-white/5 text-stone-400 hover:bg-white/10 hover:text-white transition"
+                        >
+                          <Power className="size-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  brands.map((brand) => (
-                    <tr key={brand.id} className="border-b border-white/6">
-                      <td className="px-3 py-4">
-                        <input
-                          value={nameDraftById[brand.id] ?? ""}
-                          onChange={(event) =>
-                            setNameDraftById((current) => ({
-                              ...current,
-                              [brand.id]: event.target.value,
-                            }))
-                          }
-                          className="w-full max-w-sm rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
-                        />
-                      </td>
-                      <td className="px-3 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${
-                            brand.activo
-                              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-                              : "border-white/12 bg-white/[0.03] text-stone-400"
-                          }`}
-                        >
-                          {brand.activo ? "Activa" : "Inactiva"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            disabled={isSaving}
-                            onClick={() => void handleRenameBrand(brand)}
-                            className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Guardar nombre
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isSaving}
-                            onClick={() => void handleToggleBrandActive(brand)}
-                            className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-stone-200 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {brand.activo ? "Desactivar" : "Activar"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </article>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
 
-      {feedback ? (
-        <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-          {feedback}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">
-          {error}
-        </p>
-      ) : null}
+      {error && (
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-center animate-in fade-in zoom-in-95 duration-300">
+          <p className="text-sm text-rose-300 font-medium">Error: {error}</p>
+        </div>
+      )}
+
+      {feedback && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-emerald-500/20 bg-[#0e0e0e] px-6 py-3 shadow-2xl shadow-emerald-500/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <p className="text-sm text-emerald-300 font-medium flex items-center gap-2">
+            <Sparkles className="size-4" />
+            {feedback}
+          </p>
+        </div>
+      )}
     </section>
   );
 }
-
