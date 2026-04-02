@@ -39,7 +39,7 @@ export default async function AdminSubroutePage({
             <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
               Ruta recomendada
             </p>
-            <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 font-mono text-sm text-stone-200">
+            <div className="mt-4 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 font-mono text-sm text-stone-200">
               {currentSubroute.href}
             </div>
             <p className="mt-4 text-sm leading-6 text-stone-400">
@@ -57,7 +57,7 @@ export default async function AdminSubroutePage({
               {currentSubroute.models.map((model) => (
                 <span
                   key={model}
-                  className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 text-xs text-stone-300"
+                  className="rounded-full border border-white/8 bg-white/3 px-3 py-1.5 text-xs text-stone-300"
                 >
                   {model}
                 </span>
@@ -72,21 +72,21 @@ export default async function AdminSubroutePage({
           Siguiente expansion
         </p>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+          <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
             <h2 className="text-base font-semibold text-white">Listado</h2>
             <p className="mt-2 text-sm leading-6 text-stone-400">
               Tabla o board con filtros, estados y acciones rapidas.
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+          <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
             <h2 className="text-base font-semibold text-white">Detalle</h2>
             <p className="mt-2 text-sm leading-6 text-stone-400">
               Vista por entidad con timeline, relaciones y actividad historica.
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+          <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
             <h2 className="text-base font-semibold text-white">Automacion</h2>
             <p className="mt-2 text-sm leading-6 text-stone-400">
               Reglas de negocio, cambios de estado y eventos derivados de la operacion.

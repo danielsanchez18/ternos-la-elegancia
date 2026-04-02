@@ -33,7 +33,7 @@ export default function AdminDashboardPaymentsSection({
           recentPayments.map((payment) => (
             <article
               key={payment.id}
-              className="rounded-3xl border border-white/8 bg-white/[0.03] px-4 py-4"
+              className="rounded-3xl border border-white/8 bg-white/3 px-4 py-4"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>

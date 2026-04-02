@@ -42,5 +42,5 @@ export function statusChipClasses(
 
   return isPositive
     ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-    : "border-white/8 bg-white/[0.03] text-stone-300";
+    : "border-white/8 bg-white/3 text-stone-300";
 }

@@ -94,6 +94,37 @@ export async function getAdminFabricsOverviewData() {
   };
 }
 
+export async function getAdminRentalOverviewData() {
+  const [total, available, rented, inMaintenance, damaged] = await Promise.all([
+    prisma.rentalUnit.count(),
+    prisma.rentalUnit.count({ where: { status: "DISPONIBLE" } }),
+    prisma.rentalUnit.count({ where: { status: "ALQUILADO" } }),
+    prisma.rentalUnit.count({ where: { status: "EN_MANTENIMIENTO" } }),
+    prisma.rentalUnit.count({ where: { status: "DANADO" } }),
+  ]);
+
+  return {
+    total,
+    available,
+    rented,
+    inMaintenance,
+    damaged,
+    availabilityRate: total > 0 ? (available / total) * 100 : 0,
+  };
+}
+
+export async function getAdminInventoryCombinedOverview() {
+  const [fabrics, rental] = await Promise.all([
+    getAdminFabricsOverviewData(),
+    getAdminRentalOverviewData(),
+  ]);
+
+  return {
+    fabrics,
+    rental,
+  };
+}
+
 export async function getAdminFabricMovementsData(fabricId: string) {
   return prisma.fabricMovement.findMany({
     where: { fabricId },

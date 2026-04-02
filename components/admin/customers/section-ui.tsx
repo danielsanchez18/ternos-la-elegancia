@@ -12,7 +12,7 @@ export function AdminStatCard({
   href?: string;
 }) {
   const content = (
-    <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+    <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
       <p className="text-sm font-medium text-stone-200">{title}</p>
       <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm leading-6 text-stone-400">{detail}</p>
@@ -26,7 +26,7 @@ export function AdminStatCard({
   return (
     <Link
       href={href}
-      className="transition hover:translate-y-[-1px] hover:bg-white/[0.02]"
+      className="transition hover:translate-y-[-1px] hover:bg-white/2"
     >
       {content}
     </Link>

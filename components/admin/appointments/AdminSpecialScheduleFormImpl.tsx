@@ -199,7 +199,7 @@ function ScheduleForm({
           type="button"
           onClick={onClose}
           disabled={isPending}
-          className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+          className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
         >
           Cancelar
         </button>
@@ -282,7 +282,7 @@ function DeleteConfirm({
         <button
           onClick={onClose}
           disabled={isPending}
-          className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+          className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
         >
           Cancelar
         </button>
@@ -335,7 +335,7 @@ export default function AdminSpecialScheduleForm({
         {schedules.map((schedule) => (
           <div
             key={schedule.id}
-            className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+            className="rounded-3xl border border-white/8 bg-white/3 p-5"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -354,14 +354,14 @@ export default function AdminSpecialScheduleForm({
                 <button
                   onClick={() => setModal({ type: "edit", schedule })}
                   title="Editar"
-                  className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-emerald-300"
+                  className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-emerald-300"
                 >
                   <Pencil className="size-3.5" />
                 </button>
                 <button
                   onClick={() => setModal({ type: "delete", schedule })}
                   title="Eliminar"
-                  className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-rose-500/20 hover:text-rose-300"
+                  className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-rose-500/20 hover:text-rose-300"
                 >
                   <Trash2 className="size-3.5" />
                 </button>
@@ -399,7 +399,7 @@ export default function AdminSpecialScheduleForm({
               </div>
               <button
                 onClick={() => setModal({ type: "closed" })}
-                className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+                className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <X className="size-4" />
               </button>

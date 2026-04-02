@@ -110,7 +110,7 @@ function ModalCard({
         </div>
         <button
           onClick={onClose}
-          className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+          className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
         >
           <X className="size-4" />
         </button>
@@ -211,7 +211,7 @@ function variantBorderClasses(variant: string) {
     case "amber":
       return "border-amber-400/15 bg-amber-400/5 text-amber-200";
     default:
-      return "border-white/8 bg-white/[0.03] text-stone-300";
+      return "border-white/8 bg-white/3 text-stone-300";
   }
 }
 
@@ -353,7 +353,7 @@ function ActionModal({
           const payload = (await response.json().catch(() => null)) as ApiErrorResponse | null;
           if (isMounted) {
             setErrorMessage(
-            getApiErrorMessage(payload, "No se pudo ejecutar la accion.")
+              getApiErrorMessage(payload, "No se pudo ejecutar la accion.")
             );
           }
           return;
@@ -601,10 +601,10 @@ function ActionModal({
             ) : null}
 
             {!isLoadingAvailability &&
-            availability &&
-            !availability.isClosed &&
-            availability.openTime &&
-            availability.closeTime ? (
+              availability &&
+              !availability.isClosed &&
+              availability.openTime &&
+              availability.closeTime ? (
               <p className="text-xs text-emerald-200">
                 Horario habilitado: {availability.openTime} -{" "}
                 {availability.closeTime} (
@@ -640,7 +640,7 @@ function ActionModal({
           <button
             onClick={onClose}
             disabled={isPending}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+            className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
           >
             Cancelar
           </button>
@@ -725,7 +725,7 @@ export default function AdminAppointmentActions({
             key={action}
             onClick={() => setActiveAction(action)}
             title={ACTION_META[action].label}
-            className={`rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition ${actionHoverClasses(action)}`}
+            className={`rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition ${actionHoverClasses(action)}`}
           >
             {actionIcon(action)}
           </button>

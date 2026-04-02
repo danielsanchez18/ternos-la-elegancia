@@ -5,15 +5,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
 
 import Link from "next/link";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Fingerprint, 
-  Calendar, 
-  ShoppingBag, 
-  Ruler, 
-  Clock, 
+import {
+  User,
+  Mail,
+  Phone,
+  Fingerprint,
+  Calendar,
+  ShoppingBag,
+  Ruler,
+  Clock,
   ArrowLeft,
   ChevronRight,
   Plus,
@@ -38,15 +38,14 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
         <div className="flex items-center gap-4">
           <Link
             href="/admin/clientes/listado"
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
           >
             <ArrowLeft className="size-5" />
           </Link>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                customer.isActive ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-stone-500/20 bg-stone-500/10 text-stone-400"
-              }`}>
+              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${customer.isActive ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-stone-500/20 bg-stone-500/10 text-stone-400"
+                }`}>
                 {customer.isActive ? "Cliente Activo" : "Cliente Inactivo"}
               </span>
               <span className="text-[10px] text-stone-500 uppercase tracking-widest">Registrado {formatDate(customer.createdAt)}</span>
@@ -54,10 +53,10 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
             <h1 className="text-3xl font-bold text-white tracking-tight">{customer.fullName}</h1>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Link href={`/admin/clientes/perfil/${customer.id}/medidas`}>
-            <Button variant="outline" className="border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]">
+            <Button variant="outline" className="border-white/10 bg-white/3 text-white hover:bg-white/[0.08]">
               <Ruler className="mr-2 size-4" />
               Ver Medidas
             </Button>
@@ -68,9 +67,9 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column: Info Card */}
         <div className="space-y-6">
-          <section className="rounded-[2rem] border border-white/8 bg-white/[0.02] p-8 space-y-6">
+          <section className="rounded-[2rem] border border-white/8 bg-white/2 p-8 space-y-6">
             <h3 className="text-xs font-bold text-stone-500 uppercase tracking-[0.2em]">Información de Contacto</h3>
-            
+
             <div className="space-y-4">
               <div className="flex items-center gap-4 text-sm">
                 <div className="rounded-xl bg-white/5 p-2.5 text-stone-400">
@@ -104,14 +103,14 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-white/8 bg-white/[0.02] p-8 space-y-6">
+          <section className="rounded-[2rem] border border-white/8 bg-white/2 p-8 space-y-6">
             <h3 className="text-xs font-bold text-stone-500 uppercase tracking-[0.2em]">Resumen de Actividad</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-2xl bg-white/[0.03] p-4 border border-white/5">
+              <div className="rounded-2xl bg-white/3 p-4 border border-white/5">
                 <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-2">Ventas</p>
                 <p className="text-2xl font-bold text-white">{customer.saleOrders.length}</p>
               </div>
-              <div className="rounded-2xl bg-white/[0.03] p-4 border border-white/5">
+              <div className="rounded-2xl bg-white/3 p-4 border border-white/5">
                 <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-2">Confecciones</p>
                 <p className="text-2xl font-bold text-white">{customer.customOrders.length}</p>
               </div>
@@ -130,16 +129,16 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
               </div>
               <Link href="/admin/ordenes/venta" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition uppercase tracking-widest">Ver Todas</Link>
             </div>
-            
+
             <div className="divide-y divide-white/5">
               {[...customer.saleOrders, ...customer.customOrders]
                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .slice(0, 5)
                 .map((order: any) => (
-                  <Link 
-                    key={order.id + (order.total ? 's' : 'c')} 
+                  <Link
+                    key={order.id + (order.total ? 's' : 'c')}
                     href={`/admin/ordenes/${order.total ? 'venta' : 'personalizadas'}/${order.id}`}
-                    className="flex items-center justify-between p-6 hover:bg-white/[0.03] transition group"
+                    className="flex items-center justify-between p-6 hover:bg-white/3 transition group"
                   >
                     <div className="flex items-center gap-4">
                       <div className={`rounded-xl p-2.5 ${order.total ? "bg-blue-500/10 text-blue-400" : "bg-emerald-500/10 text-emerald-400"}`}>
@@ -161,7 +160,7 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
                     </div>
                   </Link>
                 ))}
-              
+
               {customer.saleOrders.length === 0 && customer.customOrders.length === 0 && (
                 <div className="p-12 text-center text-stone-600 italic text-sm">
                   No se han registrado ordenes vinculadas a este cliente.
@@ -173,12 +172,12 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
           {/* Appointments & Notes grid */}
           <div className="grid gap-6 md:grid-cols-2">
             {/* Appointments */}
-            <section className="rounded-[2.5rem] border border-white/8 bg-white/[0.02] p-8 space-y-6">
+            <section className="rounded-[2.5rem] border border-white/8 bg-white/2 p-8 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-stone-500 uppercase tracking-[0.2em]">Citas Recientes</h3>
                 <Calendar className="size-4 text-stone-500" />
               </div>
-              
+
               <div className="space-y-4">
                 {customer.appointments.map((apt: any) => (
                   <div key={apt.id} className="flex items-start gap-4">
@@ -198,12 +197,12 @@ export default function AdminCustomerDetailView({ customer }: AdminCustomerDetai
             </section>
 
             {/* Notes */}
-            <section className="rounded-[2.5rem] border border-white/8 bg-white/[0.02] p-8 space-y-6">
+            <section className="rounded-[2.5rem] border border-white/8 bg-white/2 p-8 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-stone-500 uppercase tracking-[0.2em]">Notas de Seguimiento</h3>
                 <MessageSquare className="size-4 text-stone-500" />
               </div>
-              
+
               <div className="space-y-5">
                 {customer.notes.map((note: any) => (
                   <div key={note.id} className="space-y-2 border-l border-white/8 pl-4">

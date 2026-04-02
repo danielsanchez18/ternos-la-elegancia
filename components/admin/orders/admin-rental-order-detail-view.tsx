@@ -225,7 +225,7 @@ export default function AdminRentalOrderDetailView({ orderId }: { orderId: strin
         </div>
         <Link
           href="/admin/ordenes/rentas"
-          className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
+          className="rounded-xl border border-white/10 bg-white/3 px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
         >
           Volver a rentas
         </Link>
@@ -245,15 +245,15 @@ export default function AdminRentalOrderDetailView({ orderId }: { orderId: strin
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Salida</p>
             <p className="mt-2">{formatMediumDate(order.pickupAt)}</p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Devolucion pactada</p>
             <p className="mt-2">{formatMediumDate(order.dueBackAt)}</p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Devolucion real</p>
             <p className="mt-2">{formatMediumDate(order.returnedAt)}</p>
           </div>
@@ -294,7 +294,7 @@ export default function AdminRentalOrderDetailView({ orderId }: { orderId: strin
                   value={returnNotes}
                   onChange={(event) => setReturnNotes(event.target.value)}
                   placeholder="Opcional"
-                  className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder:text-stone-500"
+                  className="rounded-xl border border-white/10 bg-white/2 px-3 py-2 text-sm text-white placeholder:text-stone-500"
                 />
               </label>
 
@@ -318,7 +318,7 @@ export default function AdminRentalOrderDetailView({ orderId }: { orderId: strin
         )}
 
         {(order.hasDelay || order.hasDamage || order.returnNotes || order.notes) && (
-          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="mt-4 rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p>Retraso: {order.hasDelay ? "Si" : "No"}</p>
             <p className="mt-1">Danio: {order.hasDamage ? "Si" : "No"}</p>
             {order.returnNotes && <p className="mt-1">Obs. devolucion: {order.returnNotes}</p>}

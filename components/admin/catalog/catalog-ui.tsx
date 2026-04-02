@@ -12,7 +12,7 @@ export function catalogStatCard({
   detail: string;
 }) {
   return (
-    <article className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5">
+    <article className="rounded-[1.5rem] border border-white/8 bg-white/2 p-5">
       <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">{title}</p>
       <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm text-stone-400">{detail}</p>
@@ -59,7 +59,7 @@ export function CatalogSectionLinks() {
         <Link
           key={subroute.slug}
           href={subroute.href}
-          className="group block rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          className="group block rounded-2xl border border-white/5 bg-white/2 p-4 transition hover:bg-white/4"
         >
           <p className="font-medium text-white group-hover:text-emerald-300">
             {subroute.label}

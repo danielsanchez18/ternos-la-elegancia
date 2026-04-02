@@ -55,7 +55,7 @@ export default async function AdminSectionPage({
             {currentSection.models.map((model) => (
               <span
                 key={model}
-                className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 text-xs text-stone-300"
+                className="rounded-full border border-white/8 bg-white/3 px-3 py-1.5 text-xs text-stone-300"
               >
                 {model}
               </span>
@@ -74,7 +74,7 @@ export default async function AdminSectionPage({
               Rutas base de {currentSection.label.toLowerCase()}
             </h2>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2 text-xs text-stone-400">
+          <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2 text-xs text-stone-400">
             {currentSection.subroutes.length} vistas sugeridas
           </div>
         </div>
@@ -84,7 +84,7 @@ export default async function AdminSectionPage({
             <Link
               key={subroute.href}
               href={subroute.href}
-              className="rounded-3xl border border-white/8 bg-white/[0.03] p-5 transition hover:border-white/15 hover:bg-white/[0.05]"
+              className="rounded-3xl border border-white/8 bg-white/3 p-5 transition hover:border-white/15 hover:bg-white/[0.05]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

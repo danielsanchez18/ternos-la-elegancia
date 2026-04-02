@@ -47,9 +47,9 @@ export default function AdminCreateCustomerForm({
         if (!response.ok) {
           const payload = (await response.json().catch(() => null)) as
             | {
-                error?: string;
-                fields?: string[];
-              }
+              error?: string;
+              fields?: string[];
+            }
             | null;
 
           if (response.status === 409 && payload?.fields?.length) {
@@ -86,7 +86,7 @@ export default function AdminCreateCustomerForm({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+              className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -156,7 +156,7 @@ export default function AdminCatalogSection() {
           action: (
             <button
               onClick={() => void refreshSummary()}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
               type="button"
             >
               <RefreshCw className="size-3.5" />
@@ -165,7 +165,7 @@ export default function AdminCatalogSection() {
           ),
           children: (
             <div className="space-y-3">
-              <article className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+              <article className="rounded-2xl border border-white/8 bg-white/3 p-4">
                 <div className="flex items-center gap-2 text-stone-300">
                   <Layers3 className="size-4 text-cyan-300" />
                   <p className="text-sm">
@@ -174,7 +174,7 @@ export default function AdminCatalogSection() {
                   </p>
                 </div>
               </article>
-              <article className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+              <article className="rounded-2xl border border-white/8 bg-white/3 p-4">
                 <div className="flex items-center gap-2 text-stone-300">
                   <Tags className="size-4 text-cyan-300" />
                   <p className="text-sm">

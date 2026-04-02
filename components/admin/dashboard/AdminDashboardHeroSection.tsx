@@ -23,12 +23,12 @@ const heroIconMap: Record<
   DashboardHeroCardIcon,
   ComponentType<{ className?: string; strokeWidth?: number }>
 > =
-  {
-    customers: Users,
-    orders: ShoppingCart,
-    revenue: CreditCard,
-    agenda: CalendarClock,
-  };
+{
+  customers: Users,
+  orders: ShoppingCart,
+  revenue: CreditCard,
+  agenda: CalendarClock,
+};
 
 export default function AdminDashboardHeroSection({
   heroCards,
@@ -91,7 +91,7 @@ export default function AdminDashboardHeroSection({
             {focusMetrics.map((metric) => (
               <div
                 key={metric.title}
-                className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                className="rounded-3xl border border-white/8 bg-white/3 p-5"
               >
                 <p className="text-sm font-medium text-stone-200">{metric.title}</p>
                 <p className="mt-3 text-2xl font-semibold text-white">{metric.value}</p>

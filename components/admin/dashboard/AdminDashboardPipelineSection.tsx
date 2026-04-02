@@ -30,7 +30,7 @@ export default function AdminDashboardPipelineSection({
           <Link
             key={item.label}
             href={item.href}
-            className="flex items-center justify-between rounded-3xl border border-white/8 bg-white/[0.03] px-4 py-4 transition hover:bg-white/[0.05]"
+            className="flex items-center justify-between rounded-3xl border border-white/8 bg-white/3 px-4 py-4 transition hover:bg-white/[0.05]"
           >
             <div>
               <p className="text-sm font-medium text-white">{item.label}</p>

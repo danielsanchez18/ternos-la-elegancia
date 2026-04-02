@@ -77,7 +77,7 @@ export default function AdminCustomOrderActions({
     <>
       {errorMsg && (
         <div className="absolute right-12 z-20 mt-2 flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 shadow-xl max-w-[250px] text-left">
-          <AlertCircle className="size-3 flex-shrink-0" />
+          <AlertCircle className="size-3 shrink-0" />
           {errorMsg}
           <button onClick={() => setErrorMsg("")} className="ml-auto underline">
             x
@@ -129,7 +129,7 @@ export default function AdminCustomOrderActions({
                     }
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-400 transition hover:bg-white/5 text-left"
                   >
-                    <ArrowRightCircle className="size-4 flex-shrink-0" />
+                    <ArrowRightCircle className="size-4 shrink-0" />
                     <span>
                       {possibleTransition.label}
                       {possibleTransition.requiresAdvance && (
@@ -181,11 +181,10 @@ export default function AdminCustomOrderActions({
               </button>
               <button
                 onClick={handleConfirm}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                  confirmDialog.isCancel
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${confirmDialog.isCancel
                     ? "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
                     : "bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
-                }`}
+                  }`}
               >
                 {confirmDialog.isCancel ? "Sí, cancelar orden" : "Confirmar avance"}
               </button>

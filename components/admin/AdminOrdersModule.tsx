@@ -1,293 +1,208 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ScissorsLineDashed,
   ShoppingBag,
   Clock,
   CheckCircle2,
+  Package,
+  History,
+  TrendingUp,
+  FileText
 } from "lucide-react";
-import {
-  getAdminCustomOrdersListData,
-  getAdminOrdersOverviewData,
-} from "@/lib/admin-orders";
-import { getAdminSection } from "@/lib/admin-dashboard";
-import AdminCustomOrderListLayout from "@/components/admin/AdminCustomOrderListLayout";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+import { AdminStatCard, AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 import { formatMediumDate, formatStatusLabel, numberFormatter } from "@/components/admin/orders/custom-order-shared";
-import {
-  getOrdersInWorkshopTotal,
-  getOrdersRevenueTotal,
-  getOtherOrdersTotal,
-  orderSectionIconsBySlug,
-} from "@/components/admin/orders/admin-orders-overview";
+import AdminCustomOrderListLayout from "@/components/admin/AdminCustomOrderListLayout";
 import AdminRentalOrdersSubroute from "@/components/admin/orders/admin-rental-orders-subroute";
 import AdminAlterationOrdersSubroute from "@/components/admin/orders/admin-alteration-orders-subroute";
 import AdminAlterationServicesSubroute from "@/components/admin/orders/admin-alteration-services-subroute";
 
-function statCard({
-  title,
-  value,
-  detail,
-  icon: Icon,
-  alert = false,
-}: {
-  title: string;
-  value: string | number;
-  detail: React.ReactNode;
-  icon?: React.ElementType;
-  alert?: boolean;
-}) {
-  return (
-    <article
-      className={`rounded-[2rem] border p-6 ${
-        alert
-          ? "border-emerald-500/30 bg-emerald-500/10"
-          : "border-white/8 bg-white/[0.02]"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <p
-          className={`text-[11px] uppercase tracking-[0.3em] ${
-            alert ? "text-emerald-400" : "text-stone-500"
-          }`}
-        >
-          {title}
-        </p>
-        {Icon && (
-          <Icon
-            className={`size-5 ${alert ? "text-emerald-400" : "text-stone-600"}`}
-          />
-        )}
-      </div>
-      <p
-        className={`mt-4 text-4xl font-semibold tracking-tight ${
-          alert ? "text-emerald-50" : "text-white"
-        }`}
-      >
-        {value}
-      </p>
-      <div
-        className={`mt-3 text-sm leading-6 ${
-          alert ? "text-emerald-200" : "text-stone-400"
-        }`}
-      >
-        {detail}
-      </div>
-    </article>
-  );
-}
+const TABS = [
+  { id: "resumen", label: "Resumen", icon: Package, href: "/admin/ordenes" },
+  { id: "personalizadas", label: "Personalizadas", icon: ScissorsLineDashed, href: "/admin/ordenes/personalizadas" },
+  { id: "rentas", label: "Alquiler", icon: History, href: "/admin/ordenes/rentas" },
+  { id: "alteraciones", label: "Alteraciones", icon: Clock, href: "/admin/ordenes/alteraciones" },
+  { id: "servicios", label: "Servicios", icon: FileText, href: "/admin/ordenes/servicios" },
+];
 
-function panel({
-  eyebrow,
-  title,
+function AdminOrdersSharedLayout({
   children,
-  action,
+  activeTab
 }: {
-  eyebrow: string;
-  title: string;
   children: React.ReactNode;
-  action?: React.ReactNode;
+  activeTab: string;
 }) {
   return (
-    <article className="rounded-[2rem] border border-white/8 bg-black/30 p-6 sm:p-8">
-      <header className="flex items-center justify-between border-b border-white/5 pb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-            {eyebrow}
-          </p>
-          <h2 className="mt-1 text-xl font-semibold text-white">{title}</h2>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-stone-500 font-bold ml-1">Operaciones</p>
+          <h1 className="text-4xl font-bold tracking-tight text-white mt-1">Gestión de Órdenes</h1>
         </div>
-        {action}
-      </header>
-      <div className="mt-6">{children}</div>
-    </article>
-  );
-}
 
-function sectionLinks() {
-  const section = getAdminSection("ordenes");
-  if (!section) return null;
+        <nav className="flex items-center gap-1 border-b border-white/5 pb-px">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={`relative flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${isActive ? "text-emerald-400" : "text-stone-500 hover:text-stone-300"
+                  }`}
+              >
+                <tab.icon className={`size-3.5 ${isActive ? "text-emerald-400" : "text-stone-500"}`} />
+                {tab.label}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTabOrders"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {section.subroutes.map((sub) => (
-        <Link
-          key={sub.slug}
-          href={sub.href}
-          className="group block rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl border border-stone-800 bg-stone-900/50 p-2 text-stone-400 group-hover:text-emerald-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-500/10 transition">
-              {(() => {
-                const Icon = orderSectionIconsBySlug[sub.slug];
-                return Icon ? <Icon className="size-4" /> : null;
-              })()}
-            </div>
-            <div>
-              <p className="font-medium text-white group-hover:text-emerald-300">
-                {sub.label}
-              </p>
-              <p className="text-xs text-stone-500">{sub.description}</p>
-            </div>
-          </div>
-        </Link>
-      ))}
+      <main className="animate-in fade-in slide-in-from-bottom-2 duration-700">
+        {children}
+      </main>
     </div>
   );
 }
 
-export async function AdminOrdersSection() {
-  const data = await getAdminOrdersOverviewData();
+export function AdminOrdersSection() {
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchOverview() {
+      try {
+        const response = await fetch("/api/admin/orders/overview", { credentials: "include" });
+        if (response.ok) {
+          const payload = await response.json();
+          setData(payload);
+        }
+      } catch (err) {
+        console.error("Error fetching orders overview:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    void fetchOverview();
+  }, []);
+
+  if (isLoading) return <div className="py-20 text-center animate-pulse text-stone-500 font-mono text-xs uppercase tracking-widest">Sincronizando operaciones...</div>;
+  if (!data) return <div className="py-20 text-center text-stone-500">No se pudieron cargar los datos de operaciones.</div>;
+
+  const totalOther = Number(data.otherOrders.sales) + Number(data.otherOrders.rentals);
 
   return (
-    <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
-        {statCard({
-          title: "A medida",
-          value: numberFormatter.format(data.customOrders.total),
-          detail: "Órdenes de confección personalizadas.",
-          icon: ScissorsLineDashed,
-        })}
-        {statCard({
-          title: "En confección",
-          value: numberFormatter.format(data.customOrders.active),
-          detail: "En proceso o prueba.",
-          icon: Clock,
-        })}
-        {statCard({
-          title: "Listos para entrega",
-          value: numberFormatter.format(data.customOrders.ready),
-          detail: "A la espera del cliente.",
-          icon: CheckCircle2,
-          alert: data.customOrders.ready > 0,
-        })}
-        {statCard({
-          title: "Otras operaciones",
-          value: numberFormatter.format(getOtherOrdersTotal(data.otherOrders)),
-          detail: `${data.otherOrders.sales} ventas, ${data.otherOrders.rentals} alquileres.`,
-        })}
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/10 p-3">
-              <ShoppingBag
-                className="size-5 text-emerald-200"
-                strokeWidth={1.7}
-              />
-            </div>
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-                Centro de Operaciones
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-white">
-                Módulos de Órdenes
-              </h2>
-            </div>
-          </div>
-
-          {sectionLinks()}
+    <AdminOrdersSharedLayout activeTab="resumen">
+      <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <AdminStatCard title="Total Personalizadas" value={data.customOrders.total} detail="Pedidos a medida registrados" />
+          <AdminStatCard title="En Confección" value={data.customOrders.active} detail="Prendas en taller o pruebas" />
+          <AdminStatCard title="Para Entrega" value={data.customOrders.ready} detail="Pedidos listos para cliente" />
+          <AdminStatCard title="Otras Órdenes" value={totalOther} detail={`${data.otherOrders.sales} Ventas, ${data.otherOrders.rentals} Rentas`} />
         </div>
 
-        {panel({
-          eyebrow: "Confecciones",
-          title: "Últimos pedidos",
-          action: (
-            <Link
-              href="/admin/ordenes/personalizadas"
-              className="text-sm text-emerald-200 transition hover:text-emerald-100"
-            >
-              Ver todos
-            </Link>
-          ),
-          children: (
-            <div className="space-y-3">
-              {data.customOrders.recent.length ? (
-                data.customOrders.recent.map((order: any) => (
-                  <article
-                    key={order.id}
-                    className="rounded-3xl border border-white/8 bg-white/[0.03] p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        {order.code} - {order.customer.nombres}{" "}
-                        {order.customer.apellidos}
-                      </p>
-                      <p className="mt-1 text-xs text-stone-400">
-                        Total: S/ {Number(order.total).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-medium text-stone-400 border border-white/10 rounded-md px-2 py-0.5 bg-black/50">
+        <Panel eyebrow="Actividad" title="Últimos Pedidos a Medida">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-[10px] uppercase tracking-widest text-stone-600 border-b border-white/5">
+                <tr>
+                  <th className="px-2 py-4 font-bold">Orden / Cliente</th>
+                  <th className="px-2 py-4 font-bold text-center">Estado</th>
+                  <th className="px-2 py-4 font-bold text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.customOrders.recent.length > 0 ? data.customOrders.recent.map((order: any) => (
+                  <tr key={order.id} className="group hover:bg-white/2 transition-colors">
+                    <td className="px-2 py-5">
+                      <p className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">{order.code}</p>
+                      <p className="text-[11px] text-stone-500 mt-0.5">{order.customer.nombres} {order.customer.apellidos}</p>
+                    </td>
+                    <td className="px-2 py-5 text-center">
+                      <span className="inline-flex rounded-lg bg-black/40 border border-white/5 px-2 py-1 text-[10px] font-bold text-stone-400 uppercase">
                         {formatStatusLabel(order.status)}
-                      </p>
-                      <p className="mt-2 text-[10px] text-stone-500">
-                        {formatMediumDate(order.createdAt)}
-                      </p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="rounded-3xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-stone-500">
-                  No hay órdenes recientes.
-                </div>
-              )}
-            </div>
-          ),
-        })}
+                      </span>
+                    </td>
+                    <td className="px-2 py-5 text-right font-mono text-emerald-400 font-bold">
+                      S/ {Number(order.total).toFixed(2)}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={3} className="py-10 text-center text-stone-600 italic">No hay actividad reciente</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-6 pt-6 border-t border-white/5 text-center">
+            <Link href="/admin/ordenes/personalizadas" className="text-[11px] font-bold uppercase tracking-[.2em] text-emerald-400 hover:text-emerald-300 transition-colors">
+              Ver todas las confecciones →
+            </Link>
+          </div>
+        </Panel>
       </div>
-    </section>
+    </AdminOrdersSharedLayout>
   );
 }
 
-export async function AdminOrdersSubroute({ subroute }: { subroute: string }) {
-  if (subroute === "personalizadas") {
-    const orders = await getAdminCustomOrdersListData();
+export function AdminOrdersSubroute({ subroute }: { subroute: string }) {
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    return (
-      <section className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          {statCard({
-            title: "Total",
-            value: orders.length,
-            detail: "Histórico completo de órdenes.",
-          })}
-          {statCard({
-            title: "En taller",
-            value: getOrdersInWorkshopTotal(orders),
-            detail: "Prendas actualmente en desarrollo.",
-          })}
-          {statCard({
-            title: "Ingresos",
-            value: `S/ ${getOrdersRevenueTotal(orders).toFixed(2)}`,
-            detail: "Monto total transaccionado.",
-          })}
-        </div>
+  const fetchSubrouteData = async () => {
+    if (subroute !== "personalizadas") {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/admin/orders/custom-list", { credentials: "include" });
+      if (response.ok) {
+        const payload = await response.json();
+        setData(payload);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        <AdminCustomOrderListLayout orders={orders as any} />
-      </section>
-    );
-  }
+  useEffect(() => { void fetchSubrouteData(); }, [subroute]);
 
-  if (subroute === "rentas") {
-    return <AdminRentalOrdersSubroute />;
-  }
+  const renderContent = () => {
+    if (isLoading) return <div className="py-20 text-center animate-pulse text-stone-600 font-mono text-[10px] uppercase tracking-[0.3em]">Cargando módulo operativo...</div>;
 
-  if (subroute === "alteraciones") {
-    return <AdminAlterationOrdersSubroute />;
-  }
-
-  if (subroute === "servicios") {
-    return <AdminAlterationServicesSubroute />;
-  }
+    switch (subroute) {
+      case "personalizadas":
+        return <AdminCustomOrderListLayout orders={data || []} />;
+      case "rentas":
+        return <AdminRentalOrdersSubroute />;
+      case "alteraciones":
+        return <AdminAlterationOrdersSubroute />;
+      case "servicios":
+        return <AdminAlterationServicesSubroute />;
+      default:
+        return (
+          <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
+            <p className="text-stone-500 italic">Módulo pròximamente disponible</p>
+          </div>
+        );
+    }
+  };
 
   return (
-    <div className="rounded-[2rem] border border-dashed border-white/10 p-12 text-center">
-      <CheckCircle2 className="mx-auto size-12 text-stone-700" />
-      <h3 className="mt-4 text-lg font-medium text-white">Próximamente</h3>
-      <p className="mt-2 text-stone-400">
-        Esta sección de órdenes ({subroute}) estará disponible pronto.
-      </p>
-    </div>
+    <AdminOrdersSharedLayout activeTab={subroute}>
+      {renderContent()}
+    </AdminOrdersSharedLayout>
   );
 }

@@ -1,13 +1,10 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { useState } from "react";
-import { Plus, ScissorsLineDashed } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, ScissorsLineDashed, Search, Filter, Clock, CheckCircle2, User, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+
 import AdminCustomOrderActions from "@/components/admin/AdminCustomOrderActions";
 import { formatMediumDate, formatStatusLabel } from "@/components/admin/orders/custom-order-shared";
 import {
@@ -15,131 +12,167 @@ import {
   getCustomOrderItemCount,
   getCustomOrderPartsCount,
 } from "@/components/admin/orders/custom-order-list";
+import { AdminStatCard, AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 
 export default function AdminCustomOrderListLayout({
-  orders,
+  orders = [],
 }: {
-  orders: any[]; // we'll use actual typings based on prisma return later
+  orders?: any[];
 }) {
-  return (
-    <div className="flex flex-col relative w-full overflow-hidden">
-      <motion.div
-        layout
-        transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-        className="flex-grow w-full min-w-0"
-      >
-        <div className="rounded-[1.75rem] border border-white/8 bg-[#0e0e0e] flex flex-col min-w-0 pb-[10rem]">
-          <div className="flex items-center justify-between border-b border-white/5 p-6 md:px-8">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">
-                Operaciones
-              </p>
-              <h3 className="mt-1 text-xl font-semibold text-white">
-                Pedidos a Medida
-              </h3>
-            </div>
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-            <Link
-              href="/admin/ordenes/personalizadas/nueva"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-white/10 hover:text-emerald-100"
-            >
-              <Plus className="size-4" />
-              <span className="hidden sm:inline">Nueva Orden</span>
-            </Link>
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const matchesSearch =
+        o.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.customer.nombres.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.customer.apellidos.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || o.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, searchTerm, statusFilter]);
+
+  const stats = useMemo(() => {
+    const total = orders.length;
+    const inWorkshop = orders.filter(o => ["EN_CONFECCION", "EN_PRUEBA"].includes(o.status)).length;
+    const ready = orders.filter(o => o.status === "LISTO").length;
+    const pending = orders.filter(o => o.status === "PENDIENTE_RESERVA").length;
+
+    return { total, inWorkshop, ready, pending };
+  }, [orders]);
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <AdminStatCard title="Total Pedidos" value={stats.total} detail="Histórico de confecciones" />
+        <AdminStatCard title="En Taller" value={stats.inWorkshop} detail="En proceso o prueba" />
+        <AdminStatCard title="Listos p/ Entrega" value={stats.ready} detail="Esperando al cliente" />
+        <AdminStatCard title="Pendientes" value={stats.pending} detail="Falta reserva o detalle" />
+      </div>
+
+      <Panel
+        eyebrow="Maestro"
+        title="Pedidos Personalizados"
+        action={
+          <Link
+            href="/admin/ordenes/personalizadas/nueva"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-emerald-950 transition hover:bg-emerald-400"
+          >
+            <Plus className="size-4" />
+            Nueva Orden
+          </Link>
+        }
+      >
+        <div className="flex flex-col gap-4 border-b border-white/5 pb-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+            <input
+              type="text"
+              placeholder="Buscar por código u cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-9 pr-4 text-sm text-stone-200 outline-none transition focus:border-emerald-500/50"
+            />
           </div>
 
-          <div className="p-6 md:px-8">
-            <div className="overflow-visible min-h-[250px] w-full">
-              <table className="min-w-full text-left text-sm">
-                <thead className="text-stone-500">
-                  <tr className="border-b border-white/8">
-                    <th className="px-4 py-3 font-medium">Orden / Fechas</th>
-                    <th className="px-4 py-3 font-medium">Cliente</th>
-                    <th className="px-4 py-3 font-medium">Detalle</th>
-                    <th className="px-4 py-3 font-medium">Estado</th>
-                    <th className="px-4 py-3 font-medium text-right">Total</th>
-                    <th className="px-4 py-3 font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="py-12 text-center text-stone-500"
-                      >
-                        <ScissorsLineDashed className="mx-auto size-8 text-stone-700 mb-3" />
-                        No hay pedidos a medida registrados
-                      </td>
-                    </tr>
-                  ) : (
-                    orders.map((order) => {
-                      const itemCount = getCustomOrderItemCount(order);
-                      const partsCount = getCustomOrderPartsCount(order);
-
-                      return (
-                        <tr
-                          key={order.id}
-                          className="border-b border-white/6 align-top"
-                        >
-                          <td className="px-4 py-4">
-                            <p className="font-medium text-white">
-                              {order.code}
-                            </p>
-                            <div className="mt-1 flex flex-col gap-1 text-[11px] text-stone-400">
-                              <p>Creado: {formatMediumDate(order.createdAt)}</p>
-                              {order.promisedDeliveryAt && (
-                                <p className="text-amber-200/70">
-                                  Entrega: {formatMediumDate(order.promisedDeliveryAt)}
-                                </p>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <p className="font-medium text-stone-300">
-                              {order.customer.nombres} {order.customer.apellidos}
-                            </p>
-                            {order.requiresMeasurement && (
-                              <span className="mt-2 inline-block rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-rose-300">
-                                FALTA MEDIDAS
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-stone-400 text-xs">
-                            <p>
-                              {itemCount} item{itemCount !== 1 ? "s" : ""}
-                            </p>
-                            <p className="mt-0.5 text-stone-500">
-                              ({partsCount} prendas a confeccionar)
-                            </p>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-medium ${customOrderStatusChipClasses(
-                                order.status
-                              )}`}
-                            >
-                              {formatStatusLabel(order.status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <p className="font-medium text-emerald-300">
-                              S/ {Number(order.total).toFixed(2)}
-                            </p>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <AdminCustomOrderActions order={order} />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+          <div className="relative group">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="appearance-none rounded-xl border border-white/10 bg-black/40 py-2.5 pl-4 pr-10 text-sm text-stone-300 outline-none focus:border-emerald-500/50 transition-all font-bold uppercase tracking-widest text-[10px]"
+            >
+              <option value="all">Siltro: Todos los estados</option>
+              <option value="PENDIENTE_RESERVA">Pendiente Reserva</option>
+              <option value="EN_CONFECCION">En Confección</option>
+              <option value="EN_PRUEBA">En Prueba</option>
+              <option value="LISTO">Listo p/ Entrega</option>
+              <option value="ENTREGADO">Entregado</option>
+            </select>
+            <Filter className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-stone-500" />
           </div>
         </div>
-      </motion.div>
+
+        <div className="overflow-x-auto mt-6">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-[10px] uppercase tracking-widest text-stone-600 font-bold border-b border-white/8">
+              <tr>
+                <th className="px-3 py-3 font-medium">Orden / Fechas</th>
+                <th className="px-3 py-3 font-medium">Cliente</th>
+                <th className="px-3 py-3 font-medium text-center">Detalle</th>
+                <th className="px-3 py-3 font-medium text-center">Estado</th>
+                <th className="px-3 py-3 font-medium text-right">Total</th>
+                <th className="px-3 py-3 font-medium text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-20 text-center text-stone-600 italic">
+                    {orders.length === 0 ? "No hay pedidos registrados comercialmente." : "No se hallaron coincidencias con los filtros."}
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order) => {
+                  const itemCount = getCustomOrderItemCount(order);
+                  const partsCount = getCustomOrderPartsCount(order);
+
+                  return (
+                    <tr key={order.id} className="group hover:bg-white/2 transition-colors">
+                      <td className="px-3 py-5">
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-lg bg-white/5 p-2 transition group-hover:bg-emerald-500/10">
+                            <FileText className="size-4 text-stone-400 group-hover:text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="text-base font-bold text-white leading-none">{order.code}</p>
+                            <div className="mt-2 space-y-0.5">
+                              <p className="text-[10px] text-stone-500 uppercase font-medium">Reg: {formatMediumDate(order.createdAt)}</p>
+                              {order.promisedDeliveryAt && (
+                                <p className="text-[10px] text-amber-400/60 uppercase font-bold tracking-tighter">Entrega: {formatMediumDate(order.promisedDeliveryAt)}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-5">
+                        <div className="flex items-center gap-2">
+                          <User className="size-3 text-stone-600" />
+                          <p className="text-sm font-bold text-stone-200">{order.customer.nombres} {order.customer.apellidos}</p>
+                        </div>
+                        {order.requiresMeasurement && (
+                          <span className="mt-1.5 inline-block rounded-md bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tight text-rose-400 border border-rose-500/20">
+                            PENDIENTE MEDIDAS
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-5 text-center">
+                        <p className="text-sm font-bold text-stone-300">{itemCount} Itm</p>
+                        <p className="text-[10px] text-stone-600 font-medium uppercase mt-0.5 tracking-tighter">({partsCount} prendas)</p>
+                      </td>
+                      <td className="px-3 py-5 text-center">
+                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${customOrderStatusChipClasses(order.status)}`}>
+                          {formatStatusLabel(order.status)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-5 text-right font-mono font-bold text-emerald-400">
+                        S/ {Number(order.total).toFixed(2)}
+                      </td>
+                      <td className="px-3 py-5 text-right">
+                        <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          <AdminCustomOrderActions order={order} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </div>
   );
 }

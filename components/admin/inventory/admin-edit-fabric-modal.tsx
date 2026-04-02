@@ -32,7 +32,7 @@ export default function AdminEditFabricModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
           >
             <X className="size-5" />
           </button>

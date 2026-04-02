@@ -48,7 +48,7 @@ export default function AdminCreateCustomOrderForm({
 
   const updateForm = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    
+
     if (key === "customerId" && value) {
       void fetchCustomerProfilesForCustomer(value);
     }
@@ -116,7 +116,7 @@ export default function AdminCreateCustomOrderForm({
         });
 
         const resData = await res.json().catch(() => null);
-        
+
         if (res.ok && resData?.id) {
           router.push(`/admin/ordenes/personalizadas/${resData.id}`);
           router.refresh();
@@ -146,7 +146,7 @@ export default function AdminCreateCustomOrderForm({
         <div className="flex items-center gap-3">
           <Link
             href="/admin/ordenes/personalizadas"
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
           >
             <ArrowLeft className="size-5" />
           </Link>
@@ -234,7 +234,7 @@ export default function AdminCreateCustomOrderForm({
                     </div>
 
                     {/* PARTES */}
-                    <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                    <div className="mt-4 rounded-xl border border-white/5 bg-white/2 p-4">
                       <div className="mb-4 flex items-center justify-between">
                         <p className="text-sm font-medium text-stone-300">
                           Prendas (Partes a confeccionar)
@@ -319,8 +319,8 @@ export default function AdminCreateCustomOrderForm({
                                     <option value="SOLO_CONFECCION" className="bg-stone-900">Solo Confección (CMT)</option>
                                   </select>
                                   <p className="text-[10px] text-stone-500 mt-1 leading-tight">
-                                    {part.workMode === "A_TODO_COSTO" 
-                                      ? "Descuenta inventario interno." 
+                                    {part.workMode === "A_TODO_COSTO"
+                                      ? "Descuenta inventario interno."
                                       : "El cliente trae su propia tela."}
                                   </p>
                                 </div>
@@ -358,18 +358,18 @@ export default function AdminCreateCustomOrderForm({
                                           customerProfiles,
                                           part.measurementProfileId
                                         ).map((g: any) => (
-                                            <option key={g.id} value={g.id} className="bg-stone-900">
-                                              {g.garmentType.replace(/_/g, " ")}
-                                            </option>
-                                          ))
+                                          <option key={g.id} value={g.id} className="bg-stone-900">
+                                            {g.garmentType.replace(/_/g, " ")}
+                                          </option>
+                                        ))
                                         }
                                       </select>
                                     )}
                                   </div>
                                   <p className="text-[10px] text-stone-500 mt-1 leading-tight">
-                                    {customerProfiles.length === 0 && form.customerId 
+                                    {customerProfiles.length === 0 && form.customerId
                                       ? "Este cliente no tiene perfiles registrados."
-                                      : !form.customerId 
+                                      : !form.customerId
                                         ? "Selecciona un cliente primero."
                                         : "Toma de medidas técnica asociada."}
                                   </p>
@@ -499,6 +499,6 @@ export default function AdminCreateCustomOrderForm({
 
 function XIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
   );
 }

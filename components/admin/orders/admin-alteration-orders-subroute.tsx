@@ -2,9 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Scissors,
+  Hammer,
+  Package,
+  CheckCircle2,
+  MoreHorizontal,
+  User,
+  Clock as ClockIcon,
+  TrendingUp,
+  Search,
+  RefreshCcw,
+  PlusCircle,
+  FileText
+} from "lucide-react";
 
 import { alterationOrderStatusChipClasses } from "@/components/admin/orders/order-status-styles";
 import { formatMediumDate, formatStatusLabel } from "@/components/admin/orders/custom-order-shared";
+import { AdminStatCard, AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 
 type CustomerOption = {
   id: string;
@@ -55,50 +70,35 @@ async function parseApiError(response: Response, fallback: string): Promise<stri
   if (payload && typeof payload.error === "string") {
     return payload.error;
   }
-
   return fallback;
 }
 
 function getAlterationActions(status: string): Array<{ action: string; label: string }> {
   if (status === "RECIBIDO") {
     return [
-      { action: "START_EVALUATION", label: "Iniciar evaluacion" },
+      { action: "START_EVALUATION", label: "Iniciar evaluación" },
       { action: "CANCEL", label: "Cancelar" },
     ];
   }
-
   if (status === "EN_EVALUACION") {
     return [
       { action: "START_WORK", label: "Iniciar trabajo" },
       { action: "CANCEL", label: "Cancelar" },
     ];
   }
-
   if (status === "EN_PROCESO") {
     return [
       { action: "MARK_READY", label: "Marcar listo" },
       { action: "CANCEL", label: "Cancelar" },
     ];
   }
-
   if (status === "LISTO") {
     return [
       { action: "MARK_DELIVERED", label: "Marcar entregado" },
       { action: "CANCEL", label: "Cancelar" },
     ];
   }
-
   return [];
-}
-
-function statCard(input: { title: string; value: string | number; detail: string }) {
-  return (
-    <article className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5">
-      <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">{input.title}</p>
-      <p className="mt-3 text-3xl font-semibold text-white">{input.value}</p>
-      <p className="mt-2 text-sm text-stone-400">{input.detail}</p>
-    </article>
-  );
 }
 
 export default function AdminAlterationOrdersSubroute() {
@@ -119,374 +119,248 @@ export default function AdminAlterationOrdersSubroute() {
   const [notes, setNotes] = useState("");
 
   const customerById = useMemo(
-    () =>
-      new Map(
-        customers.map((customer) => [
-          customer.id,
-          `${customer.nombres} ${customer.apellidos}`.trim(),
-        ])
-      ),
+    () => new Map(customers.map((c) => [c.id, `${c.nombres} ${c.apellidos}`.trim()])),
     [customers]
   );
 
-  const activeServices = useMemo(
-    () => services.filter((service) => service.activo),
-    [services]
-  );
+  const activeServices = useMemo(() => services.filter((s) => s.activo), [services]);
 
   const refreshData = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const [ordersResponse, customersResponse, servicesResponse] = await Promise.all([
-        fetch("/api/alteration-orders?page=1&pageSize=100&orderBy=createdAt&order=desc", {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-        }),
-        fetch("/api/customers", {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-        }),
-        fetch("/api/alteration-services", {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-        }),
+      const [ordersRes, customersRes, servicesRes] = await Promise.all([
+        fetch("/api/alteration-orders?page=1&pageSize=100&orderBy=createdAt&order=desc", { cache: "no-store", credentials: "include" }),
+        fetch("/api/customers", { cache: "no-store", credentials: "include" }),
+        fetch("/api/alteration-services", { cache: "no-store", credentials: "include" }),
       ]);
-
-      if (!ordersResponse.ok || !customersResponse.ok || !servicesResponse.ok) {
-        setError("No se pudo cargar la data de alteraciones.");
-        return;
+      if (ordersRes.ok && customersRes.ok && servicesRes.ok) {
+        setOrders(((await ordersRes.json()) as AlterationOrderListResponse).items || []);
+        setCustomers((await customersRes.json()) as CustomerOption[]);
+        setServices((await servicesRes.json()) as AlterationServiceOption[]);
       }
-
-      const ordersPayload = (await ordersResponse.json()) as AlterationOrderListResponse;
-      const customersPayload = (await customersResponse.json()) as CustomerOption[];
-      const servicesPayload = (await servicesResponse.json()) as AlterationServiceOption[];
-
-      setOrders(Array.isArray(ordersPayload.items) ? ordersPayload.items : []);
-      setCustomers(Array.isArray(customersPayload) ? customersPayload : []);
-      setServices(Array.isArray(servicesPayload) ? servicesPayload : []);
-    } catch {
-      setError("Error de red al cargar alteraciones.");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError("Error de red."); } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    void refreshData();
-  }, []);
+  useEffect(() => { void refreshData(); }, []);
 
-  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFeedback(null);
-    setError(null);
-
-    if (!customerId || !garmentDescription.trim() || !workDescription.trim()) {
-      setError("Completa cliente, prenda y trabajo.");
-      return;
-    }
-
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault(); setFeedback(null); setError(null);
+    if (!customerId || !garmentDescription.trim() || !workDescription.trim()) { setError("Completa los campos obligatorios."); return; }
     setIsSubmitting(true);
-
     try {
       const promisedAtDate = promisedAt ? new Date(promisedAt) : null;
-      if (promisedAt && (promisedAtDate === null || Number.isNaN(promisedAtDate.getTime()))) {
-        setError("Fecha prometida invalida.");
-        return;
-      }
-
-      const response = await fetch("/api/alteration-orders", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          customerId,
-          serviceId: serviceId || undefined,
-          garmentDescription: garmentDescription.trim(),
-          workDescription: workDescription.trim(),
-          promisedAt: promisedAtDate ? promisedAtDate.toISOString() : undefined,
-          notes: notes.trim() || undefined,
-        }),
+      const res = await fetch("/api/alteration-orders", {
+        method: "POST", credentials: "include", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ customerId, serviceId: serviceId || undefined, garmentDescription: garmentDescription.trim(), workDescription: workDescription.trim(), promisedAt: promisedAtDate?.toISOString(), notes: notes.trim() || undefined }),
       });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo crear la orden de alteracion."));
-        return;
-      }
-
-      setFeedback("Orden de alteracion creada.");
-      setGarmentDescription("");
-      setWorkDescription("");
-      setNotes("");
-      setPromisedAt(buildDefaultPromisedAt());
-      await refreshData();
-    } catch {
-      setError("Error de red al crear la orden.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (res.ok) {
+        setFeedback("Orden creada."); setGarmentDescription(""); setWorkDescription(""); setNotes(""); setPromisedAt(buildDefaultPromisedAt()); await refreshData();
+      } else { setError(await parseApiError(res, "Error al crear.")); }
+    } catch { setError("Error de red."); } finally { setIsSubmitting(false); }
   };
 
   const handleOrderAction = async (orderId: string, action: string) => {
-    setActiveOrderId(orderId);
-    setFeedback(null);
-    setError(null);
-
+    setActiveOrderId(orderId); setFeedback(null); setError(null);
     try {
-      const response = await fetch(`/api/alteration-orders/${orderId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
+      const res = await fetch(`/api/alteration-orders/${orderId}`, {
+        method: "PATCH", credentials: "include", headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo actualizar la orden."));
-        return;
-      }
-
-      setFeedback("Estado de alteracion actualizado.");
-      await refreshData();
-    } catch {
-      setError("Error de red al actualizar la orden.");
-    } finally {
-      setActiveOrderId(null);
-    }
+      if (res.ok) { setFeedback("Estado actualizado."); await refreshData(); }
+    } finally { setActiveOrderId(null); }
   };
 
-  const activeOrders = orders.filter((order) =>
-    ["RECIBIDO", "EN_EVALUACION", "EN_PROCESO", "LISTO"].includes(order.status)
-  ).length;
-  const completedOrders = orders.filter((order) => order.status === "ENTREGADO").length;
+  const stats = useMemo(() => ({
+    total: orders.length,
+    active: orders.filter(o => ["RECIBIDO", "EN_EVALUACION", "EN_PROCESO", "LISTO"].includes(o.status)).length,
+    delivered: orders.filter(o => o.status === "ENTREGADO").length,
+    servicesCount: activeServices.length
+  }), [orders, activeServices]);
 
   return (
-    <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {statCard({
-          title: "Alteraciones",
-          value: orders.length,
-          detail: "Ordenes registradas.",
-        })}
-        {statCard({
-          title: "En curso",
-          value: activeOrders,
-          detail: "Pendientes de entrega final.",
-        })}
-        {statCard({
-          title: "Entregadas",
-          value: completedOrders,
-          detail: "Ordenes finalizadas.",
-        })}
-        {statCard({
-          title: "Servicios activos",
-          value: activeServices.length,
-          detail: "Disponibles para nuevas ordenes.",
-        })}
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <AdminStatCard title="Total Ajustes" value={stats.total} detail="Histórico de sastrería" />
+        <AdminStatCard title="En Taller" value={stats.active} detail="Pendientes de entrega" />
+        <AdminStatCard title="Entregadas" value={stats.delivered} detail="Ordenes finalizadas" />
+        <AdminStatCard title="Servicios Base" value={stats.servicesCount} detail="Catálogo habilitado" />
       </div>
 
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Nueva alteracion</p>
-        <h2 className="mt-2 text-xl font-semibold text-white">Crear orden de arreglo</h2>
+      <div className="flex flex-col xl:flex-row gap-6 items-start">
+        <div className="flex-1 w-full space-y-6 min-w-0">
+          <Panel eyebrow="Taller" title="Maestro de Alteraciones">
+            <div className="flex flex-col gap-4 border-b border-white/5 pb-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar por código u cliente..."
+                  className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-9 pr-4 text-sm text-stone-200 outline-none transition focus:border-emerald-500/50"
+                />
+              </div>
+              <button
+                onClick={() => void refreshData()}
+                className="rounded-xl border border-white/10 bg-black/40 p-2.5 text-stone-400 hover:text-white transition"
+              >
+                <RefreshCcw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
 
-        <form onSubmit={handleCreate} className="mt-5 grid gap-3 md:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Cliente
-            <select
-              value={customerId}
-              onChange={(event) => setCustomerId(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-              required
-            >
-              <option value="">Selecciona cliente</option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.nombres} {customer.apellidos} - {customer.dni}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Servicio (opcional)
-            <select
-              value={serviceId}
-              onChange={(event) => setServiceId(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-            >
-              <option value="">Sin servicio base</option>
-              {activeServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Prenda
-            <input
-              type="text"
-              value={garmentDescription}
-              onChange={(event) => setGarmentDescription(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-              required
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Trabajo solicitado
-            <input
-              type="text"
-              value={workDescription}
-              onChange={(event) => setWorkDescription(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-              required
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Fecha prometida
-            <input
-              type="datetime-local"
-              value={promisedAt}
-              onChange={(event) => setPromisedAt(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Nota
-            <input
-              type="text"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Opcional"
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder:text-stone-500"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="md:col-span-2 inline-flex w-fit items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
-          >
-            {isSubmitting ? "Creando..." : "Crear orden de alteracion"}
-          </button>
-        </form>
-
-        {feedback && (
-          <p className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-            {feedback}
-          </p>
-        )}
-        {error && (
-          <p className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">
-            {error}
-          </p>
-        )}
-      </article>
-
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Listado</p>
-            <h2 className="mt-2 text-xl font-semibold text-white">Ordenes de alteracion</h2>
-          </div>
-          <button
-            onClick={() => void refreshData()}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-          >
-            Actualizar
-          </button>
+            <div className="overflow-x-auto mt-6">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-[10px] uppercase tracking-widest text-stone-600 font-bold border-b border-white/8">
+                  <tr>
+                    <th className="px-3 py-3 font-medium">Orden / Prenda</th>
+                    <th className="px-3 py-3 font-medium text-center">Referencia</th>
+                    <th className="px-3 py-3 font-medium text-center">Plazos</th>
+                    <th className="px-3 py-3 font-medium text-center">Estado</th>
+                    <th className="px-3 py-3 font-medium text-right">Total</th>
+                    <th className="px-3 py-3 font-medium text-right">Gestión</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {isLoading ? (
+                    <tr><td colSpan={6} className="py-20 text-center animate-pulse text-stone-600 font-mono text-[10px] uppercase tracking-widest">Consultando mesa de trabajo...</td></tr>
+                  ) : orders.length === 0 ? (
+                    <tr><td colSpan={6} className="py-20 text-center text-stone-600 italic">No hay alteraciones registradas</td></tr>
+                  ) : (
+                    orders.map((o) => (
+                      <tr key={o.id} className="group hover:bg-white/2 transition-colors">
+                        <td className="px-3 py-5">
+                          <p className="text-base font-bold text-white leading-none">{o.code}</p>
+                          <p className="text-[10px] text-stone-500 mt-1.5 uppercase font-mono tracking-tighter truncate max-w-[150px]">{o.garmentDescription}</p>
+                        </td>
+                        <td className="px-3 py-5 text-center">
+                          <p className="text-sm font-bold text-stone-300">{customerById.get(o.customerId) || "Clin."}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-stone-600 font-bold mt-1">{o.service?.nombre || "Sin servicio base"}</p>
+                        </td>
+                        <td className="px-3 py-5 text-center">
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-stone-500 font-bold uppercase tracking-tighter">Recibo: {formatMediumDate(o.receivedAt)}</p>
+                            {o.promisedAt && (
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/80">
+                                Meta: {formatMediumDate(o.promisedAt)}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-5 text-center text-[10px] font-bold uppercase tracking-widest">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 ${alterationOrderStatusChipClasses(o.status)}`}>
+                            {formatStatusLabel(o.status)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-5 text-right font-mono font-bold text-emerald-400">
+                          S/ {Number(o.total).toFixed(2)}
+                        </td>
+                        <td className="px-3 py-5 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {getAlterationActions(o.status).map(action => (
+                              <button
+                                key={action.action}
+                                onClick={() => void handleOrderAction(o.id, action.action)}
+                                disabled={activeOrderId === o.id}
+                                className="rounded-lg bg-emerald-500/10 text-emerald-400 px-2 py-1 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500/20 transition disabled:opacity-50"
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                            <Link
+                              href={`/admin/ordenes/alteraciones/${o.id}`}
+                              className="rounded-lg bg-white/5 text-stone-300 p-1.5 hover:bg-white/10 transition"
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
         </div>
 
-        {isLoading ? (
-          <p className="mt-6 text-sm text-stone-400">Cargando ordenes...</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-stone-500">
-                <tr className="border-b border-white/8">
-                  <th className="px-3 py-3 font-medium">Codigo</th>
-                  <th className="px-3 py-3 font-medium">Cliente</th>
-                  <th className="px-3 py-3 font-medium">Servicio</th>
-                  <th className="px-3 py-3 font-medium">Fechas</th>
-                  <th className="px-3 py-3 font-medium">Estado</th>
-                  <th className="px-3 py-3 font-medium text-right">Total</th>
-                  <th className="px-3 py-3 font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-10 text-center text-stone-500">
-                      No hay ordenes de alteracion registradas.
-                    </td>
-                  </tr>
-                ) : (
-                  orders.map((order) => (
-                    <tr key={order.id} className="border-b border-white/6 align-top">
-                      <td className="px-3 py-4">
-                        <p className="font-medium text-white">{order.code}</p>
-                        <p className="mt-1 text-xs text-stone-500">{order.garmentDescription}</p>
-                      </td>
-                      <td className="px-3 py-4 text-stone-200">
-                        {customerById.get(order.customerId) ?? order.customerId}
-                      </td>
-                      <td className="px-3 py-4 text-stone-300">
-                        {order.service?.nombre ?? "Sin servicio base"}
-                      </td>
-                      <td className="px-3 py-4 text-xs text-stone-400">
-                        <p>Recibido: {formatMediumDate(order.receivedAt)}</p>
-                        <p className="mt-1">Prometido: {formatMediumDate(order.promisedAt)}</p>
-                        {order.deliveredAt && (
-                          <p className="mt-1 text-emerald-300">
-                            Entregado: {formatMediumDate(order.deliveredAt)}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-3 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${alterationOrderStatusChipClasses(order.status)}`}
-                        >
-                          {formatStatusLabel(order.status)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4 text-right font-medium text-emerald-300">
-                        S/ {Number(order.total).toFixed(2)}
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          <Link
-                            href={`/admin/ordenes/alteraciones/${order.id}`}
-                            className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-                          >
-                            Detalle
-                          </Link>
-                          {getAlterationActions(order.status).map((item) => (
-                            <button
-                              key={item.action}
-                              onClick={() => void handleOrderAction(order.id, item.action)}
-                              disabled={activeOrderId === order.id}
-                              className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1.5 text-xs text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </article>
-    </section>
+        <div className="w-full xl:w-[400px] shrink-0">
+          <Panel eyebrow="Registro" title="Nueva Alteración">
+            <form onSubmit={handleCreate} className="space-y-5">
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Cliente Titular</p>
+                <select
+                  value={customerId}
+                  onChange={e => setCustomerId(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/50"
+                  required
+                >
+                  <option value="">Selecciona cliente...</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos} - {c.dni}</option>)}
+                </select>
+              </div>
+
+              <div className="grid gap-4 grid-cols-2">
+                <div className="space-y-1.5">
+                  <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Tipo Prenda</p>
+                  <input
+                    type="text"
+                    value={garmentDescription}
+                    onChange={e => setGarmentDescription(e.target.value)}
+                    placeholder="Ej: Saco Azul"
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Servicio Base</p>
+                  <select
+                    value={serviceId}
+                    onChange={e => setServiceId(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none"
+                  >
+                    <option value="">Opcional...</option>
+                    {activeServices.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Trabajo a Realizar</p>
+                <textarea
+                  value={workDescription}
+                  onChange={e => setWorkDescription(e.target.value)}
+                  placeholder="Ej: Entallar mangas 2cm, subir basta..."
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white min-h-[100px] outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Fecha Prometida</p>
+                <input
+                  type="datetime-local"
+                  value={promisedAt}
+                  onChange={e => setPromisedAt(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white font-mono"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-emerald-950 hover:bg-emerald-400 transition disabled:opacity-50"
+              >
+                {isSubmitting ? "Registrando..." : "Crear Orden de Ajuste"}
+              </button>
+            </form>
+          </Panel>
+        </div>
+      </div>
+
+      {feedback && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-emerald-500/20 bg-[#0e0e0e] px-6 py-3 shadow-2xl shadow-emerald-500/10">
+          <p className="text-sm text-emerald-400 font-bold flex items-center gap-2"><CheckCircle2 className="size-4" /> {feedback}</p>
+        </div>
+      )}
+    </div>
   );
 }

@@ -34,7 +34,7 @@ function statusBadgeClasses(status: string) {
     case "REPROGRAMADA":
       return "border-violet-400/20 bg-violet-400/10 text-violet-200";
     default:
-      return "border-white/8 bg-white/[0.03] text-stone-400";
+      return "border-white/8 bg-white/3 text-stone-400";
   }
 }
 

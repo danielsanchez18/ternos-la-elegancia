@@ -55,7 +55,7 @@ function ModalCard({
         </div>
         <button
           onClick={onClose}
-          className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+          className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
         >
           <X className="size-4" />
         </button>
@@ -209,7 +209,7 @@ export function MeasurementValuesFormContent({
             return (
               <div
                 key={field.id}
-                className="rounded-2xl border border-white/8 bg-white/[0.02] p-4"
+                className="rounded-2xl border border-white/8 bg-white/2 p-4"
               >
                 <p className="mb-3 text-xs uppercase tracking-[0.15em] text-stone-400">
                   {field.label}
@@ -255,7 +255,7 @@ export function MeasurementValuesFormContent({
           type="button"
           onClick={onClose}
           disabled={isPending}
-          className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+          className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
         >
           Cancelar
         </button>

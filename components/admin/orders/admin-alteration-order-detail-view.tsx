@@ -191,7 +191,7 @@ export default function AdminAlterationOrderDetailView({ orderId }: { orderId: s
         </div>
         <Link
           href="/admin/ordenes/alteraciones"
-          className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
+          className="rounded-xl border border-white/10 bg-white/3 px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
         >
           Volver a alteraciones
         </Link>
@@ -211,15 +211,15 @@ export default function AdminAlterationOrderDetailView({ orderId }: { orderId: s
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Recibido</p>
             <p className="mt-2">{formatMediumDate(order.receivedAt)}</p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Prometido</p>
             <p className="mt-2">{formatMediumDate(order.promisedAt)}</p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Entregado</p>
             <p className="mt-2">{formatMediumDate(order.deliveredAt)}</p>
           </div>
@@ -239,7 +239,7 @@ export default function AdminAlterationOrderDetailView({ orderId }: { orderId: s
         </div>
 
         {(order.notes || order.initialCondition) && (
-          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="mt-4 rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             {order.initialCondition && <p>Condicion inicial: {order.initialCondition}</p>}
             {order.notes && <p className="mt-1">Notas: {order.notes}</p>}
           </div>
@@ -263,15 +263,15 @@ export default function AdminAlterationOrderDetailView({ orderId }: { orderId: s
         <p className="mt-3 text-sm text-stone-300">{order.workDescription}</p>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Subtotal</p>
             <p className="mt-2">S/ {Number(order.subtotal).toFixed(2)}</p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Descuento</p>
             <p className="mt-2">S/ {Number(order.discountTotal).toFixed(2)}</p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-stone-300">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-4 text-sm text-stone-300">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Servicio base</p>
             <p className="mt-2">{order.service?.nombre ?? "Sin servicio base"}</p>
           </div>

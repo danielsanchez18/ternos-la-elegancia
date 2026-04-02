@@ -64,7 +64,7 @@ export default function AdminFabricMovementsModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
           >
             <X className="size-5" />
           </button>
@@ -88,15 +88,14 @@ export default function AdminFabricMovementsModal({
                   return (
                     <article
                       key={movement.id}
-                      className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.02] p-4"
+                      className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/2 p-4"
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`rounded-full p-2 ${
-                            positive
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-rose-500/10 text-rose-400"
-                          }`}
+                          className={`rounded-full p-2 ${positive
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : "bg-rose-500/10 text-rose-400"
+                            }`}
                         >
                           <Icon className="size-4" />
                         </div>
@@ -107,9 +106,8 @@ export default function AdminFabricMovementsModal({
                       </div>
                       <div className="text-right">
                         <p
-                          className={`text-sm font-semibold ${
-                            positive ? "text-emerald-400" : "text-rose-400"
-                          }`}
+                          className={`text-sm font-semibold ${positive ? "text-emerald-400" : "text-rose-400"
+                            }`}
                         >
                           {positive ? "+" : "-"}
                           {Number(movement.quantity)}m
@@ -125,7 +123,7 @@ export default function AdminFabricMovementsModal({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-5 h-fit">
+          <div className="rounded-2xl border border-white/8 bg-white/2 p-5 h-fit">
             <h3 className="text-sm font-medium text-stone-300 mb-4">Registrar Movimiento</h3>
             <form onSubmit={handleAddMovement} className="space-y-4">
               <label className="block space-y-1.5">

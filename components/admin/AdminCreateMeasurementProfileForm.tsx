@@ -181,11 +181,10 @@ export default function AdminCreateMeasurementProfileForm({
                   key={garment.value}
                   type="button"
                   onClick={() => toggleGarment(garment.value)}
-                  className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                    isSelected
+                  className={`rounded-full border px-3 py-1.5 text-xs transition ${isSelected
                       ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-200"
-                      : "border-white/8 bg-white/[0.03] text-stone-400 hover:bg-white/[0.06]"
-                  }`}
+                      : "border-white/8 bg-white/3 text-stone-400 hover:bg-white/[0.06]"
+                    }`}
                 >
                   {isSelected ? <span className="mr-1">✓</span> : null}
                   {garment.label}

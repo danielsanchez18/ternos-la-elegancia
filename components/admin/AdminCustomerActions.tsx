@@ -51,7 +51,7 @@ function ModalCard({
         </div>
         <button
           onClick={onClose}
-          className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+          className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
         >
           <X className="size-4" />
         </button>
@@ -126,9 +126,9 @@ function EditModal({
         if (!response.ok) {
           const payload = (await response.json().catch(() => null)) as
             | {
-                error?: string;
-                fields?: string[];
-              }
+              error?: string;
+              fields?: string[];
+            }
             | null;
 
           if (response.status === 409 && payload?.fields?.length) {
@@ -170,7 +170,7 @@ function EditModal({
             {changes.map((change) => (
               <div
                 key={change.field}
-                className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3"
+                className="rounded-xl border border-white/8 bg-white/3 px-4 py-3"
               >
                 <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
                   {change.field}
@@ -190,7 +190,7 @@ function EditModal({
             <button
               onClick={() => setStep("form")}
               disabled={isPending}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+              className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
             >
               Volver
             </button>
@@ -276,7 +276,7 @@ function EditModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06]"
+              className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06]"
             >
               Cancelar
             </button>
@@ -383,7 +383,7 @@ function DeactivateModal({
                 setConfirmText("");
               }}
               disabled={isPending}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+              className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
             >
               Volver
             </button>
@@ -413,7 +413,7 @@ function DeactivateModal({
           </p>
         </div>
 
-        <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
+        <div className="mt-4 rounded-xl border border-white/8 bg-white/3 px-4 py-3">
           <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
             Resumen del cliente
           </p>
@@ -426,7 +426,7 @@ function DeactivateModal({
         <div className="mt-5 flex items-center gap-3">
           <button
             onClick={onClose}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06]"
+            className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-sm text-stone-300 transition hover:bg-white/[0.06]"
           >
             Cancelar
           </button>
@@ -457,7 +457,7 @@ export default function AdminCustomerActions({
         <button
           onClick={() => setModal("edit")}
           title="Editar cliente"
-          className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-emerald-300"
+          className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-white/[0.06] hover:text-emerald-300"
         >
           <Pencil className="size-3.5" />
         </button>
@@ -466,7 +466,7 @@ export default function AdminCustomerActions({
           <button
             onClick={() => setModal("deactivate")}
             title="Desactivar cliente"
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 transition hover:bg-rose-500/20 hover:text-rose-300"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 transition hover:bg-rose-500/20 hover:text-rose-300"
           >
             <UserX className="size-3.5" />
           </button>

@@ -102,11 +102,11 @@ export default function AdminBusinessHourForm({
         return (
           <div
             key={row.dayOfWeek}
-            className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+            className="rounded-3xl border border-white/8 bg-white/3 p-5"
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/8 bg-white/[0.03] text-xs font-semibold text-white">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/8 bg-white/3 text-xs font-semibold text-white">
                   {row.dayLabel.slice(0, 2)}
                 </span>
                 <div>
@@ -131,7 +131,7 @@ export default function AdminBusinessHourForm({
                   ) : null}
                   <button
                     onClick={() => startEdit(row)}
-                    className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-1.5 text-xs text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
+                    className="rounded-xl border border-white/8 bg-white/3 px-3 py-1.5 text-xs text-stone-400 transition hover:bg-white/[0.06] hover:text-white"
                   >
                     Editar
                   </button>
@@ -200,7 +200,7 @@ export default function AdminBusinessHourForm({
                   <button
                     onClick={cancelEdit}
                     disabled={isPending}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/3 px-3 py-1.5 text-xs text-stone-300 transition hover:bg-white/[0.06] disabled:opacity-60"
                   >
                     <X className="size-3" />
                     Cancelar

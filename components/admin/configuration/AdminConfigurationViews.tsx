@@ -56,7 +56,7 @@ function statCard({
   detail: string;
 }) {
   return (
-    <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+    <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
       <p className="text-sm font-medium text-stone-200">{title}</p>
       <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm leading-6 text-stone-400">{detail}</p>
@@ -104,7 +104,7 @@ function sectionLinks() {
         <Link
           key={route.href}
           href={route.href}
-          className="rounded-3xl border border-white/8 bg-white/[0.03] p-5 transition hover:bg-white/[0.05]"
+          className="rounded-3xl border border-white/8 bg-white/3 p-5 transition hover:bg-white/[0.05]"
         >
           <p className="text-base font-semibold text-white">{route.label}</p>
           <p className="mt-2 text-sm leading-6 text-stone-400">{route.description}</p>
@@ -197,7 +197,7 @@ export function ConfigurationSectionView({
               {data.recentAdmins.map((admin) => (
                 <article
                   key={admin.id}
-                  className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/8 bg-white/3 p-5"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -245,14 +245,14 @@ export function ConfigurationSectionView({
           children: (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+                <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
                   <p className="text-sm font-medium text-white">Dias abiertos</p>
                   <p className="mt-3 text-3xl font-semibold text-white">{data.summary.openDays}</p>
                   <p className="mt-2 text-sm leading-6 text-stone-400">
                     {data.summary.closedDays} dias cerrados en la semana base.
                   </p>
                 </div>
-                <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+                <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
                   <p className="text-sm font-medium text-white">Fechas especiales</p>
                   <p className="mt-3 text-3xl font-semibold text-white">
                     {data.summary.upcomingSpecialSchedules}
@@ -267,7 +267,7 @@ export function ConfigurationSectionView({
                 {data.upcomingSpecialSchedules.slice(0, 4).map((schedule) => (
                   <article
                     key={schedule.id}
-                    className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                    className="rounded-3xl border border-white/8 bg-white/3 p-5"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -340,7 +340,7 @@ export function ConfigurationUsersSubrouteView({
               {data.adminUsers.map((admin) => (
                 <article
                   key={admin.id}
-                  className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/8 bg-white/3 p-5"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -385,7 +385,7 @@ export function ConfigurationUsersSubrouteView({
               {data.authUsers.map((user) => (
                 <article
                   key={user.id}
-                  className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/8 bg-white/3 p-5"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -467,7 +467,7 @@ export function ConfigurationAvailabilitySubrouteView({
               {data.businessHours.map((hour) => (
                 <article
                   key={hour.dayOfWeek}
-                  className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/8 bg-white/3 p-5"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -500,7 +500,7 @@ export function ConfigurationAvailabilitySubrouteView({
                 data.specialSchedules.map((schedule) => (
                   <article
                     key={schedule.id}
-                    className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                    className="rounded-3xl border border-white/8 bg-white/3 p-5"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -583,7 +583,7 @@ export function ConfigurationSystemSubrouteView({
               {data.readiness.map((item) => (
                 <article
                   key={item.label}
-                  className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/8 bg-white/3 p-5"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -615,7 +615,7 @@ export function ConfigurationSystemSubrouteView({
               {data.recentSessions.map((session) => (
                 <article
                   key={session.id}
-                  className="rounded-3xl border border-white/8 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/8 bg-white/3 p-5"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>

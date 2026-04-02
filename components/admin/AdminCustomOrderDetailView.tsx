@@ -218,7 +218,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
 
   const currentAction =
     customOrderDetailStatusActions[
-      order.status as keyof typeof customOrderDetailStatusActions
+    order.status as keyof typeof customOrderDetailStatusActions
     ];
 
   return (
@@ -238,7 +238,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
         <div className="flex items-center gap-4">
           <Link
             href="/admin/ordenes/personalizadas"
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
           >
             <ArrowLeft className="size-5" />
           </Link>
@@ -320,7 +320,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
         <div className="lg:col-span-2 space-y-8">
           {/* Items Section */}
           <section className="rounded-3xl border border-white/8 bg-[#0e0e0e] overflow-hidden">
-            <header className="border-b border-white/5 bg-white/[0.02] px-6 py-4 flex items-center gap-2">
+            <header className="border-b border-white/5 bg-white/2 px-6 py-4 flex items-center gap-2">
               <Package className="size-5 text-emerald-400" />
               <h2 className="font-semibold text-white">Detalle de Prendas</h2>
             </header>
@@ -340,7 +340,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
 
                   <div className="grid grid-cols-1 gap-3 ml-9">
                     {item.parts.map((part: any) => (
-                      <div key={part.id} className="group relative rounded-2xl border border-white/5 bg-white/[0.01] p-4 transition hover:bg-white/[0.03]">
+                      <div key={part.id} className="group relative rounded-2xl border border-white/5 bg-white/1 p-4 transition hover:bg-white/3">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-stone-900 p-2 text-stone-400 group-hover:text-emerald-400 transition">
@@ -370,21 +370,21 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                           </div>
                           <div className="space-y-1">
                             <p className="text-stone-500">Estado de Medidas:</p>
-                             <p className={part.measurementProfileId ? "text-emerald-400 flex items-center gap-1" : "text-amber-400 flex items-center gap-1"}>
-                               {part.measurementProfileId ? <CheckCircle2 className="size-3" /> : <Info className="size-3" />}
-                               {part.measurementProfileId ? "Vinculadas" : (
-                                 <button
-                                   onClick={() => {
-                                     setSelectedPartForMeasurement(part);
-                                     fetchCustomerProfiles();
-                                     setShowLinkMeasurementModal(true);
-                                   }}
-                                   className="underline decoration-amber-500/30 hover:decoration-amber-500 transition underline-offset-2"
-                                 >
-                                   Vincular
-                                 </button>
-                               )}
-                             </p>
+                            <p className={part.measurementProfileId ? "text-emerald-400 flex items-center gap-1" : "text-amber-400 flex items-center gap-1"}>
+                              {part.measurementProfileId ? <CheckCircle2 className="size-3" /> : <Info className="size-3" />}
+                              {part.measurementProfileId ? "Vinculadas" : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedPartForMeasurement(part);
+                                    fetchCustomerProfiles();
+                                    setShowLinkMeasurementModal(true);
+                                  }}
+                                  className="underline decoration-amber-500/30 hover:decoration-amber-500 transition underline-offset-2"
+                                >
+                                  Vincular
+                                </button>
+                              )}
+                            </p>
                           </div>
                         </div>
 
@@ -462,7 +462,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
 
           {/* Payments Section */}
           <section className="rounded-3xl border border-white/8 bg-[#0e0e0e] overflow-hidden">
-            <header className="border-b border-white/5 bg-white/[0.02] px-6 py-4 flex items-center justify-between">
+            <header className="border-b border-white/5 bg-white/2 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CreditCard className="size-5 text-emerald-400" />
                 <h2 className="font-semibold text-white">Pagos y Abonos</h2>
@@ -497,7 +497,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                     S/ {pendingBalance.toFixed(2)}
                   </p>
                 </div>
-                <div className="col-span-2 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-center">
+                <div className="col-span-2 rounded-2xl border border-white/5 bg-white/2 p-4 text-center">
                   <p className="text-[10px] uppercase text-stone-500 tracking-wider mb-1">Total Orden</p>
                   <p className="text-xl font-bold text-white">S/ {order.total.toFixed(2)}</p>
                 </div>
@@ -520,7 +520,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               {/* Advance Payment Warning */}
               {shouldShowAdvanceWarning(order.status, totalPaid, order.total) && (
                 <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
-                  <AlertTriangle className="size-5 text-amber-500 flex-shrink-0" />
+                  <AlertTriangle className="size-5 text-amber-500 shrink-0" />
                   <p>
                     Para iniciar la confección se requiere un abono del 50% (S/{" "}
                     {getCustomOrderRequiredAdvance(order.total).toFixed(2)}). Falta
@@ -541,7 +541,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                 ) : (
                   <div className="space-y-2">
                     {order.payments.map((payment: any) => (
-                      <div key={payment.id} className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 p-4 hover:bg-white/[0.02] transition">
+                      <div key={payment.id} className="flex items-center justify-between rounded-xl border border-white/5 bg-black/40 p-4 hover:bg-white/2 transition">
                         <div className="flex items-center gap-3">
                           <div className={`rounded-lg p-2 ${payment.status === 'APROBADO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-stone-800 text-stone-500'}`}>
                             <Receipt className="size-4" />
@@ -705,7 +705,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-lg rounded-[2.5rem] border border-white/10 bg-[#0e0e0e] shadow-2xl overflow-hidden"
             >
-              <header className="flex items-center justify-between border-b border-white/5 bg-white/[0.02] px-8 py-6">
+              <header className="flex items-center justify-between border-b border-white/5 bg-white/2 px-8 py-6">
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
                     <PlusCircle className="size-5" />
@@ -723,7 +723,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               <form onSubmit={handleRegisterPayment} className="p-8 space-y-6">
                 {errorMsg && (
                   <div className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-                    <AlertTriangle className="size-4 flex-shrink-0" />
+                    <AlertTriangle className="size-4 shrink-0" />
                     {errorMsg}
                   </div>
                 )}
@@ -894,7 +894,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                   </button>
                   <button
                     type="submit"
-                    className="flex-[2] rounded-2xl bg-emerald-500 py-4 text-sm font-bold text-emerald-950 hover:bg-emerald-400 transition disabled:opacity-50"
+                    className="flex-2 rounded-2xl bg-emerald-500 py-4 text-sm font-bold text-emerald-950 hover:bg-emerald-400 transition disabled:opacity-50"
                     disabled={isPending}
                   >
                     {isPending ? "Registrando..." : "Registrar pago"}
@@ -916,7 +916,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-2xl rounded-[2.5rem] border border-white/10 bg-[#0e0e0e] shadow-2xl overflow-hidden"
             >
-              <header className="flex items-center justify-between border-b border-white/5 bg-white/[0.02] px-8 py-6">
+              <header className="flex items-center justify-between border-b border-white/5 bg-white/2 px-8 py-6">
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-blue-500/10 p-2 text-blue-400">
                     <Receipt className="size-5" />
@@ -943,7 +943,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                   ) : (
                     <div className="space-y-3">
                       {order.comprobantes.map((c: any) => (
-                        <div key={c.id} className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-2">
+                        <div key={c.id} className="rounded-2xl border border-white/5 bg-white/2 p-4 space-y-2">
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="text-xs font-bold text-white">
@@ -994,12 +994,12 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                 </div>
 
                 {/* Form Half */}
-                <div className="flex-1 bg-white/[0.01] p-6 overflow-y-auto">
+                <div className="flex-1 bg-white/1 p-6 overflow-y-auto">
                   <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-6">Nuevo Comprobante</h4>
                   <form onSubmit={handleRegisterComprobante} className="space-y-4">
                     {errorMsg && (
                       <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-                        <AlertTriangle className="size-4 flex-shrink-0" />
+                        <AlertTriangle className="size-4 shrink-0" />
                         {errorMsg}
                       </div>
                     )}
@@ -1173,7 +1173,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="w-full max-w-xl rounded-[2.5rem] border border-white/10 bg-[#0e0e0e] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-8 border-b border-white/5 bg-white/[0.02]">
+              <div className="p-8 border-b border-white/5 bg-white/2">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-2xl font-bold text-white tracking-tight">Vincular Medidas</h3>
                   <button
@@ -1187,7 +1187,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                   </button>
                 </div>
                 <p className="text-stone-400 text-sm">
-                  Selecciona un perfil de medidas para el 
+                  Selecciona un perfil de medidas para el
                   <span className="text-emerald-400 font-medium ml-1">
                     {selectedPartForMeasurement?.label} ({selectedPartForMeasurement?.garmentType.replace(/_/g, ' ')})
                   </span>
@@ -1197,7 +1197,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
               <div className="flex-1 overflow-y-auto p-8 space-y-6">
                 {errorMsg && (
                   <div className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-                    <AlertTriangle className="size-4 flex-shrink-0" />
+                    <AlertTriangle className="size-4 shrink-0" />
                     {errorMsg}
                   </div>
                 )}
@@ -1208,7 +1208,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                     <p className="mt-4 text-sm text-stone-500">Cargando perfiles del cliente...</p>
                   </div>
                 ) : customerProfiles.length === 0 ? (
-                  <div className="py-12 text-center rounded-3xl border border-dashed border-white/10 bg-white/[0.02]">
+                  <div className="py-12 text-center rounded-3xl border border-dashed border-white/10 bg-white/2">
                     <Ruler className="size-12 text-stone-700 mx-auto mb-4" />
                     <p className="text-stone-400 font-medium">No hay medidas registradas</p>
                     <p className="text-xs text-stone-500 mt-1 max-w-[200px] mx-auto">El cliente no tiene perfiles de medidas para este tipo de prenda.</p>
@@ -1223,11 +1223,10 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                       return (
                         <div
                           key={profile.id}
-                          className={`group rounded-3xl border transition-all ${
-                            matchingGarment 
-                              ? "border-white/10 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-emerald-500/[0.02]" 
-                              : "border-white/5 bg-white/[0.01] opacity-50 grayscale"
-                          }`}
+                          className={`group rounded-3xl border transition-all ${matchingGarment
+                            ? "border-white/10 bg-white/2 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02]"
+                            : "border-white/5 bg-white/1 opacity-50 grayscale"
+                            }`}
                         >
                           <div className="p-5">
                             <div className="flex items-center justify-between mb-3">
@@ -1250,7 +1249,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                                 </button>
                               )}
                             </div>
-                            
+
                             {profile.notes && (
                               <p className="text-xs text-stone-500 italic mb-3">"{profile.notes}"</p>
                             )}
@@ -1259,11 +1258,10 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                               {profile.garments?.map((g: any) => (
                                 <span
                                   key={g.id}
-                                  className={`rounded-lg px-2 py-1 text-[10px] font-medium border ${
-                                    g.garmentType === selectedPartForMeasurement?.garmentType
-                                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                                      : "bg-white/5 text-stone-500 border-white/5"
-                                  }`}
+                                  className={`rounded-lg px-2 py-1 text-[10px] font-medium border ${g.garmentType === selectedPartForMeasurement?.garmentType
+                                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                    : "bg-white/5 text-stone-500 border-white/5"
+                                    }`}
                                 >
                                   {g.garmentType.replace(/_/g, ' ')}
                                 </span>
@@ -1277,7 +1275,7 @@ export default function AdminCustomOrderDetailView({ order }: { order: any }) {
                 )}
               </div>
 
-              <div className="p-8 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+              <div className="p-8 bg-white/2 border-t border-white/5 flex items-center justify-between">
                 <p className="text-xs text-stone-500 italic">
                   * Solo se muestran perfiles que contienen el tipo de prenda requerido.
                 </p>

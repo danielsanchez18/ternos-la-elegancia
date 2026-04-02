@@ -36,11 +36,11 @@ export default function AdminEditCustomOrderForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState<{ 
-    isOpen: boolean; 
+  const [confirmDelete, setConfirmDelete] = useState<{
+    isOpen: boolean;
     type: 'ITEM' | 'PART';
-    itemIdx: number; 
-    partIdx?: number; 
+    itemIdx: number;
+    partIdx?: number;
   } | null>(null);
 
   const [form, setForm] = useState(() => createEditCustomOrderFormState(initialOrder));
@@ -121,7 +121,7 @@ export default function AdminEditCustomOrderForm({
         <div className="flex items-center gap-3">
           <Link
             href={`/admin/ordenes/personalizadas/${initialOrder.id}`}
-            className="rounded-xl border border-white/8 bg-white/[0.03] p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
+            className="rounded-xl border border-white/8 bg-white/3 p-2 text-stone-400 hover:bg-white/[0.06] hover:text-white transition"
           >
             <ArrowLeft className="size-5" />
           </Link>
@@ -208,7 +208,7 @@ export default function AdminEditCustomOrderForm({
                       </label>
                     </div>
 
-                    <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                    <div className="mt-4 rounded-xl border border-white/5 bg-white/2 p-4">
                       <div className="mb-4 flex items-center justify-between">
                         <p className="text-sm font-medium text-stone-300">Prendas</p>
                         <button
@@ -293,7 +293,7 @@ export default function AdminEditCustomOrderForm({
           <div className="space-y-6">
             <div className="rounded-2xl border border-white/8 bg-[#0e0e0e] p-6 space-y-4">
               <h3 className="font-medium text-white border-b border-white/5 pb-2 mb-4">Operación</h3>
-              <div className="p-3 rounded-xl border border-white/5 bg-white/[0.02]">
+              <div className="p-3 rounded-xl border border-white/5 bg-white/2">
                 <p className={labelClasses}>Cliente (No editable)</p>
                 <p className="text-sm text-stone-300 font-medium">
                   {initialOrder.customer.nombres} {initialOrder.customer.apellidos}
@@ -356,26 +356,26 @@ export default function AdminEditCustomOrderForm({
               {confirmDelete.type === 'ITEM' ? '¿Eliminar este ítem?' : '¿Quitar esta prenda?'}
             </h3>
             <p className="text-sm text-stone-400 mb-8 leading-relaxed">
-              {confirmDelete.type === 'ITEM' 
+              {confirmDelete.type === 'ITEM'
                 ? 'Se eliminarán todas las prendas y configuraciones asociadas a este grupo de venta. Esta acción no se puede deshacer.'
                 : 'Se perderán las configuraciones específicas de esta prenda dentro del ítem.'}
             </p>
             <div className="flex flex-col gap-3">
-              <button 
-                onClick={() => { 
+              <button
+                onClick={() => {
                   if (confirmDelete.type === 'ITEM') {
                     removeItem(confirmDelete.itemIdx);
                   } else if (confirmDelete.partIdx !== undefined) {
                     removePart(confirmDelete.itemIdx, confirmDelete.partIdx);
                   }
-                  setConfirmDelete(null); 
-                }} 
+                  setConfirmDelete(null);
+                }}
                 className="w-full rounded-2xl bg-rose-500 py-3 text-sm font-bold text-rose-950 hover:bg-rose-400 transition"
               >
                 Sí, eliminar
               </button>
-              <button 
-                onClick={() => setConfirmDelete(null)} 
+              <button
+                onClick={() => setConfirmDelete(null)}
                 className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 text-sm font-medium text-stone-400 hover:text-white transition"
               >
                 Cancelar

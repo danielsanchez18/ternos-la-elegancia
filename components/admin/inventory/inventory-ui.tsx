@@ -17,17 +17,15 @@ export function statCard({
 }) {
   return (
     <article
-      className={`rounded-[2rem] border p-6 ${
-        alert
-          ? "border-amber-500/30 bg-amber-500/10"
-          : "border-white/8 bg-white/[0.02]"
-      }`}
+      className={`rounded-[2rem] border p-6 ${alert
+        ? "border-amber-500/30 bg-amber-500/10"
+        : "border-white/8 bg-white/2"
+        }`}
     >
       <div className="flex items-center justify-between">
         <p
-          className={`text-[11px] uppercase tracking-[0.3em] ${
-            alert ? "text-amber-400" : "text-stone-500"
-          }`}
+          className={`text-[11px] uppercase tracking-[0.3em] ${alert ? "text-amber-400" : "text-stone-500"
+            }`}
         >
           {title}
         </p>
@@ -38,16 +36,14 @@ export function statCard({
         )}
       </div>
       <p
-        className={`mt-4 text-4xl font-semibold tracking-tight ${
-          alert ? "text-amber-50" : "text-white"
-        }`}
+        className={`mt-4 text-4xl font-semibold tracking-tight ${alert ? "text-amber-50" : "text-white"
+          }`}
       >
         {value}
       </p>
       <div
-        className={`mt-3 text-sm leading-6 ${
-          alert ? "text-amber-200" : "text-stone-400"
-        }`}
+        className={`mt-3 text-sm leading-6 ${alert ? "text-amber-200" : "text-stone-400"
+          }`}
       >
         {detail}
       </div>
@@ -95,7 +91,7 @@ export function InventorySectionLinks() {
         <Link
           key={subroute.slug}
           href={subroute.href}
-          className="group block rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          className="group block rounded-2xl border border-white/5 bg-white/2 p-4 transition hover:bg-white/4"
         >
           <p className="font-medium text-white group-hover:text-emerald-300">
             {subroute.label}

@@ -1,6 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  Scissors,
+  Plus,
+  Search,
+  Edit3,
+  RefreshCcw,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  Hammer,
+  Trash2
+} from "lucide-react";
+
+import { AdminStatCard, AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 
 type AlterationService = {
   id: string;
@@ -15,14 +29,7 @@ async function parseApiError(response: Response, fallback: string): Promise<stri
   if (payload && typeof payload.error === "string") {
     return payload.error;
   }
-
   return fallback;
-}
-
-function boolChip(active: boolean) {
-  return active
-    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-    : "border-stone-500/20 bg-stone-500/10 text-stone-300";
 }
 
 export default function AdminAlterationServicesSubroute() {
@@ -40,392 +47,203 @@ export default function AdminAlterationServicesSubroute() {
   const [editPrecioBase, setEditPrecioBase] = useState("");
   const [editActivo, setEditActivo] = useState(true);
 
-  const activeCount = useMemo(
-    () => services.filter((service) => service.activo).length,
-    [services]
-  );
+  const stats = useMemo(() => ({
+    total: services.length,
+    active: services.filter((s) => s.activo).length,
+    inactive: services.filter((s) => !s.activo).length
+  }), [services]);
 
   const refreshData = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const response = await fetch("/api/alteration-services", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        setError("No se pudieron cargar los servicios.");
-        return;
+      const response = await fetch("/api/alteration-services", { method: "GET", credentials: "include", cache: "no-store" });
+      if (response.ok) {
+        const payload = (await response.json()) as AlterationService[];
+        setServices(Array.isArray(payload) ? payload : []);
       }
-
-      const payload = (await response.json()) as AlterationService[];
-      setServices(Array.isArray(payload) ? payload : []);
-    } catch {
-      setError("Error de red al cargar servicios.");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError("Error de red."); } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    void refreshData();
-  }, []);
+  useEffect(() => { void refreshData(); }, []);
 
-  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFeedback(null);
-    setError(null);
-
-    if (!nombre.trim()) {
-      setError("El nombre del servicio es obligatorio.");
-      return;
-    }
-
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault(); setFeedback(null); setError(null);
+    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
     setIsSubmitting(true);
     try {
-      const parsedPrice = precioBase.trim() === "" ? undefined : Number(precioBase);
-      if (parsedPrice !== undefined && !Number.isFinite(parsedPrice)) {
-        setError("Precio base invalido.");
-        return;
-      }
-
-      const response = await fetch("/api/alteration-services", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          nombre: nombre.trim(),
-          precioBase: parsedPrice,
-          activo: true,
-        }),
+      const res = await fetch("/api/alteration-services", {
+        method: "POST", credentials: "include", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ nombre: nombre.trim(), precioBase: precioBase ? Number(precioBase) : undefined, activo: true }),
       });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo crear el servicio."));
-        return;
-      }
-
-      setNombre("");
-      setPrecioBase("");
-      setFeedback("Servicio creado correctamente.");
-      await refreshData();
-    } catch {
-      setError("Error de red al crear servicio.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (res.ok) { setNombre(""); setPrecioBase(""); setFeedback("Servicio creado."); await refreshData(); }
+      else { setError(await parseApiError(res, "No se pudo crear.")); }
+    } finally { setIsSubmitting(false); }
   };
 
   const handleToggleActive = async (service: AlterationService) => {
-    setFeedback(null);
-    setError(null);
-
     try {
-      if (service.activo) {
-        const response = await fetch(`/api/alteration-services/${service.id}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          setError(await parseApiError(response, "No se pudo desactivar el servicio."));
-          return;
-        }
-      } else {
-        const response = await fetch(`/api/alteration-services/${service.id}`, {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ activo: true }),
-        });
-
-        if (!response.ok) {
-          setError(await parseApiError(response, "No se pudo activar el servicio."));
-          return;
-        }
-      }
-
-      setFeedback("Estado del servicio actualizado.");
-      await refreshData();
-    } catch {
-      setError("Error de red al actualizar el estado del servicio.");
-    }
-  };
-
-  const beginEdit = (service: AlterationService) => {
-    setEditingId(service.id);
-    setEditNombre(service.nombre);
-    setEditPrecioBase(
-      service.precioBase === null || service.precioBase === undefined
-        ? ""
-        : String(service.precioBase)
-    );
-    setEditActivo(service.activo);
-    setFeedback(null);
-    setError(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditNombre("");
-    setEditPrecioBase("");
-    setEditActivo(true);
+      const res = await fetch(`/api/alteration-services/${service.id}`, {
+        method: service.activo ? "DELETE" : "PATCH", credentials: "include",
+        ...(service.activo ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify({ activo: true }) })
+      });
+      if (res.ok) { setFeedback("Estado actualizado."); await refreshData(); }
+    } catch { setError("Error de red."); }
   };
 
   const saveEdit = async () => {
-    if (!editingId) {
-      return;
-    }
-
-    setFeedback(null);
-    setError(null);
-
-    if (!editNombre.trim()) {
-      setError("El nombre del servicio es obligatorio.");
-      return;
-    }
-
-    const parsedPrice = editPrecioBase.trim() === "" ? null : Number(editPrecioBase);
-    if (parsedPrice !== null && !Number.isFinite(parsedPrice)) {
-      setError("Precio base invalido.");
-      return;
-    }
-
+    if (!editingId) return;
     try {
-      const response = await fetch(`/api/alteration-services/${editingId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          nombre: editNombre.trim(),
-          precioBase: parsedPrice,
-          activo: editActivo,
-        }),
+      const res = await fetch(`/api/alteration-services/${editingId}`, {
+        method: "PATCH", credentials: "include", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ nombre: editNombre.trim(), precioBase: editPrecioBase ? Number(editPrecioBase) : null, activo: editActivo }),
       });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo actualizar el servicio."));
-        return;
-      }
-
-      setFeedback("Servicio actualizado.");
-      cancelEdit();
-      await refreshData();
-    } catch {
-      setError("Error de red al actualizar servicio.");
-    }
+      if (res.ok) { setFeedback("Servicio actualizado."); setEditingId(null); await refreshData(); }
+    } catch { setError("Error de red."); }
   };
 
   return (
-    <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Servicios</p>
-          <p className="mt-3 text-3xl font-semibold text-white">{services.length}</p>
-          <p className="mt-2 text-sm text-stone-400">Catalogo de arreglos disponible.</p>
-        </article>
-        <article className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Activos</p>
-          <p className="mt-3 text-3xl font-semibold text-emerald-200">{activeCount}</p>
-          <p className="mt-2 text-sm text-stone-400">Servicios habilitados para nuevas ordenes.</p>
-        </article>
-        <article className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Inactivos</p>
-          <p className="mt-3 text-3xl font-semibold text-stone-300">
-            {services.length - activeCount}
-          </p>
-          <p className="mt-2 text-sm text-stone-400">Servicios historicos desactivados.</p>
-        </article>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <AdminStatCard title="Total Servicios" value={stats.total} detail="Catálogo de sastrería" />
+        <AdminStatCard title="Habilitados" value={stats.active} detail="Disponibles para nuevas órdenes" />
+        <AdminStatCard title="Históricos" value={stats.inactive} detail="Servicios fuera de catálogo" />
       </div>
 
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Nuevo servicio</p>
-        <h2 className="mt-2 text-xl font-semibold text-white">Registrar servicio base</h2>
-
-        <form onSubmit={handleCreate} className="mt-5 grid gap-3 md:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Nombre
-            <input
-              type="text"
-              value={nombre}
-              onChange={(event) => setNombre(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-              required
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm text-stone-300">
-            Precio base (S/)
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={precioBase}
-              onChange={(event) => setPrecioBase(event.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="md:self-end inline-flex h-[42px] items-center justify-center rounded-xl bg-emerald-500 px-4 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
-          >
-            {isSubmitting ? "Guardando..." : "Crear servicio"}
-          </button>
-        </form>
-
-        {feedback && (
-          <p className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-            {feedback}
-          </p>
-        )}
-        {error && (
-          <p className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">
-            {error}
-          </p>
-        )}
-      </article>
-
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Catalogo</p>
-            <h2 className="mt-2 text-xl font-semibold text-white">Servicios de alteracion</h2>
-          </div>
-          <button
-            onClick={() => void refreshData()}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-          >
-            Actualizar
-          </button>
-        </div>
-
-        {isLoading ? (
-          <p className="mt-6 text-sm text-stone-400">Cargando servicios...</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-stone-500">
-                <tr className="border-b border-white/8">
-                  <th className="px-3 py-3 font-medium">Servicio</th>
-                  <th className="px-3 py-3 font-medium">Precio base</th>
-                  <th className="px-3 py-3 font-medium">Estado</th>
-                  <th className="px-3 py-3 font-medium">Actualizado</th>
-                  <th className="px-3 py-3 font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-stone-500">
-                      No hay servicios registrados.
-                    </td>
-                  </tr>
-                ) : (
-                  services.map((service) => (
-                    <tr key={service.id} className="border-b border-white/6">
-                      <td className="px-3 py-4">
-                        <p className="font-medium text-white">{service.nombre}</p>
-                      </td>
-                      <td className="px-3 py-4 text-stone-200">
-                        {service.precioBase === null
-                          ? "--"
-                          : `S/ ${Number(service.precioBase).toFixed(2)}`}
-                      </td>
-                      <td className="px-3 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${boolChip(service.activo)}`}
-                        >
-                          {service.activo ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4 text-xs text-stone-400">
-                        {new Date(service.updatedAt).toLocaleString("es-PE")}
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => beginEdit(service)}
-                            className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => void handleToggleActive(service)}
-                            className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-2.5 py-1.5 text-xs text-amber-200 transition hover:bg-amber-400/20"
-                          >
-                            {service.activo ? "Desactivar" : "Reactivar"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </article>
-
-      {editingId && (
-        <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Edicion</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Actualizar servicio</h2>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
-            <label className="flex flex-col gap-1 text-sm text-stone-300">
-              Nombre
-              <input
-                type="text"
-                value={editNombre}
-                onChange={(event) => setEditNombre(event.target.value)}
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm text-stone-300">
-              Precio base
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={editPrecioBase}
-                onChange={(event) => setEditPrecioBase(event.target.value)}
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-              />
-            </label>
-
-            <label className="flex items-center gap-2 self-end text-sm text-stone-300">
-              <input
-                type="checkbox"
-                checked={editActivo}
-                onChange={(event) => setEditActivo(event.target.checked)}
-                className="size-4 rounded border border-white/20 bg-transparent"
-              />
-              Activo
-            </label>
-
-            <div className="flex items-end gap-2">
+      <div className="flex flex-col xl:flex-row gap-6 items-start">
+        <div className="flex-1 w-full space-y-6 min-w-0">
+          <Panel eyebrow="Catálogo" title="Servicios de Alteración">
+            <div className="flex flex-col gap-4 border-b border-white/5 pb-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+                <input
+                  type="text"
+                  placeholder="Filtrar servicios..."
+                  className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-9 pr-4 text-sm text-stone-200 outline-none transition focus:border-emerald-500/50"
+                />
+              </div>
               <button
-                onClick={() => void saveEdit()}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400"
+                onClick={() => void refreshData()}
+                className="rounded-xl border border-white/10 bg-black/40 p-2.5 text-stone-400 hover:text-white transition"
               >
-                Guardar
-              </button>
-              <button
-                onClick={cancelEdit}
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm text-stone-200 transition hover:bg-white/[0.06]"
-              >
-                Cancelar
+                <RefreshCcw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
               </button>
             </div>
-          </div>
-        </article>
+
+            <div className="overflow-x-auto mt-6">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-[10px] uppercase tracking-widest text-stone-600 font-bold border-b border-white/8">
+                  <tr>
+                    <th className="px-3 py-3 font-medium">Servicio</th>
+                    <th className="px-3 py-3 font-medium text-center">Precio Base</th>
+                    <th className="px-3 py-3 font-medium text-center">Estado</th>
+                    <th className="px-3 py-3 font-medium text-right">Gestión</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {isLoading ? (
+                    <tr><td colSpan={4} className="py-20 text-center animate-pulse text-stone-600 font-mono text-[10px] uppercase tracking-widest">Sincronizando catálogo...</td></tr>
+                  ) : services.length === 0 ? (
+                    <tr><td colSpan={4} className="py-20 text-center text-stone-600 italic">No hay servicios registrados</td></tr>
+                  ) : (
+                    services.map((s) => (
+                      <tr key={s.id} className="group hover:bg-white/2 transition-colors">
+                        <td className="px-3 py-5">
+                          <p className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors uppercase tracking-tight">{s.nombre}</p>
+                          <p className="text-[10px] text-stone-600 mt-0.5 font-mono">CODE: {s.id.split("-")[0].toUpperCase()}</p>
+                        </td>
+                        <td className="px-3 py-5 text-center font-mono text-xs text-stone-300 font-bold">
+                          {s.precioBase ? `S/ ${Number(s.precioBase).toFixed(2)}` : "--"}
+                        </td>
+                        <td className="px-3 py-5 text-center text-[10px] font-bold uppercase tracking-widest">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 ${s.activo ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-white/5 text-stone-500"}`}>
+                            {s.activo ? "Activo" : "Inactivo"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-5 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => { setEditingId(s.id); setEditNombre(s.nombre); setEditPrecioBase(String(s.precioBase || "")); setEditActivo(s.activo); }}
+                              className="rounded-lg bg-white/5 text-stone-400 p-2 hover:bg-white/10 hover:text-white transition"
+                            >
+                              <Edit3 className="size-3.5" />
+                            </button>
+                            <button
+                              onClick={() => void handleToggleActive(s)}
+                              className={`rounded-lg p-2 transition ${s.activo ? "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20" : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"}`}
+                            >
+                              {s.activo ? <Trash2 className="size-3.5" /> : <RefreshCcw className="size-3.5" />}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="w-full xl:w-[400px] shrink-0">
+          <Panel eyebrow="Configuración" title={editingId ? "Editar Servicio" : "Nuevo Servicio"}>
+            <form onSubmit={editingId ? e => { e.preventDefault(); void saveEdit(); } : handleCreate} className="space-y-5">
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Nombre del Servicio</p>
+                <input
+                  type="text"
+                  value={editingId ? editNombre : nombre}
+                  onChange={e => editingId ? setEditNombre(e.target.value) : setNombre(e.target.value)}
+                  placeholder="Ej: Basta de pantalón"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/50"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Precio Base (S/)</p>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingId ? editPrecioBase : precioBase}
+                  onChange={e => editingId ? setEditPrecioBase(e.target.value) : setPrecioBase(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white font-mono outline-none"
+                />
+              </div>
+
+              {editingId && (
+                <label className="flex items-center gap-3 cursor-pointer p-4 rounded-2xl bg-white/3 border border-white/5">
+                  <div className={`size-5 rounded-md border flex items-center justify-center transition ${editActivo ? "bg-emerald-500 border-emerald-500" : "border-white/10 bg-white/5"}`}>
+                    {editActivo && <CheckCircle2 className="size-3 text-white" />}
+                  </div>
+                  <input type="checkbox" checked={editActivo} onChange={e => setEditActivo(e.target.checked)} className="hidden" />
+                  <span className="text-xs font-bold text-stone-300 uppercase tracking-widest leading-none">Servicio Habilitado</span>
+                </label>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                {editingId && (
+                  <button type="button" onClick={() => setEditingId(null)} className="flex-1 rounded-xl bg-white/5 py-3 text-sm font-bold text-stone-400 hover:bg-white/10 transition">Cancelar</button>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-2 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-emerald-950 hover:bg-emerald-400 transition disabled:opacity-50"
+                >
+                  {isSubmitting ? "Guardando..." : editingId ? "Guardar Cambios" : "Registrar Servicio"}
+                </button>
+              </div>
+            </form>
+          </Panel>
+        </div>
+      </div>
+
+      {feedback && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-emerald-500/20 bg-[#0e0e0e] px-6 py-3 shadow-2xl shadow-emerald-500/10 animate-in fade-in slide-in-from-bottom-5">
+          <p className="text-sm text-emerald-400 font-bold flex items-center gap-2"><CheckCircle2 className="size-4" /> {feedback}</p>
+        </div>
       )}
-    </section>
+    </div>
   );
 }

@@ -24,19 +24,19 @@ export default function AdminDashboardExecutiveSummarySection({
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+        <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
           <p className="text-sm font-medium text-white">Presion operativa</p>
           <p className="mt-3 text-sm leading-7 text-stone-400">
             {executiveSummary.operational}
           </p>
         </div>
 
-        <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+        <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
           <p className="text-sm font-medium text-white">Liquidez</p>
           <p className="mt-3 text-sm leading-7 text-stone-400">{executiveSummary.liquidity}</p>
         </div>
 
-        <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+        <div className="rounded-3xl border border-white/8 bg-white/3 p-5">
           <p className="text-sm font-medium text-white">Salud de servicio</p>
           <p className="mt-3 text-sm leading-7 text-stone-400">
             {executiveSummary.serviceHealth}

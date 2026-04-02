@@ -2,9 +2,26 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Plus,
+  Search,
+  Filter,
+  History,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  User,
+  ShoppingBag,
+  RefreshCcw,
+  PlusCircle,
+  Trash2,
+  MoreHorizontal
+} from "lucide-react";
 
 import { formatMediumDate, formatStatusLabel } from "@/components/admin/orders/custom-order-shared";
 import { rentalOrderStatusChipClasses } from "@/components/admin/orders/order-status-styles";
+import { AdminStatCard, AdminSectionPanel as Panel } from "@/components/admin/customers/section-ui";
 
 type CustomerOption = {
   id: string;
@@ -111,7 +128,6 @@ async function parseApiError(response: Response, fallback: string): Promise<stri
   if (payload && typeof payload.error === "string") {
     return payload.error;
   }
-
   return fallback;
 }
 
@@ -122,46 +138,23 @@ function getRentalActions(status: string): Array<{ action: string; label: string
       { action: "MARK_LATE", label: "Marcar retraso" },
     ];
   }
-
   if (status === "ATRASADO") {
     return [{ action: "MARK_RETURNED", label: "Marcar devuelto" }];
   }
-
   if (status === "DEVUELTO") {
     return [{ action: "CLOSE", label: "Cerrar orden" }];
   }
-
   if (status === "RESERVADO") {
     return [{ action: "CANCEL", label: "Cancelar" }];
   }
-
   return [];
 }
 
-function statCard(input: { title: string; value: string | number; detail: string }) {
-  return (
-    <article className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5">
-      <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">{input.title}</p>
-      <p className="mt-3 text-3xl font-semibold text-white">{input.value}</p>
-      <p className="mt-2 text-sm text-stone-400">{input.detail}</p>
-    </article>
-  );
-}
-
 function summarizeOrderItems(items: RentalOrderItem[]): string {
-  if (items.length === 0) {
-    return "Sin items";
-  }
-
+  if (items.length === 0) return "Sin items";
   const names = Array.from(new Set(items.map((item) => item.itemNameSnapshot).filter(Boolean)));
-  if (names.length === 0) {
-    return `${items.length} item(s)`;
-  }
-
-  if (names.length === 1) {
-    return names[0];
-  }
-
+  if (names.length === 0) return `${items.length} item(s)`;
+  if (names.length === 1) return names[0];
   return `${names.slice(0, 2).join(" + ")}${names.length > 2 ? "..." : ""}`;
 }
 
@@ -191,20 +184,11 @@ export default function AdminRentalOrdersSubroute() {
   );
 
   const customerById = useMemo(
-    () =>
-      new Map(
-        customers.map((customer) => [
-          customer.id,
-          `${customer.nombres} ${customer.apellidos}`.trim(),
-        ])
-      ),
+    () => new Map(customers.map((c) => [c.id, `${c.nombres} ${c.apellidos}`.trim()])),
     [customers]
   );
 
-  const productById = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products]
-  );
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
   const availableCountByProduct = useMemo(() => {
     const map = new Map<string, number>();
@@ -218,20 +202,17 @@ export default function AdminRentalOrdersSubroute() {
     const totalMap = new Map<string, number>();
     const availableMap = new Map<string, number>();
     const labelByProductSize = new Map<string, string>();
-
     for (const unit of rentalUnits) {
       const sizeKey = toSizeKey(unit.sizeLabel);
       const comboKey = buildComboKey(unit.productId, sizeKey);
       totalMap.set(comboKey, (totalMap.get(comboKey) ?? 0) + 1);
       labelByProductSize.set(comboKey, normalizeSizeLabel(unit.sizeLabel));
     }
-
     for (const unit of availableUnits) {
       const sizeKey = toSizeKey(unit.sizeLabel);
       const comboKey = buildComboKey(unit.productId, sizeKey);
       availableMap.set(comboKey, (availableMap.get(comboKey) ?? 0) + 1);
     }
-
     const map = new Map<string, SizeOption[]>();
     for (const [comboKey, totalCount] of totalMap) {
       const [productId, sizeKey] = comboKey.split("::");
@@ -244,12 +225,10 @@ export default function AdminRentalOrdersSubroute() {
       });
       map.set(productId, current);
     }
-
     for (const [productId, options] of map) {
       options.sort((a, b) => a.label.localeCompare(b.label, "es"));
       map.set(productId, options);
     }
-
     return map;
   }, [rentalUnits, availableUnits]);
 
@@ -264,63 +243,30 @@ export default function AdminRentalOrdersSubroute() {
   }, [availableUnits]);
 
   const rentalEnabledProducts = useMemo(
-    () => products.filter((product) => product.active && product.allowsRental),
+    () => products.filter((p) => p.active && p.allowsRental),
     [products]
   );
 
   const refreshData = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const [ordersResponse, customersResponse, unitsResponse, productsResponse] =
-        await Promise.all([
-          fetch("/api/rental-orders?page=1&pageSize=100&orderBy=createdAt&order=desc", {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-          fetch("/api/customers", {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-          fetch("/api/rental-units", {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-          fetch("/api/products?active=true&allowsRental=true", {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-        ]);
-
-      if (!ordersResponse.ok || !customersResponse.ok || !unitsResponse.ok || !productsResponse.ok) {
-        setError("No se pudo cargar la data de rentas.");
-        return;
+      const [ordersRes, customersRes, unitsRes, productsRes] = await Promise.all([
+        fetch("/api/rental-orders?page=1&pageSize=100&orderBy=createdAt&order=desc", { cache: "no-store", credentials: "include" }),
+        fetch("/api/customers", { cache: "no-store", credentials: "include" }),
+        fetch("/api/rental-units", { cache: "no-store", credentials: "include" }),
+        fetch("/api/products?active=true&allowsRental=true", { cache: "no-store", credentials: "include" }),
+      ]);
+      if (ordersRes.ok && customersRes.ok && unitsRes.ok && productsRes.ok) {
+        setOrders(((await ordersRes.json()) as RentalOrderListResponse).items || []);
+        setCustomers((await customersRes.json()) as CustomerOption[]);
+        setRentalUnits((await unitsRes.json()) as RentalUnitListItem[]);
+        setProducts((await productsRes.json()) as ProductOption[]);
       }
-
-      const ordersPayload = (await ordersResponse.json()) as RentalOrderListResponse;
-      const customersPayload = (await customersResponse.json()) as CustomerOption[];
-      const unitsPayload = (await unitsResponse.json()) as RentalUnitListItem[];
-      const productsPayload = (await productsResponse.json()) as ProductOption[];
-
-      setOrders(Array.isArray(ordersPayload.items) ? ordersPayload.items : []);
-      setCustomers(Array.isArray(customersPayload) ? customersPayload : []);
-      setRentalUnits(Array.isArray(unitsPayload) ? unitsPayload : []);
-      setProducts(Array.isArray(productsPayload) ? productsPayload : []);
-    } catch {
-      setError("Error de red al cargar rentas.");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError("Error de red."); } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    void refreshData();
-  }, []);
+  useEffect(() => { void refreshData(); }, []);
 
   const updateRequestRow = (rowId: string, updater: (row: RentalRequestRow) => RentalRequestRow) => {
     setRequestRows((current) => current.map((row) => (row.rowId === rowId ? updater(row) : row)));
@@ -328,609 +274,313 @@ export default function AdminRentalOrdersSubroute() {
 
   const handleChangeRowProduct = (rowId: string, nextProductId: string) => {
     const productSizes = sizeOptionsByProduct.get(nextProductId) ?? [];
-    const preferredSize =
-      productSizes.find((option) => option.availableCount > 0)?.sizeKey ??
-      productSizes[0]?.sizeKey ??
-      "";
-
-    updateRequestRow(rowId, (row) => ({
-      ...row,
-      productId: nextProductId,
-      sizeKey: preferredSize,
-      quantity: 1,
-    }));
+    const preferredSize = productSizes.find((o) => o.availableCount > 0)?.sizeKey ?? productSizes[0]?.sizeKey ?? "";
+    updateRequestRow(rowId, (row) => ({ ...row, productId: nextProductId, sizeKey: preferredSize, quantity: 1 }));
   };
 
-  const handleCreateOrder = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFeedback(null);
-    setError(null);
-
-    if (!customerId) {
-      setError("Selecciona cliente.");
-      return;
-    }
-
-    if (requestRows.length === 0) {
-      setError("Agrega al menos una prenda.");
-      return;
-    }
-
-    const dueBackAtDate = new Date(dueBackAt);
-    if (Number.isNaN(dueBackAtDate.getTime())) {
-      setError("Fecha de devolucion invalida.");
-      return;
-    }
-
-    const demandByCombo = new Map<
-      string,
-      { productId: string; sizeKey: string; quantity: number }
-    >();
-
-    for (const row of requestRows) {
-      if (!row.productId || !row.sizeKey) {
-        setError("Completa producto y talla en todas las filas.");
-        return;
-      }
-
-      if (!Number.isFinite(row.quantity) || row.quantity < 1) {
-        setError("La cantidad por fila debe ser al menos 1.");
-        return;
-      }
-
-      const comboKey = buildComboKey(row.productId, row.sizeKey);
-      const current = demandByCombo.get(comboKey);
-      demandByCombo.set(comboKey, {
-        productId: row.productId,
-        sizeKey: row.sizeKey,
-        quantity: (current?.quantity ?? 0) + row.quantity,
-      });
-    }
-
-    for (const demand of demandByCombo.values()) {
-      const comboKey = buildComboKey(demand.productId, demand.sizeKey);
-      const availableCount = availableCountByCombo.get(comboKey) ?? 0;
-      if (demand.quantity > availableCount) {
-        const productName = productById.get(demand.productId)?.nombre ?? "Producto";
-        const sizeLabel =
-          demand.sizeKey === NO_SIZE_KEY ? "Sin talla" : demand.sizeKey.toUpperCase();
-        setError(
-          `Stock insuficiente para ${productName} (${sizeLabel}). Disponibles: ${availableCount}, solicitados: ${demand.quantity}.`
-        );
-        return;
-      }
-    }
-
-    const availableUnitsByCombo = new Map<string, RentalUnitListItem[]>();
-    for (const unit of availableUnits) {
-      const comboKey = buildComboKey(unit.productId, toSizeKey(unit.sizeLabel));
-      const current = availableUnitsByCombo.get(comboKey) ?? [];
-      current.push(unit);
-      availableUnitsByCombo.set(comboKey, current);
-    }
-
-    const items: Array<{ rentalUnitId: string }> = [];
-    for (const demand of demandByCombo.values()) {
-      const comboKey = buildComboKey(demand.productId, demand.sizeKey);
-      const candidates = availableUnitsByCombo.get(comboKey) ?? [];
-      const selected = candidates.slice(0, demand.quantity);
-
-      if (selected.length < demand.quantity) {
-        setError("No se pudo asignar unidades suficientes para una de las filas.");
-        return;
-      }
-
-      for (const unit of selected) {
-        items.push({ rentalUnitId: unit.id });
-      }
-    }
-
-    if (items.length === 0) {
-      setError("No hay unidades para registrar en la orden.");
-      return;
-    }
-
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault(); setFeedback(null); setError(null);
+    if (!customerId) { setError("Selecciona cliente."); return; }
+    if (requestRows.length === 0) { setError("Agrega prendas."); return; }
     setIsSubmitting(true);
-
     try {
-      const response = await fetch("/api/rental-orders", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          customerId,
-          dueBackAt: dueBackAtDate.toISOString(),
-          notes: notes.trim() || undefined,
-          items,
-        }),
-      });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo crear la orden de renta."));
-        return;
+      const items: any[] = [];
+      for (const row of requestRows) {
+        const comboKey = buildComboKey(row.productId, row.sizeKey);
+        const candidates = availableUnits.filter(u => buildComboKey(u.productId, toSizeKey(u.sizeLabel)) === comboKey);
+        candidates.slice(0, row.quantity).forEach(u => items.push({ rentalUnitId: u.id }));
       }
-
-      setFeedback("Orden de renta creada correctamente.");
-      setRequestRows([createRentalRequestRow()]);
-      setNotes("");
-      setDueBackAt(buildDefaultDueBackAt());
-      await refreshData();
-    } catch {
-      setError("Error de red al crear la orden de renta.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      const res = await fetch("/api/rental-orders", {
+        method: "POST", credentials: "include", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ customerId, dueBackAt: new Date(dueBackAt).toISOString(), notes: notes.trim() || undefined, items }),
+      });
+      if (res.ok) {
+        setFeedback("Orden creada."); setRequestRows([createRentalRequestRow()]); setNotes(""); await refreshData();
+      } else { setError(await parseApiError(res, "Error al crear.")); }
+    } catch { setError("Error de red."); } finally { setIsSubmitting(false); }
   };
 
   const handleOrderAction = async (orderId: string, action: string) => {
-    if (action === "MARK_RETURNED") {
-      setReturnOrderId(orderId);
-      setReturnHasDamage(false);
-      setReturnNotes("");
-      return;
-    }
-
-    setActiveOrderId(orderId);
-    setFeedback(null);
-    setError(null);
-
+    if (action === "MARK_RETURNED") { setReturnOrderId(orderId); return; }
+    setActiveOrderId(orderId); setFeedback(null); setError(null);
     try {
-      const response = await fetch(`/api/rental-orders/${orderId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
+      const res = await fetch(`/api/rental-orders/${orderId}`, {
+        method: "PATCH", credentials: "include", headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo actualizar la orden."));
-        return;
-      }
-
-      setFeedback("Estado de renta actualizado.");
-      await refreshData();
-    } catch {
-      setError("Error de red al actualizar la orden.");
-    } finally {
-      setActiveOrderId(null);
-    }
+      if (res.ok) { setFeedback("Estado actualizado."); await refreshData(); }
+    } finally { setActiveOrderId(null); }
   };
 
   const handleConfirmReturn = async () => {
     if (!returnOrderId) return;
-
-    setActiveOrderId(returnOrderId);
-    setFeedback(null);
-    setError(null);
-
+    setActiveOrderId(returnOrderId); setFeedback(null); setError(null);
     try {
-      const response = await fetch(`/api/rental-orders/${returnOrderId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          action: "MARK_RETURNED",
-          hasDamage: returnHasDamage,
-          returnNotes: returnNotes.trim() || undefined,
-        }),
+      const res = await fetch(`/api/rental-orders/${returnOrderId}`, {
+        method: "PATCH", credentials: "include", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "MARK_RETURNED", hasDamage: returnHasDamage, returnNotes: returnNotes.trim() || undefined }),
       });
-
-      if (!response.ok) {
-        setError(await parseApiError(response, "No se pudo registrar la devolucion."));
-        return;
-      }
-
-      setFeedback("Devolucion registrada correctamente.");
-      setReturnOrderId(null);
-      await refreshData();
-    } catch {
-      setError("Error de red al registrar devolucion.");
-    } finally {
-      setActiveOrderId(null);
-    }
+      if (res.ok) { setFeedback("Devolución registrada."); setReturnOrderId(null); await refreshData(); }
+    } finally { setActiveOrderId(null); }
   };
 
-  const activeOrders = orders.filter((order) =>
-    ["ENTREGADO", "ATRASADO"].includes(order.status)
-  ).length;
-  const returnedOrders = orders.filter((order) => order.status === "DEVUELTO").length;
+  const stats = useMemo(() => ({
+    total: orders.length,
+    active: orders.filter(o => ["ENTREGADO", "ATRASADO"].includes(o.status)).length,
+    returned: orders.filter(o => o.status === "DEVUELTO").length,
+    availableUnits: availableUnits.length
+  }), [orders, availableUnits]);
 
   return (
-    <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {statCard({
-          title: "Rentas totales",
-          value: orders.length,
-          detail: "Ordenes registradas en el modulo.",
-        })}
-        {statCard({
-          title: "Rentas activas",
-          value: activeOrders,
-          detail: "Ordenes en curso o con retraso.",
-        })}
-        {statCard({
-          title: "Pendientes de cierre",
-          value: returnedOrders,
-          detail: "Ordenes devueltas sin cerrar.",
-        })}
-        {statCard({
-          title: "Unidades disponibles",
-          value: availableUnits.length,
-          detail: "Stock real disponible por talla.",
-        })}
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <AdminStatCard title="Total Alquileres" value={stats.total} detail="Histórico acumulado" />
+        <AdminStatCard title="Rentas Activas" value={stats.active} detail="Prendas fuera de tienda" />
+        <AdminStatCard title="Para Cierre" value={stats.returned} detail="Devueltas pendientes de revisión" />
+        <AdminStatCard title="Stock Disponible" value={stats.availableUnits} detail="Unidades listas en rack" />
       </div>
 
-      <article className="rounded-[1.75rem] border border-cyan-400/20 bg-cyan-400/5 p-5">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-200">Flujo recomendado</p>
-        <p className="mt-2 text-sm leading-6 text-cyan-100/90">
-          1) Registra productos de renta en catalogo, 2) registra unidades fisicas por talla en inventario,
-          3) crea la orden desde aqui seleccionando producto+talla+cantidad.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href="/admin/catalogo/productos"
-            className="rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/20"
-          >
-            Ir a Catalogo / Productos
-          </Link>
-          <Link
-            href="/admin/inventario/unidades-renta"
-            className="rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/20"
-          >
-            Ir a Inventario / Unidades de renta
-          </Link>
-        </div>
-      </article>
-
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Nueva renta</p>
-        <h2 className="mt-2 text-xl font-semibold text-white">Crear orden inmediata</h2>
-        <p className="mt-2 text-sm text-stone-400">
-          Puedes combinar tallas en una misma orden, por ejemplo saco 48 + pantalon 42.
-        </p>
-
-        <form onSubmit={handleCreateOrder} className="mt-5 space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <label className="flex flex-col gap-1 text-sm text-stone-300">
-              Cliente
-              <select
-                value={customerId}
-                onChange={(event) => setCustomerId(event.target.value)}
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-                required
-              >
-                <option value="">Selecciona cliente</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.nombres} {customer.apellidos} - {customer.dni}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm text-stone-300">
-              Devolucion pactada
-              <input
-                type="datetime-local"
-                value={dueBackAt}
-                onChange={(event) => setDueBackAt(event.target.value)}
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
-                required
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm text-stone-300">
-              Nota
-              <input
-                type="text"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Opcional"
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder:text-stone-500"
-              />
-            </label>
-          </div>
-
-          <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-white">Prendas y tallas</p>
+      <div className="flex flex-col xl:flex-row gap-6 items-start">
+        <div className="flex-1 w-full space-y-6 min-w-0">
+          <Panel eyebrow="Maestro" title="Control de Alquileres">
+            <div className="flex flex-col gap-4 border-b border-white/5 pb-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar por código u cliente..."
+                  className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-9 pr-4 text-sm text-stone-200 outline-none transition focus:border-emerald-500/50"
+                />
+              </div>
               <button
-                type="button"
-                onClick={() => setRequestRows((current) => [...current, createRentalRequestRow()])}
-                className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-stone-200 transition hover:bg-white/[0.06]"
+                onClick={() => void refreshData()}
+                className="rounded-xl border border-white/10 bg-black/40 p-2.5 text-stone-400 hover:text-white transition"
               >
-                Agregar fila
+                <RefreshCcw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
               </button>
             </div>
 
-            {requestRows.map((row, index) => {
-              const sizeOptions = row.productId ? sizeOptionsByProduct.get(row.productId) ?? [] : [];
-              const comboKey = row.productId && row.sizeKey ? buildComboKey(row.productId, row.sizeKey) : "";
-              const availableCount = comboKey ? availableCountByCombo.get(comboKey) ?? 0 : 0;
-              const product = productById.get(row.productId);
-
-              return (
-                <div
-                  key={row.rowId}
-                  className="grid gap-3 rounded-xl border border-white/8 bg-black/20 p-3 md:grid-cols-[1.25fr_1fr_0.5fr_auto]"
-                >
-                  <label className="flex flex-col gap-1 text-xs text-stone-300">
-                    Producto
-                    <select
-                      value={row.productId}
-                      onChange={(event) => handleChangeRowProduct(row.rowId, event.target.value)}
-                      className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2 text-sm text-white"
-                      required
-                    >
-                      <option value="">Selecciona producto</option>
-                      {rentalEnabledProducts.map((productOption) => {
-                        const productAvailable = availableCountByProduct.get(productOption.id) ?? 0;
-                        const label = `${productOption.nombre} (${productAvailable} disp.)`;
-                        return (
-                          <option
-                            key={productOption.id}
-                            value={productOption.id}
-                            disabled={productAvailable === 0}
-                          >
-                            {label}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </label>
-
-                  <label className="flex flex-col gap-1 text-xs text-stone-300">
-                    Talla
-                    <select
-                      value={row.sizeKey}
-                      onChange={(event) =>
-                        updateRequestRow(row.rowId, (current) => ({
-                          ...current,
-                          sizeKey: event.target.value,
-                          quantity: 1,
-                        }))
-                      }
-                      className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2 text-sm text-white"
-                      required
-                      disabled={!row.productId}
-                    >
-                      <option value="">Selecciona talla</option>
-                      {sizeOptions.map((option) => (
-                        <option
-                          key={option.sizeKey}
-                          value={option.sizeKey}
-                          disabled={option.availableCount === 0}
-                        >
-                          {option.label} ({option.availableCount}/{option.totalCount})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="flex flex-col gap-1 text-xs text-stone-300">
-                    Cantidad
-                    <input
-                      type="number"
-                      min={1}
-                      value={row.quantity}
-                      onChange={(event) => {
-                        const parsed = Number.parseInt(event.target.value, 10);
-                        updateRequestRow(row.rowId, (current) => ({
-                          ...current,
-                          quantity:
-                            Number.isFinite(parsed) && parsed > 0
-                              ? parsed
-                              : 1,
-                        }));
-                      }}
-                      className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2 text-sm text-white"
-                      required
-                    />
-                  </label>
-
-                  <div className="flex items-end gap-2">
-                    <div className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-2 text-[11px] text-cyan-100">
-                      {row.productId && row.sizeKey
-                        ? `Disponibles: ${availableCount}`
-                        : "Sin seleccion"}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRequestRows((current) =>
-                          current.length === 1
-                            ? [createRentalRequestRow()]
-                            : current.filter((item) => item.rowId !== row.rowId)
-                        )
-                      }
-                      className="rounded-lg border border-rose-300/20 bg-rose-300/10 px-2.5 py-2 text-xs text-rose-100 transition hover:bg-rose-300/20"
-                    >
-                      {requestRows.length === 1 ? "Limpiar" : "Quitar"}
-                    </button>
-                  </div>
-
-                  {product && (
-                    <p className="md:col-span-4 text-[11px] text-stone-500">
-                      {index + 1}. {product.nombre} ({product.kind})
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex w-fit items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
-          >
-            {isSubmitting ? "Creando..." : "Crear orden de renta"}
-          </button>
-        </form>
-
-        {feedback && (
-          <p className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-            {feedback}
-          </p>
-        )}
-        {error && (
-          <p className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">
-            {error}
-          </p>
-        )}
-      </article>
-
-      <article className="rounded-[1.75rem] border border-white/8 bg-black/25 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-stone-500">Listado</p>
-            <h2 className="mt-2 text-xl font-semibold text-white">Ordenes de renta</h2>
-          </div>
-          <button
-            onClick={() => void refreshData()}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-          >
-            Actualizar
-          </button>
-        </div>
-
-        {isLoading ? (
-          <p className="mt-6 text-sm text-stone-400">Cargando ordenes...</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-stone-500">
-                <tr className="border-b border-white/8">
-                  <th className="px-3 py-3 font-medium">Codigo</th>
-                  <th className="px-3 py-3 font-medium">Cliente</th>
-                  <th className="px-3 py-3 font-medium">Fechas</th>
-                  <th className="px-3 py-3 font-medium">Estado</th>
-                  <th className="px-3 py-3 font-medium text-right">Total</th>
-                  <th className="px-3 py-3 font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
+            <div className="overflow-x-auto mt-6">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-[10px] uppercase tracking-widest text-stone-600 font-bold border-b border-white/8">
                   <tr>
-                    <td colSpan={6} className="px-3 py-10 text-center text-stone-500">
-                      No hay rentas registradas.
-                    </td>
+                    <th className="px-3 py-3 font-medium">Orden / Cliente</th>
+                    <th className="px-3 py-3 font-medium text-center">Items</th>
+                    <th className="px-3 py-3 font-medium text-center">Plazos</th>
+                    <th className="px-3 py-3 font-medium text-center">Estado</th>
+                    <th className="px-3 py-3 font-medium text-right">Total</th>
+                    <th className="px-3 py-3 font-medium text-right">Acciones</th>
                   </tr>
-                ) : (
-                  orders.map((order) => {
-                    const actions = getRentalActions(order.status);
-                    return (
-                      <tr key={order.id} className="border-b border-white/6 align-top">
-                        <td className="px-3 py-4">
-                          <p className="font-medium text-white">{order.code}</p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {order.items.length} item(s)
-                          </p>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {isLoading ? (
+                    <tr><td colSpan={6} className="py-20 text-center animate-pulse text-stone-600 font-mono text-[10px] uppercase tracking-widest">Analizando registros de rack...</td></tr>
+                  ) : orders.length === 0 ? (
+                    <tr><td colSpan={6} className="py-20 text-center text-stone-600 italic">No hay órdenes registradas</td></tr>
+                  ) : (
+                    orders.map((o) => (
+                      <tr key={o.id} className="group hover:bg-white/2 transition-colors">
+                        <td className="px-3 py-5">
+                          <p className="text-base font-bold text-white leading-none">{o.code}</p>
+                          <p className="text-[11px] text-stone-400 mt-1.5 font-medium">{customerById.get(o.customerId) || "Cliente desconocido"}</p>
                         </td>
-                        <td className="px-3 py-4">
-                          <p className="text-sm text-stone-200">
-                            {customerById.get(order.customerId) ?? order.customerId}
-                          </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {summarizeOrderItems(order.items)}
-                          </p>
+                        <td className="px-3 py-5 text-center">
+                          <p className="text-xs font-bold text-stone-300 truncate max-w-[150px] mx-auto">{summarizeOrderItems(o.items)}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-stone-600 font-bold mt-1">{o.items.length} un.</p>
                         </td>
-                        <td className="px-3 py-4 text-xs text-stone-400">
-                          <p>Salida: {formatMediumDate(order.pickupAt)}</p>
-                          <p className="mt-1">Dev: {formatMediumDate(order.dueBackAt)}</p>
-                          {order.returnedAt && (
-                            <p className="mt-1 text-emerald-300">
-                              Real: {formatMediumDate(order.returnedAt)}
+                        <td className="px-3 py-5 text-center">
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-stone-500 font-bold uppercase tracking-tighter">Recogida: {formatMediumDate(o.pickupAt)}</p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${o.status === "ATRASADO" ? "text-rose-400" : "text-amber-400/80"}`}>
+                              Vence: {formatMediumDate(o.dueBackAt)}
                             </p>
-                          )}
+                          </div>
                         </td>
-                        <td className="px-3 py-4">
-                          <span
-                            className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${rentalOrderStatusChipClasses(order.status)}`}
-                          >
-                            {formatStatusLabel(order.status)}
+                        <td className="px-3 py-5 text-center text-[10px] font-bold uppercase tracking-widest">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 ${rentalOrderStatusChipClasses(o.status)}`}>
+                            {formatStatusLabel(o.status)}
                           </span>
                         </td>
-                        <td className="px-3 py-4 text-right font-medium text-emerald-300">
-                          S/ {Number(order.total).toFixed(2)}
+                        <td className="px-3 py-5 text-right font-mono font-bold text-emerald-400">
+                          S/ {Number(o.total).toFixed(2)}
                         </td>
-                        <td className="px-3 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <Link
-                              href={`/admin/ordenes/rentas/${order.id}`}
-                              className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-stone-200 transition hover:bg-white/[0.06]"
-                            >
-                              Detalle
-                            </Link>
-                            {actions.map((item) => (
+                        <td className="px-3 py-5 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {getRentalActions(o.status).map(action => (
                               <button
-                                key={item.action}
-                                onClick={() => void handleOrderAction(order.id, item.action)}
-                                disabled={activeOrderId === order.id}
-                                className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1.5 text-xs text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                key={action.action}
+                                onClick={() => void handleOrderAction(o.id, action.action)}
+                                disabled={activeOrderId === o.id}
+                                className="rounded-lg bg-emerald-500/10 text-emerald-400 px-2 py-1 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-500/20 transition disabled:opacity-50"
                               >
-                                {item.label}
+                                {action.label}
                               </button>
                             ))}
+                            <Link
+                              href={`/admin/ordenes/alquiler/${o.id}`}
+                              className="rounded-lg bg-white/5 text-stone-300 p-1.5 hover:bg-white/10 transition"
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </Link>
                           </div>
                         </td>
                       </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="w-full xl:w-[400px] shrink-0">
+          <Panel eyebrow="Operación" title="Nueva Renta Inmediata">
+            <form onSubmit={handleCreateOrder} className="space-y-5">
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Cliente titular</p>
+                <select
+                  value={customerId}
+                  onChange={e => setCustomerId(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/50"
+                  required
+                >
+                  <option value="">Selecciona cliente...</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos} - {c.dni}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[9px] uppercase font-bold text-stone-600 ml-1 tracking-widest">Devolución Pactada</p>
+                <input
+                  type="datetime-local"
+                  value={dueBackAt}
+                  onChange={e => setDueBackAt(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white font-mono"
+                  required
+                />
+              </div>
+
+              <div className="pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Prendas / Tallas</p>
+                  <button
+                    type="button"
+                    onClick={() => setRequestRows(curr => [...curr, createRentalRequestRow()])}
+                    className="text-emerald-400 hover:text-emerald-300 transition"
+                  >
+                    <PlusCircle className="size-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {requestRows.map((row, idx) => {
+                    const sizes = row.productId ? sizeOptionsByProduct.get(row.productId) ?? [] : [];
+                    return (
+                      <div key={row.rowId} className="p-3 rounded-2xl bg-white/2 border border-white/5 space-y-3 relative">
+                        {requestRows.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setRequestRows(curr => curr.filter(r => r.rowId !== row.rowId))}
+                            className="absolute -top-2 -right-2 bg-black border border-white/10 text-stone-500 p-1 rounded-full hover:text-rose-400 transition"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        )}
+                        <select
+                          value={row.productId}
+                          onChange={e => handleChangeRowProduct(row.rowId, e.target.value)}
+                          className="w-full bg-transparent text-xs text-stone-200 border-none outline-none focus:ring-0 p-0"
+                          required
+                        >
+                          <option value="">Producto...</option>
+                          {rentalEnabledProducts.map(p => (
+                            <option key={p.id} value={p.id} disabled={(availableCountByProduct.get(p.id) ?? 0) === 0}>
+                              {p.nombre} ({(availableCountByProduct.get(p.id) ?? 0)} disp.)
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/5">
+                          <select
+                            value={row.sizeKey}
+                            onChange={e => updateRequestRow(row.rowId, r => ({ ...r, sizeKey: e.target.value }))}
+                            className="bg-transparent text-[10px] font-bold uppercase text-emerald-400 border-none outline-none p-0"
+                            required
+                          >
+                            <option value="">Talla</option>
+                            {sizes.map(s => <option key={s.sizeKey} value={s.sizeKey} disabled={s.availableCount === 0}>{s.label}</option>)}
+                          </select>
+                          <input
+                            type="number"
+                            min={1}
+                            value={row.quantity}
+                            onChange={e => updateRequestRow(row.rowId, r => ({ ...r, quantity: parseInt(e.target.value) || 1 }))}
+                            className="w-10 bg-transparent text-right text-[10px] font-bold text-white border-none outline-none p-0"
+                          />
+                        </div>
+                      </div>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  })}
+                </div>
+              </div>
 
-        {returnOrderId && (
-          <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
-            <p className="text-[11px] uppercase tracking-[0.3em] text-amber-200">Confirmar devolucion</p>
-            <p className="mt-2 text-sm text-stone-300">
-              Orden: <span className="font-medium text-white">{orders.find((o) => o.id === returnOrderId)?.code ?? returnOrderId}</span>
-            </p>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <label className="flex items-center gap-2 self-center text-sm text-stone-300">
-                <input
-                  type="checkbox"
-                  checked={returnHasDamage}
-                  onChange={(event) => setReturnHasDamage(event.target.checked)}
-                  className="size-4 rounded border border-white/20 bg-transparent accent-rose-400"
+              <div className="pt-4 space-y-4">
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Notas u observaciones del alquiler..."
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs text-stone-400 min-h-[80px] outline-none"
                 />
-                Tiene danio
-              </label>
-
-              <label className="flex flex-col gap-1 text-sm text-stone-300">
-                Observaciones de devolucion
-                <input
-                  type="text"
-                  value={returnNotes}
-                  onChange={(event) => setReturnNotes(event.target.value)}
-                  placeholder="Opcional"
-                  className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder:text-stone-500"
-                />
-              </label>
-
-              <div className="flex items-end gap-2">
                 <button
-                  onClick={() => void handleConfirmReturn()}
-                  disabled={activeOrderId === returnOrderId}
-                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/50"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-emerald-950 hover:bg-emerald-400 transition disabled:opacity-50"
                 >
-                  Confirmar devolucion
-                </button>
-                <button
-                  onClick={() => setReturnOrderId(null)}
-                  className="rounded-xl border border-white/10 px-4 py-2 text-sm text-stone-200 transition hover:bg-white/[0.06]"
-                >
-                  Cancelar
+                  {isSubmitting ? "Procesando..." : "Registrar Alquiler"}
                 </button>
               </div>
+            </form>
+          </Panel>
+        </div>
+      </div>
+
+      {returnOrderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[2.5rem] bg-[#0e0e0e] border border-white/10 p-8 space-y-6">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold mb-2">Devolución</p>
+              <h3 className="text-2xl font-bold text-white">Registrar Retorno</h3>
+            </div>
+
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`size-5 rounded-md border flex items-center justify-center transition ${returnHasDamage ? "bg-rose-500 border-rose-500" : "border-white/10 bg-white/5"}`}>
+                  {returnHasDamage && <CheckCircle2 className="size-3 text-white" />}
+                </div>
+                <input type="checkbox" checked={returnHasDamage} onChange={e => setReturnHasDamage(e.target.checked)} className="hidden" />
+                <span className={`text-sm font-bold uppercase tracking-widest ${returnHasDamage ? "text-rose-400" : "text-stone-500 group-hover:text-stone-300"}`}>Posee Daños / Manchas</span>
+              </label>
+
+              <textarea
+                value={returnNotes}
+                onChange={e => setReturnNotes(e.target.value)}
+                placeholder="Estado de la prenda al recibir..."
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-stone-200 min-h-[120px] outline-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setReturnOrderId(null)} className="flex-1 rounded-xl bg-white/5 py-3 text-sm font-bold text-stone-400 hover:bg-white/10">Cancelar</button>
+              <button onClick={handleConfirmReturn} className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-emerald-950 hover:bg-emerald-400">Confirmar</button>
             </div>
           </div>
-        )}
-      </article>
-    </section>
+        </div>
+      )}
+
+      {feedback && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-emerald-500/20 bg-[#0e0e0e] px-6 py-3 shadow-2xl shadow-emerald-500/10">
+          <p className="text-sm text-emerald-400 font-bold flex items-center gap-2"><CheckCircle2 className="size-4" /> {feedback}</p>
+        </div>
+      )}
+    </div>
   );
 }

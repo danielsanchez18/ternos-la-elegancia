@@ -19,7 +19,7 @@ import {
 export default async function WorkshopSheetPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const id = parseAdminCustomOrderId(resolvedParams.id);
-  
+
   if (id === null) {
     notFound();
   }
@@ -34,7 +34,7 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
     <div className="min-h-screen bg-white text-stone-900 p-8 md:p-12 print:p-0">
       {/* Container for Print */}
       <div className="max-w-4xl mx-auto border border-stone-100 shadow-sm print:shadow-none print:border-none">
-        
+
         {/* Header */}
         <div className="p-8 border-b-2 border-stone-800 flex justify-between items-start">
           <div>
@@ -46,8 +46,8 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
             </p>
           </div>
           <div className="text-right">
-            <div className="inline-block bg-stone-900 text-white px-4 py-1 text-sm font-bold skew-x-[-12deg] mb-2">
-              <span className="skew-x-[12deg] inline-block">FICHA DE PRODUCCIÓN</span>
+            <div className="inline-block bg-stone-900 text-white px-4 py-1 text-sm font-bold skew-x-12 mb-2">
+              <span className="skew-x-12 inline-block">FICHA DE PRODUCCIÓN</span>
             </div>
             <p className="text-xl font-mono font-bold text-stone-800">{order.code}</p>
           </div>
@@ -73,7 +73,7 @@ export default async function WorkshopSheetPage({ params }: { params: Promise<{ 
                 <span className="font-medium">{formatWorkshopDate(order.createdAt)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-stone-500 font-bold text-rose-600">ENTREGA PROMETIDA:</span>
+                <span className="text-stone-500 font-bold">ENTREGA PROMETIDA:</span>
                 <span className="font-bold text-rose-600">
                   {order.promisedDeliveryAt ? formatWorkshopDate(order.promisedDeliveryAt) : "No definida"}
                 </span>

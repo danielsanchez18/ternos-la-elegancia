@@ -29,7 +29,7 @@ export default function AdminDashboardInventorySection({
           <Link
             key={alert.title}
             href={alert.href}
-            className="rounded-3xl border border-white/8 bg-white/[0.03] p-5 transition hover:bg-white/[0.05]"
+            className="rounded-3xl border border-white/8 bg-white/3 p-5 transition hover:bg-white/[0.05]"
           >
             <p className="text-sm font-medium text-white">{alert.title}</p>
             <p className="mt-3 text-3xl font-semibold text-white">{alert.value}</p>
